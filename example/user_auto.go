@@ -2,6 +2,7 @@ package example
 
 import (
 	"strings"
+	"strconv"
 
 	"github.com/mackee/go-sqlla"
 )
@@ -13,7 +14,8 @@ type userSQL struct {
 type userSelectSQL struct {
 	userSQL
 	Columns []string
-	Order   string
+	order   string
+	limit   *uint64
 }
 
 func NewUserSQL() userSQL {
@@ -28,7 +30,13 @@ func (q userSQL) Select() userSelectSQL {
 			"id","name",
 		},
 		"",
+		nil,
 	}
+}
+
+func (q userSelectSQL) Limit(l uint64) userSelectSQL {
+	q.limit = &l
+	return q
 }
 
 
@@ -46,11 +54,11 @@ func (q userSelectSQL) ID(v uint64, exprs ...sqlla.Operator) userSelectSQL {
 }
 
 func (q userSelectSQL) OrderByID(order sqlla.Order) userSelectSQL {
-	q.Order = " ORDER BY id"
+	q.order = " ORDER BY id"
 	if order == sqlla.Asc {
-		q.Order += " ASC"
+		q.order += " ASC"
 	} else {
-		q.Order += " DESC"
+		q.order += " DESC"
 	}
 
 	return q
@@ -70,11 +78,11 @@ func (q userSelectSQL) Name(v string, exprs ...sqlla.Operator) userSelectSQL {
 }
 
 func (q userSelectSQL) OrderByName(order sqlla.Order) userSelectSQL {
-	q.Order = " ORDER BY name"
+	q.order = " ORDER BY name"
 	if order == sqlla.Asc {
-		q.Order += " ASC"
+		q.order += " ASC"
 	} else {
-		q.Order += " DESC"
+		q.order += " DESC"
 	}
 
 	return q
@@ -98,5 +106,10 @@ func (q userSelectSQL) ToSelectSql() (string, []interface{}, error) {
 		wheres += " AND " + s
 	}
 
-	return "SELECT " + columns + " FROM user WHERE " + wheres + q.Order + ";", vs, nil
+	query := "SELECT " + columns + " FROM user WHERE " + wheres + q.order
+	if q.limit != nil {
+		query += " LIMIT " + strconv.FormatUint(*q.limit, 10)
+	}
+
+	return query + ";", vs, nil
 }

@@ -22,12 +22,12 @@ func TestSelect(t *testing.T) {
 }
 
 func TestSelect__OrderByAndLimit(t *testing.T) {
-	q := NewUserSQL().Select().Name("hoge").OrderByID(sqlla.Asc)
+	q := NewUserSQL().Select().Name("hoge").OrderByID(sqlla.Asc).Limit(uint64(100))
 	query, args, err := q.ToSelectSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "SELECT id, name FROM user WHERE name = ? ORDER BY id ASC;" {
+	if query != "SELECT id, name FROM user WHERE name = ? ORDER BY id ASC LIMIT 100;" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{"hoge"}) {

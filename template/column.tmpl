@@ -13,11 +13,11 @@ func (q {{ $smallTableName }}SelectSQL) {{ .Name | toCamel | Title }}(v {{ .Type
 }
 
 func (q {{ $smallTableName }}SelectSQL) OrderBy{{ .Name | toCamel }}(order sqlla.Order) {{ $smallTableName }}SelectSQL {
-	q.Order = " ORDER BY {{ .Name }}"
+	q.order = " ORDER BY {{ .Name }}"
 	if order == sqlla.Asc {
-		q.Order += " ASC"
+		q.order += " ASC"
 	} else {
-		q.Order += " DESC"
+		q.order += " DESC"
 	}
 
 	return q

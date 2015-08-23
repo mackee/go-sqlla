@@ -2,6 +2,7 @@ package {{ .PackageName }}
 
 import (
 	"strings"
+	"strconv"
 
 	"github.com/mackee/go-sqlla"
 )
@@ -13,7 +14,8 @@ type {{ $camelName }}SQL struct {
 type {{ $camelName }}SelectSQL struct {
 	{{ .Name }}SQL
 	Columns []string
-	Order   string
+	order   string
+	limit   *uint64
 }
 
 func New{{ .Name | toCamel | Title }}SQL() userSQL {
@@ -28,7 +30,13 @@ func (q {{ $camelName }}SQL) Select() {{ $camelName }}SelectSQL {
 			{{ range .Columns }}"{{ .Name }}",{{ end }}
 		},
 		"",
+		nil,
 	}
+}
+
+func (q {{ $camelName }}SelectSQL) Limit(l uint64) {{ $camelName }}SelectSQL {
+	q.limit = &l
+	return q
 }
 
 {{ range .Columns }}{{ template "column" . }}{{ end }}
@@ -50,5 +58,10 @@ func (q {{ $camelName }}SelectSQL) ToSelectSql() (string, []interface{}, error) 
 		wheres += " AND " + s
 	}
 
-	return "SELECT " + columns + " FROM {{ .Name }} WHERE " + wheres + q.Order + ";", vs, nil
+	query := "SELECT " + columns + " FROM {{ .Name }} WHERE " + wheres + q.order
+	if q.limit != nil {
+		query += " LIMIT " + strconv.FormatUint(*q.limit, 10)
+	}
+
+	return query + ";", vs, nil
 }
