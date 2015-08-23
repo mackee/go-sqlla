@@ -1,0 +1,54 @@
+package {{ .PackageName }}
+
+import (
+	"strings"
+
+	"github.com/mackee/go-sqlla"
+)
+{{ $camelName := .Name | toCamel | toLower }}
+type {{ $camelName }}SQL struct {
+	where []sqlla.Expr
+}
+
+type {{ $camelName }}SelectSQL struct {
+	{{ .Name }}SQL
+	Columns []string
+	Order   string
+}
+
+func New{{ .Name | toCamel | Title }}SQL() userSQL {
+	q := {{ $camelName }}SQL{}
+	return q
+}
+
+func (q {{ $camelName }}SQL) Select() {{ $camelName }}SelectSQL {
+	return {{ $camelName }}SelectSQL{
+		q,
+		[]string{
+			{{ range .Columns }}"{{ .Name }}",{{ end }}
+		},
+		"",
+	}
+}
+
+{{ range .Columns }}{{ template "column" . }}{{ end }}
+func (q {{ $camelName }}SelectSQL) ToSelectSql() (string, []interface{}, error) {
+	columns := strings.Join(q.Columns, ", ")
+	vs := []interface{}{}
+	var wheres string
+	for i, w := range q.where {
+		s, v, err := w.ToSql()
+		if err != nil {
+			return "", nil, err
+		}
+		vs = append(vs, v...)
+
+		if i == 0 {
+			wheres += s
+			continue
+		}
+		wheres += " AND " + s
+	}
+
+	return "SELECT " + columns + " FROM {{ .Name }} WHERE " + wheres + q.Order + ";", vs, nil
+}

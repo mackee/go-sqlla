@@ -1,0 +1,25 @@
+{{ define "column" }}{{ $smallTableName := .TableName | toCamel | toLower }}
+func (q {{ $smallTableName }}SelectSQL) {{ .Name | toCamel | Title }}(v {{ .TypeName }}, exprs ...sqlla.Operator) {{ $smallTableName }}SelectSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+
+	where := sqlla.Expr{{ .TypeName | Title }}{Value: v, Op: op, Column: "{{ .Name }}"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q {{ $smallTableName }}SelectSQL) OrderBy{{ .Name | toCamel }}(order sqlla.Order) {{ $smallTableName }}SelectSQL {
+	q.Order = " ORDER BY {{ .Name }}"
+	if order == sqlla.Asc {
+		q.Order += " ASC"
+	} else {
+		q.Order += " DESC"
+	}
+
+	return q
+}
+{{ end }}
