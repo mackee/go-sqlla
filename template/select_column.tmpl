@@ -1,4 +1,4 @@
-{{ define "column" }}{{ $smallTableName := .TableName | toCamel | toLower }}
+{{ define "SelectColumn" }}{{ $smallTableName := .TableName | toCamel | toLower }}
 func (q {{ $smallTableName }}SelectSQL) {{ .Name | toCamel | Title }}(v {{ .TypeName }}, exprs ...sqlla.Operator) {{ $smallTableName }}SelectSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {

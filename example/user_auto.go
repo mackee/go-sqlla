@@ -11,16 +11,17 @@ type userSQL struct {
 	where []sqlla.Expr
 }
 
+func NewUserSQL() userSQL {
+	q := userSQL{}
+	return q
+}
+
+
 type userSelectSQL struct {
 	userSQL
 	Columns []string
 	order   string
 	limit   *uint64
-}
-
-func NewUserSQL() userSQL {
-	q := userSQL{}
-	return q
 }
 
 func (q userSQL) Select() userSelectSQL {
@@ -113,3 +114,4 @@ func (q userSelectSQL) ToSelectSql() (string, []interface{}, error) {
 
 	return query + ";", vs, nil
 }
+

@@ -10,12 +10,15 @@ import (
 
 //go:generate go-bindata -pkg sqlla template
 
+var templates = []string{
+	"template/table.tmpl",
+	"template/select.tmpl",
+	"template/select_column.tmpl",
+}
+
 var tmpl = template.New("sqlla")
 
 func init() {
-	tableTmpl, _ := Asset("template/table.tmpl")
-	columnTmpl, _ := Asset("template/column.tmpl")
-
 	tmpl = tmpl.Funcs(
 		template.FuncMap{
 			"Title":   strings.Title,
@@ -24,14 +27,12 @@ func init() {
 			"toCamel": snaker.SnakeToCamel,
 		},
 	)
-	var err error
-	tmpl, err = tmpl.Parse(string(tableTmpl))
-	if err != nil {
-		panic(err)
-	}
-	tmpl, err = tmpl.Parse(string(columnTmpl))
-	if err != nil {
-		panic(err)
+	for _, filename := range templates {
+		data, err := Asset(filename)
+		tmpl, err = tmpl.Parse(string(data))
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
