@@ -9,7 +9,7 @@ import (
 
 func TestSelect(t *testing.T) {
 	q := NewUserSQL().Select().Name("hoge")
-	query, args, err := q.ToSelectSql()
+	query, args, err := q.ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
@@ -23,7 +23,7 @@ func TestSelect(t *testing.T) {
 
 func TestSelect__OrderByAndLimit(t *testing.T) {
 	q := NewUserSQL().Select().Name("hoge").OrderByID(sqlla.Asc).Limit(uint64(100))
-	query, args, err := q.ToSelectSql()
+	query, args, err := q.ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}

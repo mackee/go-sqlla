@@ -89,7 +89,7 @@ func (q userSelectSQL) OrderByName(order sqlla.Order) userSelectSQL {
 	return q
 }
 
-func (q userSelectSQL) ToSelectSql() (string, []interface{}, error) {
+func (q userSelectSQL) ToSql() (string, []interface{}, error) {
 	columns := strings.Join(q.Columns, ", ")
 	vs := []interface{}{}
 	var wheres string

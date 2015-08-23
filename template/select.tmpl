@@ -23,7 +23,7 @@ func (q {{ $camelName }}SelectSQL) Limit(l uint64) {{ $camelName }}SelectSQL {
 }
 
 {{ range .Columns }}{{ template "SelectColumn" . }}{{ end }}
-func (q {{ $camelName }}SelectSQL) ToSelectSql() (string, []interface{}, error) {
+func (q {{ $camelName }}SelectSQL) ToSql() (string, []interface{}, error) {
 	columns := strings.Join(q.Columns, ", ")
 	vs := []interface{}{}
 	var wheres string
