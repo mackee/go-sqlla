@@ -3,7 +3,7 @@ package sqlla
 import (
 	"io"
 
-	"github.com/mackee/genbase"
+	"github.com/mackee/go-sqlla/vendor/genbase"
 )
 
 type Table struct {
