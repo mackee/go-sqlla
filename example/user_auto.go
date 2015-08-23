@@ -8,7 +8,7 @@ import (
 )
 
 type userSQL struct {
-	where []sqlla.Expr
+	where sqlla.Where
 }
 
 func NewUserSQL() userSQL {
@@ -91,27 +91,91 @@ func (q userSelectSQL) OrderByName(order sqlla.Order) userSelectSQL {
 
 func (q userSelectSQL) ToSql() (string, []interface{}, error) {
 	columns := strings.Join(q.Columns, ", ")
-	vs := []interface{}{}
-	var wheres string
-	for i, w := range q.where {
-		s, v, err := w.ToSql()
-		if err != nil {
-			return "", nil, err
-		}
-		vs = append(vs, v...)
-
-		if i == 0 {
-			wheres += s
-			continue
-		}
-		wheres += " AND " + s
+	wheres, vs, err := q.where.ToSql()
+	if err != nil {
+		return "", nil, err
 	}
 
-	query := "SELECT " + columns + " FROM user WHERE " + wheres + q.order
+	query := "SELECT " + columns + " FROM user"
+	if wheres != "" {
+		query += " WHERE" + wheres
+	}
+	query += q.order
 	if q.limit != nil {
 		query += " LIMIT " + strconv.FormatUint(*q.limit, 10)
 	}
 
 	return query + ";", vs, nil
+}
+
+
+type userUpdateSQL struct {
+	userSQL
+	setMap	sqlla.SetMap
+	Columns []string
+}
+
+func (q userSQL) Update() userUpdateSQL {
+	return userUpdateSQL{
+		userSQL: q,
+		setMap: sqlla.SetMap{},
+	}
+}
+
+
+func (q userUpdateSQL) SetID(v uint64) userUpdateSQL {
+	q.setMap["id"] = v
+	return q
+}
+
+func (q userUpdateSQL) WhereID(v uint64, exprs ...sqlla.Operator) userUpdateSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+
+	where := sqlla.ExprUint64{Value: v, Op: op, Column: "id"}
+	q.where = append(q.where, where)
+	return q
+}
+
+
+func (q userUpdateSQL) SetName(v string) userUpdateSQL {
+	q.setMap["name"] = v
+	return q
+}
+
+func (q userUpdateSQL) WhereName(v string, exprs ...sqlla.Operator) userUpdateSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+
+	where := sqlla.ExprString{Value: v, Op: op, Column: "name"}
+	q.where = append(q.where, where)
+	return q
+}
+
+
+func (q userUpdateSQL) ToSql() (string, []interface{}, error) {
+	setColumns, svs, err := q.setMap.ToSql()
+	if err != nil {
+		return "", []interface{}{}, err
+	}
+	wheres, wvs, err := q.where.ToSql()
+	if err != nil {
+		return "", []interface{}{}, err
+	}
+
+	query := "UPDATE user SET" + setColumns
+	if wheres != "" {
+		query += " WHERE" + wheres
+	}
+
+	return query + ";", append(svs, wvs...), nil
 }
 

@@ -34,3 +34,20 @@ func TestSelect__OrderByAndLimit(t *testing.T) {
 		t.Error("unexpected args:", args)
 	}
 }
+
+func TestUpdate(t *testing.T) {
+	q := NewUserSQL().Update().SetName("barbar").WhereID(uint64(1))
+	query, args, err := q.ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	if query != "UPDATE user SET name = ? WHERE id = ?;" {
+		t.Error("unexpected query:", query)
+	}
+	if args[0] != "barbar" {
+		t.Error("unexpected args[0]:", args[0])
+	}
+	if !reflect.DeepEqual(args, []interface{}{"barbar", "1"}) {
+		t.Error("unexpected args:", args)
+	}
+}

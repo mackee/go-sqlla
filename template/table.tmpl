@@ -8,7 +8,7 @@ import (
 )
 {{ $camelName := .Name | toCamel | toLower }}
 type {{ $camelName }}SQL struct {
-	where []sqlla.Expr
+	where sqlla.Where
 }
 
 func New{{ .Name | toCamel | Title }}SQL() userSQL {
@@ -17,3 +17,4 @@ func New{{ .Name | toCamel | Title }}SQL() userSQL {
 }
 
 {{ template "Select" . }}
+{{ template "Update" . }}

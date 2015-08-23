@@ -1,0 +1,33 @@
+{{ define "Update" }}{{ $camelName := .Name | toCamel | toLower }}
+type {{ $camelName }}UpdateSQL struct {
+	{{ .Name }}SQL
+	setMap	sqlla.SetMap
+	Columns []string
+}
+
+func (q {{ $camelName }}SQL) Update() {{ $camelName }}UpdateSQL {
+	return {{ $camelName }}UpdateSQL{
+		{{ $camelName }}SQL: q,
+		setMap: sqlla.SetMap{},
+	}
+}
+
+{{ range .Columns }}{{ template "UpdateColumn" . }}{{ end }}
+func (q {{ $camelName }}UpdateSQL) ToSql() (string, []interface{}, error) {
+	setColumns, svs, err := q.setMap.ToSql()
+	if err != nil {
+		return "", []interface{}{}, err
+	}
+	wheres, wvs, err := q.where.ToSql()
+	if err != nil {
+		return "", []interface{}{}, err
+	}
+
+	query := "UPDATE {{ .Name }} SET" + setColumns
+	if wheres != "" {
+		query += " WHERE" + wheres
+	}
+
+	return query + ";", append(svs, wvs...), nil
+}
+{{ end }}

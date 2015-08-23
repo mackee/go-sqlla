@@ -1,0 +1,20 @@
+{{ define "UpdateColumn" }}{{ $smallTableName := .TableName | toCamel | toLower }}
+func (q {{ $smallTableName }}UpdateSQL) Set{{ .Name | toCamel | Title }}(v {{ .TypeName }}) {{ $smallTableName }}UpdateSQL {
+	q.setMap["{{ .Name }}"] = v
+	return q
+}
+
+func (q {{ $smallTableName }}UpdateSQL) Where{{ .Name | toCamel | Title }}(v {{ .TypeName }}, exprs ...sqlla.Operator) {{ $smallTableName }}UpdateSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+
+	where := sqlla.Expr{{ .TypeName | Title }}{Value: v, Op: op, Column: "{{ .Name }}"}
+	q.where = append(q.where, where)
+	return q
+}
+
+{{ end }}
