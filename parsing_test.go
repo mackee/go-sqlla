@@ -58,6 +58,11 @@ func TestPackageInfoCollectTaggedTypeInfos(t *testing.T) {
 		}
 		t.Fatalf("unexpected: %d", len(tis))
 	}
+	for _, ti := range tis {
+		if ti.Comment.Text != "// +test" {
+			t.Fatalf("unexpected: %s", ti.Comment.Text)
+		}
+	}
 }
 
 func TestPackageInfoCollectTypeInfos(t *testing.T) {

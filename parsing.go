@@ -35,6 +35,7 @@ type TypeInfo struct {
 	FileInfo *FileInfo
 	GenDecl  *ast.GenDecl
 	TypeSpec *ast.TypeSpec
+	Comment  *ast.Comment
 }
 type TypeInfos []*TypeInfo
 
@@ -137,6 +138,7 @@ func (pkg *PackageInfo) CollectTaggedTypeInfos(tag string) TypeInfos {
 
 	for _, t := range types {
 		if c := findAnnotation(t.Doc(), tag); c != nil {
+			t.Comment = c
 			ret = append(ret, t)
 		}
 	}
