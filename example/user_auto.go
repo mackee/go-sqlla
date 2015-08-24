@@ -162,7 +162,7 @@ func (q userUpdateSQL) WhereName(v string, exprs ...sqlla.Operator) userUpdateSQ
 
 
 func (q userUpdateSQL) ToSql() (string, []interface{}, error) {
-	setColumns, svs, err := q.setMap.ToSql()
+	setColumns, svs, err := q.setMap.ToUpdateSql()
 	if err != nil {
 		return "", []interface{}{}, err
 	}
@@ -177,5 +177,43 @@ func (q userUpdateSQL) ToSql() (string, []interface{}, error) {
 	}
 
 	return query + ";", append(svs, wvs...), nil
+}
+
+
+type userInsertSQL struct {
+	userSQL
+	setMap	sqlla.SetMap
+	Columns []string
+}
+
+func (q userSQL) Insert() userInsertSQL {
+	return userInsertSQL{
+		userSQL: q,
+		setMap: sqlla.SetMap{},
+	}
+}
+
+
+func (q userInsertSQL) ValueID(v uint64) userInsertSQL {
+	q.setMap["id"] = v
+	return q
+}
+
+
+func (q userInsertSQL) ValueName(v string) userInsertSQL {
+	q.setMap["name"] = v
+	return q
+}
+
+
+func (q userInsertSQL) ToSql() (string, []interface{}, error) {
+	qs, vs, err := q.setMap.ToInsertSql()
+	if err != nil {
+		return "", []interface{}{}, err
+	}
+
+	query := "INSERT INTO user " + qs
+
+	return query + ";", vs, nil
 }
 

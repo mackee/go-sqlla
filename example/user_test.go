@@ -44,10 +44,21 @@ func TestUpdate(t *testing.T) {
 	if query != "UPDATE user SET name = ? WHERE id = ?;" {
 		t.Error("unexpected query:", query)
 	}
-	if args[0] != "barbar" {
-		t.Error("unexpected args[0]:", args[0])
-	}
 	if !reflect.DeepEqual(args, []interface{}{"barbar", "1"}) {
+		t.Error("unexpected args:", args)
+	}
+}
+
+func TestInsert(t *testing.T) {
+	q := NewUserSQL().Insert().ValueName("hogehoge")
+	query, args, err := q.ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	if query != "INSERT INTO user (name) VALUES(?);" {
+		t.Error("unexpected query:", query)
+	}
+	if !reflect.DeepEqual(args, []interface{}{"hogehoge"}) {
 		t.Error("unexpected args:", args)
 	}
 }

@@ -27,7 +27,7 @@ func (wh Where) ToSql() (string, []interface{}, error) {
 
 type SetMap map[string]interface{}
 
-func (sm SetMap) ToSql() (string, []interface{}, error) {
+func (sm SetMap) ToUpdateSql() (string, []interface{}, error) {
 	var setColumns string
 	vs := []interface{}{}
 	columnCount := 0
@@ -37,7 +37,28 @@ func (sm SetMap) ToSql() (string, []interface{}, error) {
 		}
 		setColumns += " " + k + " = ?"
 		vs = append(vs, v)
+		columnCount++
 	}
 
 	return setColumns, vs, nil
+}
+
+func (sm SetMap) ToInsertSql() (string, []interface{}, error) {
+	qs, ps := "(", "("
+	vs := []interface{}{}
+	columnCount := 0
+	for k, v := range sm {
+		if columnCount != 0 {
+			qs += ","
+			ps += ","
+		}
+		qs += k
+		ps += "?"
+		vs = append(vs, v)
+		columnCount++
+	}
+	qs += ")"
+	ps += ")"
+
+	return qs + " VALUES" + ps, vs, nil
 }

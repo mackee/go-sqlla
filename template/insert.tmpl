@@ -1,0 +1,26 @@
+{{ define "Insert" }}{{ $camelName := .Name | toCamel | toLower }}
+type {{ $camelName }}InsertSQL struct {
+	{{ .Name }}SQL
+	setMap	sqlla.SetMap
+	Columns []string
+}
+
+func (q {{ $camelName }}SQL) Insert() {{ $camelName }}InsertSQL {
+	return {{ $camelName }}InsertSQL{
+		{{ $camelName }}SQL: q,
+		setMap: sqlla.SetMap{},
+	}
+}
+
+{{ range .Columns }}{{ template "InsertColumn" . }}{{ end }}
+func (q {{ $camelName }}InsertSQL) ToSql() (string, []interface{}, error) {
+	qs, vs, err := q.setMap.ToInsertSql()
+	if err != nil {
+		return "", []interface{}{}, err
+	}
+
+	query := "INSERT INTO {{ .Name }} " + qs
+
+	return query + ";", vs, nil
+}
+{{ end }}

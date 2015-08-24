@@ -16,6 +16,8 @@ var templates = []string{
 	"template/select_column.tmpl",
 	"template/update.tmpl",
 	"template/update_column.tmpl",
+	"template/insert.tmpl",
+	"template/insert_column.tmpl",
 }
 
 var tmpl = template.New("sqlla")
