@@ -1,0 +1,26 @@
+{{ define "Delete" }}{{ $camelName := .Name | toCamel | toLower }}
+type {{ $camelName }}DeleteSQL struct {
+	{{ .Name }}SQL
+}
+
+func (q {{ $camelName }}SQL) Delete() {{ $camelName }}DeleteSQL {
+	return {{ $camelName }}DeleteSQL{
+		q,
+	}
+}
+
+{{ range .Columns }}{{ template "DeleteColumn" . }}{{ end }}
+func (q {{ $camelName }}DeleteSQL) ToSql() (string, []interface{}, error) {
+	wheres, vs, err := q.where.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+
+	query := "DELETE FROM {{ .Name }}"
+	if wheres != "" {
+		query += " WHERE" + wheres
+	}
+
+	return query + ";", vs, nil
+}
+{{ end }}

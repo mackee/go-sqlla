@@ -19,3 +19,4 @@ func New{{ .Name | toCamel | Title }}SQL() userSQL {
 {{ template "Select" . }}
 {{ template "Update" . }}
 {{ template "Insert" . }}
+{{ template "Delete" . }}

@@ -62,3 +62,17 @@ func TestInsert(t *testing.T) {
 		t.Error("unexpected args:", args)
 	}
 }
+
+func TestDelete(t *testing.T) {
+	q := NewUserSQL().Delete().Name("hogehoge")
+	query, args, err := q.ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	if query != "DELETE FROM user WHERE name = ?;" {
+		t.Error("unexpected query:", query)
+	}
+	if !reflect.DeepEqual(args, []interface{}{"hogehoge"}) {
+		t.Error("unexpected args:", args)
+	}
+}

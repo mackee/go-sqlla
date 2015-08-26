@@ -18,6 +18,8 @@ var templates = []string{
 	"template/update_column.tmpl",
 	"template/insert.tmpl",
 	"template/insert_column.tmpl",
+	"template/delete.tmpl",
+	"template/delete_column.tmpl",
 }
 
 var tmpl = template.New("sqlla")

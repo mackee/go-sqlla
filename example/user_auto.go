@@ -217,3 +217,57 @@ func (q userInsertSQL) ToSql() (string, []interface{}, error) {
 	return query + ";", vs, nil
 }
 
+
+type userDeleteSQL struct {
+	userSQL
+}
+
+func (q userSQL) Delete() userDeleteSQL {
+	return userDeleteSQL{
+		q,
+	}
+}
+
+
+func (q userDeleteSQL) ID(v uint64, exprs ...sqlla.Operator) userDeleteSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+
+	where := sqlla.ExprUint64{Value: v, Op: op, Column: "id"}
+	q.where = append(q.where, where)
+	return q
+}
+
+
+func (q userDeleteSQL) Name(v string, exprs ...sqlla.Operator) userDeleteSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+
+	where := sqlla.ExprString{Value: v, Op: op, Column: "name"}
+	q.where = append(q.where, where)
+	return q
+}
+
+
+func (q userDeleteSQL) ToSql() (string, []interface{}, error) {
+	wheres, vs, err := q.where.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+
+	query := "DELETE FROM user"
+	if wheres != "" {
+		query += " WHERE" + wheres
+	}
+
+	return query + ";", vs, nil
+}
+
