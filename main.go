@@ -49,7 +49,9 @@ func toTable(typeInfo *genbase.TypeInfo) (*Table, error) {
 	for _, fieldInfo := range fieldInfos {
 		tagText := fieldInfo.Tag.Value[1 : len(fieldInfo.Tag.Value)-1]
 		tag := reflect.StructTag(tagText)
-		columnName := tag.Get("db")
+		columnInfo := tag.Get("db")
+		columnMaps := strings.Split(columnInfo, ",")
+		columnName := columnMaps[0]
 		column := Column{FieldInfo: fieldInfo, Name: columnName}
 		table.AddColumn(column)
 	}

@@ -1,8 +1,14 @@
 package example
 
 import (
+	"database/sql"
+	"io/ioutil"
+	"os"
 	"reflect"
+	"strings"
 	"testing"
+
+	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/mackee/go-sqlla"
 )
@@ -74,5 +80,85 @@ func TestDelete(t *testing.T) {
 	}
 	if !reflect.DeepEqual(args, []interface{}{"hogehoge"}) {
 		t.Error("unexpected args:", args)
+	}
+}
+
+func TestCRUD__WithSqlite3(t *testing.T) {
+	dbFile, err := ioutil.TempFile("", "sqlla_test")
+	if err != nil {
+		t.Fatal("cannot create tempfile error:", err)
+	}
+	db, err := sql.Open("sqlite3", dbFile.Name())
+	if err != nil {
+		t.Fatal("cannot open database error:", err)
+	}
+
+	schemaFile, err := os.Open("./sqlite3.sql")
+	if err != nil {
+		t.Fatal("cannot open schema file error:", err)
+	}
+
+	b, err := ioutil.ReadAll(schemaFile)
+	if err != nil {
+		t.Fatal("cannot read schema file error:", err)
+	}
+
+	stmts := strings.Split(string(b), ";")
+	for _, stmt := range stmts {
+		_, err := db.Exec(stmt)
+		if err != nil {
+			t.Fatal("cannot load schema error:", err)
+		}
+	}
+
+	query, args, err := NewUserSQL().Insert().ValueName("hogehoge").ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	_, err = db.Exec(query, args...)
+	if err != nil {
+		t.Error("cannot insert row error:", err)
+	}
+
+	query, args, err = NewUserSQL().Select().Name("hogehoge").ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	row := db.QueryRow(query, args...)
+	var id uint64
+	var name string
+	err = row.Scan(&id, &name)
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	if name != "hogehoge" {
+		t.Error("unexpected name:", name)
+	}
+	if id == uint64(0) {
+		t.Error("empty id:", id)
+	}
+
+	query, args, err = NewUserSQL().Update().WhereID(id).SetName("barbar").ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	result, err := db.Exec(query, args...)
+	if err != nil {
+		t.Error("cannot update row error:", err)
+	}
+	if rows, _ := result.RowsAffected(); rows != 1 {
+		t.Error("unexpected row affected:", rows)
+	}
+
+	query, args, err = NewUserSQL().Delete().Name("barbar").ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	result, err = db.Exec(query, args...)
+	if err != nil {
+		t.Error("cannot delete row error:", err)
+	}
+	if rows, _ := result.RowsAffected(); rows != 1 {
+		t.Error("unexpected row affected:", rows)
 	}
 }
