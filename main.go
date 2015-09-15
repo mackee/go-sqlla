@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/mackee/go-sqlla/vendor/genbase"
+	"github.com/favclip/genbase"
 )
 
 func Run(from string) {
