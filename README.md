@@ -20,8 +20,8 @@ package table
 //+table: person
 type Person struct {
 	ID uint64 `db:"id"`
-	FirstName string `db:"first_name"
-	LastName  string `db:"last_name"
+	FirstName string `db:"first_name"`
+	LastName  string `db:"last_name"`
 }
 ```
 
@@ -39,8 +39,9 @@ Same package as the person.go:
 
 import (
 	"database/sql"
-	_ "github.com/mattn/go-sqlite3"
 	"log"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
