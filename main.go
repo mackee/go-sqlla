@@ -36,7 +36,7 @@ func toTable(typeInfo *genbase.TypeInfo) (*Table, error) {
 	table := new(Table)
 	table.PackageName = typeInfo.FileInfo.Name.Name
 
-	comment := typeInfo.Comment.Text
+	comment := typeInfo.AnnotatedComment.Text
 	tableName := strings.TrimPrefix(comment, "//+table: ")
 	table.Name = tableName
 
