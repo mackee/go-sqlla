@@ -23,6 +23,24 @@ func (e ExprUint64) ToSql() (string, []interface{}, error) {
 	return e.Column + " " + ops + " ?", []interface{}{s}, nil
 }
 
+type ExprMultiUint64 struct {
+	Column string
+	Values []uint64
+	Op     Operator
+}
+
+func (e ExprMultiUint64) ToSql() (string, []interface{}, error) {
+	ops, err := e.Op.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	vs := make([]interface{}, 0, len(e.Values))
+	for _, v := range e.Values {
+		vs = append(vs, interface{}(v))
+	}
+	return e.Column + " " + ops, vs, nil
+}
+
 type ExprUint32 struct {
 	Column string
 	Value  uint32
@@ -36,6 +54,24 @@ func (e ExprUint32) ToSql() (string, []interface{}, error) {
 		return "", nil, err
 	}
 	return e.Column + " " + ops + " ?", []interface{}{s}, nil
+}
+
+type ExprMultiUint32 struct {
+	Column string
+	Values []uint32
+	Op     Operator
+}
+
+func (e ExprMultiUint32) ToSql() (string, []interface{}, error) {
+	ops, err := e.Op.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	vs := make([]interface{}, 0, len(e.Values))
+	for _, v := range e.Values {
+		vs = append(vs, interface{}(v))
+	}
+	return e.Column + " " + ops, vs, nil
 }
 
 type ExprInt64 struct {
@@ -53,6 +89,24 @@ func (e ExprInt64) ToSql() (string, []interface{}, error) {
 	return e.Column + " " + ops + " ?", []interface{}{s}, nil
 }
 
+type ExprMultiInt64 struct {
+	Column string
+	Values []uint64
+	Op     Operator
+}
+
+func (e ExprMultiInt64) ToSql() (string, []interface{}, error) {
+	ops, err := e.Op.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	vs := make([]interface{}, 0, len(e.Values))
+	for _, v := range e.Values {
+		vs = append(vs, interface{}(v))
+	}
+	return e.Column + " " + ops, vs, nil
+}
+
 type ExprInt32 struct {
 	Column string
 	Value  int32
@@ -68,6 +122,24 @@ func (e ExprInt32) ToSql() (string, []interface{}, error) {
 	return e.Column + " " + ops + " ?", []interface{}{s}, nil
 }
 
+type ExprMultiInt32 struct {
+	Column string
+	Values []uint32
+	Op     Operator
+}
+
+func (e ExprMultiInt32) ToSql() (string, []interface{}, error) {
+	ops, err := e.Op.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	vs := make([]interface{}, 0, len(e.Values))
+	for _, v := range e.Values {
+		vs = append(vs, interface{}(v))
+	}
+	return e.Column + " " + ops, vs, nil
+}
+
 type ExprString struct {
 	Column string
 	Value  string
@@ -80,4 +152,22 @@ func (e ExprString) ToSql() (string, []interface{}, error) {
 		return "", nil, err
 	}
 	return e.Column + " " + ops + " ?", []interface{}{e.Value}, nil
+}
+
+type ExprMultiString struct {
+	Column string
+	Values []string
+	Op     Operator
+}
+
+func (e ExprMultiString) ToSql() (string, []interface{}, error) {
+	ops, err := e.Op.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	vs := make([]interface{}, 0, len(e.Values))
+	for _, v := range e.Values {
+		vs = append(vs, interface{}(v))
+	}
+	return e.Column + " " + ops, vs, nil
 }

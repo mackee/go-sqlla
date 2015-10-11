@@ -41,6 +41,20 @@ func TestSelect__OrderByAndLimit(t *testing.T) {
 	}
 }
 
+func TestSelect__InOperator(t *testing.T) {
+	q := NewUserSQL().Select().IDIn(1, 2, 3, 4, 5)
+	query, args, err := q.ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	if query != "SELECT id, name FROM user WHERE id IN(?,?,?,?,?);" {
+		t.Error("unexpected query:", query)
+	}
+	if !reflect.DeepEqual(args, []interface{}{uint64(1), uint64(2), uint64(3), uint64(4), uint64(5)}) {
+		t.Error("unexpected args:", args)
+	}
+}
+
 func TestUpdate(t *testing.T) {
 	q := NewUserSQL().Update().SetName("barbar").WhereID(uint64(1))
 	query, args, err := q.ToSql()
