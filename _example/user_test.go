@@ -152,6 +152,24 @@ func TestCRUD__WithSqlite3(t *testing.T) {
 		t.Error("empty id:", id)
 	}
 
+	query, args, err = NewUserSQL().Select().IDIn(uint64(1)).ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	row = db.QueryRow(query, args...)
+	var rescanId uint64
+	var rescanName string
+	err = row.Scan(&rescanId, &rescanName)
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	if name != "hogehoge" {
+		t.Error("unexpected name:", name)
+	}
+	if rescanId != id {
+		t.Error("unmatched id:", rescanId)
+	}
+
 	query, args, err = NewUserSQL().Update().WhereID(id).SetName("barbar").ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
