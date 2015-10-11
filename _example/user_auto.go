@@ -3,6 +3,7 @@ package example
 import (
 	"strings"
 	"strconv"
+	"bytes"
 
 	"github.com/mackee/go-sqlla"
 )
@@ -95,17 +96,25 @@ func (q userSelectSQL) ToSql() (string, []interface{}, error) {
 	if err != nil {
 		return "", nil, err
 	}
+	b := bytes.NewBuffer(make([]byte, 0, 256))
+	b.WriteString("SELECT ")
+	b.WriteString(columns)
+	b.WriteString(" FROM user")
 
-	query := "SELECT " + columns + " FROM user"
 	if wheres != "" {
-		query += " WHERE" + wheres
-	}
-	query += q.order
-	if q.limit != nil {
-		query += " LIMIT " + strconv.FormatUint(*q.limit, 10)
+		b.WriteString(" WHERE")
+		b.WriteString(wheres)
 	}
 
-	return query + ";", vs, nil
+	b.WriteString(q.order)
+	if q.limit != nil {
+		b.WriteString(" LIMIT ")
+		b.WriteString(strconv.FormatUint(*q.limit, 10))
+	}
+
+	b.WriteString(";")
+
+	return b.String(), vs, nil
 }
 
 
