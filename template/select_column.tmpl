@@ -12,6 +12,12 @@ func (q {{ $smallTableName }}SelectSQL) {{ .Name | toCamel | Title }}(v {{ .Type
 	return q
 }
 
+func (q {{ $smallTableName }}SelectSQL) {{ .Name | toCamel | Title }}In(v {{ .TypeName }}, vs ...{{ .TypeName }}) {{ $smallTableName }}SelectSQL {
+	where := sqlla.ExprMulti{{ .TypeName | Title }}{Values: append([]{{ .TypeName }}{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "{{ .Name }}"}
+	q.where = append(q.where, where)
+	return q
+}
+
 func (q {{ $smallTableName }}SelectSQL) OrderBy{{ .Name | toCamel }}(order sqlla.Order) {{ $smallTableName }}SelectSQL {
 	q.order = " ORDER BY {{ .Name }}"
 	if order == sqlla.Asc {
