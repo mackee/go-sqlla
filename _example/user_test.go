@@ -83,7 +83,7 @@ func TestDelete(t *testing.T) {
 	}
 }
 
-func TestCRUD__WithSqlite3(t *testing.T) {
+func setupDB(t *testing.T) *sql.DB {
 	dbFile, err := ioutil.TempFile("", "sqlla_test")
 	if err != nil {
 		t.Fatal("cannot create tempfile error:", err)
@@ -110,6 +110,11 @@ func TestCRUD__WithSqlite3(t *testing.T) {
 			t.Fatal("cannot load schema error:", err)
 		}
 	}
+	return db
+}
+
+func TestCRUD__WithSqlite3(t *testing.T) {
+	db := setupDB(t)
 
 	query, args, err := NewUserSQL().Insert().ValueName("hogehoge").ToSql()
 	if err != nil {
@@ -138,6 +143,17 @@ func TestCRUD__WithSqlite3(t *testing.T) {
 		t.Error("empty id:", id)
 	}
 
+	user, err := NewUserSQL().Select().Name("hogehoge").Single(db)
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	if user.Name != "hogehoge" {
+		t.Error("unexpected name:", name)
+	}
+	if user.Id == uint64(0) {
+		t.Error("empty id:", id)
+	}
+
 	query, args, err = NewUserSQL().Update().WhereID(id).SetName("barbar").ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
@@ -160,5 +176,50 @@ func TestCRUD__WithSqlite3(t *testing.T) {
 	}
 	if rows, _ := result.RowsAffected(); rows != 1 {
 		t.Error("unexpected row affected:", rows)
+	}
+}
+
+func TestORM__WithSqlite3(t *testing.T) {
+	db := setupDB(t)
+
+	insertedRow, err := NewUserSQL().Insert().ValueName("hogehoge").Exec(db)
+	if err != nil {
+		t.Error("cannot delete row error:", err)
+	}
+	if insertedRow.Id == uint64(0) {
+		t.Error("empty id:", insertedRow.Id)
+	}
+	if insertedRow.Name != "hogehoge" {
+		t.Error("unexpected name:", insertedRow.Name)
+	}
+
+	singleRow, err := NewUserSQL().Select().ID(insertedRow.Id).Single(db)
+	if err != nil {
+		t.Error("cannot delete row error:", err)
+	}
+	if singleRow.Id == uint64(0) {
+		t.Error("empty id:", singleRow.Id)
+	}
+	if singleRow.Name != "hogehoge" {
+		t.Error("unexpected name:", singleRow.Name)
+	}
+
+	_, err = NewUserSQL().Insert().ValueName("fugafuga").Exec(db)
+	if err != nil {
+		t.Error("cannot delete row error:", err)
+	}
+
+	rows, err := NewUserSQL().Select().All(db)
+	if len(rows) != 2 {
+		t.Error("missing rows error:", len(rows))
+	}
+
+	for _, row := range rows {
+		if row.Id == uint64(0) {
+			t.Error("empty id:", row.Id)
+		}
+		if row.Name != "hogehoge" && row.Name != "fugafuga" {
+			t.Error("unexpected name:", row.Name)
+		}
 	}
 }

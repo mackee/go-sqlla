@@ -16,6 +16,9 @@ func NewUserSQL() userSQL {
 	return q
 }
 
+var allColumns = []string{
+	"id","name",
+}
 
 type userSelectSQL struct {
 	userSQL
@@ -27,9 +30,7 @@ type userSelectSQL struct {
 func (q userSQL) Select() userSelectSQL {
 	return userSelectSQL{
 		q,
-		[]string{
-			"id","name",
-		},
+		allColumns,
 		"",
 		nil,
 	}
@@ -52,6 +53,11 @@ func (q userSelectSQL) ID(v uint64, exprs ...sqlla.Operator) userSelectSQL {
 	where := sqlla.ExprUint64{Value: v, Op: op, Column: "id"}
 	q.where = append(q.where, where)
 	return q
+}
+
+func (q userSelectSQL) PkColumn(pk int64, exprs ...sqlla.Operator) userSelectSQL {
+	v := uint64(pk)
+	return q.ID(v, exprs...)
 }
 
 func (q userSelectSQL) OrderByID(order sqlla.Order) userSelectSQL {
@@ -77,6 +83,8 @@ func (q userSelectSQL) Name(v string, exprs ...sqlla.Operator) userSelectSQL {
 	q.where = append(q.where, where)
 	return q
 }
+
+
 
 func (q userSelectSQL) OrderByName(order sqlla.Order) userSelectSQL {
 	q.order = " ORDER BY name"
@@ -106,6 +114,50 @@ func (q userSelectSQL) ToSql() (string, []interface{}, error) {
 	}
 
 	return query + ";", vs, nil
+}
+
+func (q userSelectSQL) Single(db sqlla.DB) (User, error) {
+	q.Columns = allColumns
+	query, args, err := q.ToSql()
+	if err != nil {
+		return User{}, err
+	}
+
+	row := db.QueryRow(query, args...)
+	return q.Scan(row)
+}
+
+func (q userSelectSQL) All(db sqlla.DB) ([]User, error) {
+	rs := make([]User, 0, 10)
+	q.Columns = allColumns
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		r, err := q.Scan(rows)
+		if err != nil {
+			return nil, err
+		}
+		rs = append(rs, r)
+	}
+	return rs, nil
+}
+
+func (q userSelectSQL) Scan(s sqlla.Scanner) (User, error) {
+	var row User
+	err := s.Scan(
+		&row.Id,
+		&row.Name,
+		
+	)
+	return row, err
 }
 
 
@@ -179,7 +231,6 @@ func (q userUpdateSQL) ToSql() (string, []interface{}, error) {
 	return query + ";", append(svs, wvs...), nil
 }
 
-
 type userInsertSQL struct {
 	userSQL
 	setMap	sqlla.SetMap
@@ -215,6 +266,22 @@ func (q userInsertSQL) ToSql() (string, []interface{}, error) {
 	query := "INSERT INTO user " + qs
 
 	return query + ";", vs, nil
+}
+
+func (q userInsertSQL) Exec(db sqlla.DB) (User, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return User{}, err
+	}
+	result, err := db.Exec(query, args...)
+	if err != nil {
+		return User{}, err
+	}
+	id, err := result.LastInsertId()
+	if err != nil {
+		return User{}, err
+	}
+	return NewUserSQL().Select().PkColumn(id).Single(db)
 }
 
 

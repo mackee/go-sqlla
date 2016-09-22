@@ -12,6 +12,13 @@ func (q {{ $smallTableName }}SelectSQL) {{ .Name | toCamel | Title }}(v {{ .Type
 	return q
 }
 
+{{ if .IsPk -}}
+func (q {{ $smallTableName }}SelectSQL) PkColumn(pk int64, exprs ...sqlla.Operator) {{ $smallTableName }}SelectSQL {
+	v := {{ .TypeName }}(pk)
+	return q.{{ .Name | toCamel | Title }}(v, exprs...)
+}
+{{- end }}
+
 func (q {{ $smallTableName }}SelectSQL) OrderBy{{ .Name | toCamel }}(order sqlla.Order) {{ $smallTableName }}SelectSQL {
 	q.order = " ORDER BY {{ .Name }}"
 	if order == sqlla.Asc {

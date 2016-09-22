@@ -1,4 +1,7 @@
-{{ define "Insert" }}{{ $camelName := .Name | toCamel | toLower }}
+{{ define "Insert" }}
+{{- $camelName := .Name | toCamel | toLower -}}
+{{- $constructor := printf "New%sSQL" (.Name | toCamel) -}}
+{{- $structName := .StructName -}}
 type {{ $camelName }}InsertSQL struct {
 	{{ .Name }}SQL
 	setMap	sqlla.SetMap
@@ -22,5 +25,29 @@ func (q {{ $camelName }}InsertSQL) ToSql() (string, []interface{}, error) {
 	query := "INSERT INTO {{ .Name }} " + qs
 
 	return query + ";", vs, nil
+}
+
+{{ if .HasPk -}}
+func (q {{ $camelName }}InsertSQL) Exec(db sqlla.DB) ({{ $structName }}, error) {
+{{- else -}}
+func (q {{ $camelName }}InsertSQL) Exec(db sqlla.DB) (db.Result, error) {
+{{- end }}
+	query, args, err := q.ToSql()
+	if err != nil {
+		return {{ $structName }}{}, err
+	}
+	result, err := db.Exec(query, args...)
+	{{ if .HasPk -}}
+	if err != nil {
+		return {{ $structName }}{}, err
+	}
+	id, err := result.LastInsertId()
+	if err != nil {
+		return {{ $structName }}{}, err
+	}
+	return {{ $constructor }}().Select().PkColumn(id).Single(db)
+	{{- else -}}
+	return result, err
+	{{- end }}
 }
 {{ end }}

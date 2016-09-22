@@ -8,8 +8,10 @@ import (
 
 type Table struct {
 	PackageName string
+	StructName  string
 	Name        string
 	Columns     Columns
+	HasPk       bool
 }
 
 func (t *Table) AddColumn(c Column) {
@@ -27,6 +29,7 @@ type Column struct {
 	*genbase.FieldInfo
 	Name      string
 	TableName string
+	IsPk      bool
 }
 
 func (c Column) String() string {
