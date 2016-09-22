@@ -3,6 +3,7 @@ package example
 import (
 	"strings"
 	"strconv"
+	"database/sql"
 
 	"github.com/mackee/go-sqlla"
 )
@@ -115,7 +116,9 @@ func (q userSelectSQL) ToSql() (string, []interface{}, error) {
 
 	return query + ";", vs, nil
 }
-
+func (s User) Select() (userSelectSQL) {
+	return NewUserSQL().Select().ID(s.Id)
+}
 func (q userSelectSQL) Single(db sqlla.DB) (User, error) {
 	q.Columns = allColumns
 	query, args, err := q.ToSql()
@@ -159,7 +162,6 @@ func (q userSelectSQL) Scan(s sqlla.Scanner) (User, error) {
 	)
 	return row, err
 }
-
 
 type userUpdateSQL struct {
 	userSQL
@@ -230,6 +232,23 @@ func (q userUpdateSQL) ToSql() (string, []interface{}, error) {
 
 	return query + ";", append(svs, wvs...), nil
 }
+func (s User) Update() userUpdateSQL {
+	return NewUserSQL().Update().WhereID(s.Id)
+}
+
+func (q userUpdateSQL) Exec(db sqlla.DB) ([]User, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	_, err = db.Exec(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	qq := q.userSQL
+
+	return qq.Select().All(db)
+}
 
 type userInsertSQL struct {
 	userSQL
@@ -284,7 +303,6 @@ func (q userInsertSQL) Exec(db sqlla.DB) (User, error) {
 	return NewUserSQL().Select().PkColumn(id).Single(db)
 }
 
-
 type userDeleteSQL struct {
 	userSQL
 }
@@ -336,5 +354,12 @@ func (q userDeleteSQL) ToSql() (string, []interface{}, error) {
 	}
 
 	return query + ";", vs, nil
+}
+func (s User) Delete(db sqlla.DB) (sql.Result, error) {
+	query, args, err := NewUserSQL().Delete().ID(s.Id).ToSql()
+	if err != nil {
+		return nil, err
+	}
+	return db.Exec(query, args...)
 }
 

@@ -1,4 +1,6 @@
-{{ define "Delete" }}{{ $camelName := .Name | toCamel | toLower }}
+{{ define "Delete" }}
+{{- $camelName := .Name | toCamel | toLower -}}
+{{- $constructor := printf "New%sSQL" (.Name | toCamel | Title) -}}
 type {{ $camelName }}DeleteSQL struct {
 	{{ .Name }}SQL
 }
@@ -23,4 +25,14 @@ func (q {{ $camelName }}DeleteSQL) ToSql() (string, []interface{}, error) {
 
 	return query + ";", vs, nil
 }
+
+{{- if .HasPk }}
+func (s {{ .StructName }}) Delete(db sqlla.DB) (sql.Result, error) {
+	query, args, err := {{ $constructor }}().Delete().{{ .PkColumn.Name | toCamel | Title }}(s.{{ .PkColumn.FieldName }}).ToSql()
+	if err != nil {
+		return nil, err
+	}
+	return db.Exec(query, args...)
+}
+{{- end }}
 {{ end }}

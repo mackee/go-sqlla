@@ -184,7 +184,7 @@ func TestORM__WithSqlite3(t *testing.T) {
 
 	insertedRow, err := NewUserSQL().Insert().ValueName("hogehoge").Exec(db)
 	if err != nil {
-		t.Error("cannot delete row error:", err)
+		t.Error("cannot insert row error:", err)
 	}
 	if insertedRow.Id == uint64(0) {
 		t.Error("empty id:", insertedRow.Id)
@@ -195,7 +195,7 @@ func TestORM__WithSqlite3(t *testing.T) {
 
 	singleRow, err := NewUserSQL().Select().ID(insertedRow.Id).Single(db)
 	if err != nil {
-		t.Error("cannot delete row error:", err)
+		t.Error("cannot select row error:", err)
 	}
 	if singleRow.Id == uint64(0) {
 		t.Error("empty id:", singleRow.Id)
@@ -206,7 +206,7 @@ func TestORM__WithSqlite3(t *testing.T) {
 
 	_, err = NewUserSQL().Insert().ValueName("fugafuga").Exec(db)
 	if err != nil {
-		t.Error("cannot delete row error:", err)
+		t.Error("cannot insert row error:", err)
 	}
 
 	rows, err := NewUserSQL().Select().All(db)
@@ -221,5 +221,34 @@ func TestORM__WithSqlite3(t *testing.T) {
 		if row.Name != "hogehoge" && row.Name != "fugafuga" {
 			t.Error("unexpected name:", row.Name)
 		}
+	}
+
+	targetRow := rows[0]
+	results, err := targetRow.Update().SetName("barbar").Exec(db)
+	if err != nil {
+		t.Error("cannnot update row error", err)
+	}
+	if len(results) != 1 {
+		t.Error("unexpected rows results:", len(results))
+	}
+	result := results[0]
+	if result.Id != targetRow.Id {
+		t.Errorf("result.Id is not targetRow.Id: %d vs %d", result.Id, targetRow.Id)
+	}
+	if result.Name != "barbar" {
+		t.Errorf("result.Name is not replaced to \"barbar\": %s", result.Name)
+	}
+
+	deletedResult, err := targetRow.Delete(db)
+	if err != nil {
+		t.Error("cannnot delete row error", err)
+	}
+	if affected, _ := deletedResult.RowsAffected(); affected != int64(1) {
+		t.Error("unexpected rows affected:", affected)
+	}
+
+	_, err = targetRow.Select().Single(db)
+	if err != sql.ErrNoRows {
+		t.Error("not deleted rows")
 	}
 }

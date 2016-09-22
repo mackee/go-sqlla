@@ -1,6 +1,6 @@
 {{ define "Select" }}
 {{- $camelName := .Name | toCamel | toLower -}}
-{{- $structName := .StructName -}}
+{{- $constructor := printf "New%sSQL" (.Name | toCamel | Title) -}}
 var allColumns = []string{
 	{{ range .Columns }}"{{ .Name }}",{{ end }}
 }
@@ -46,19 +46,25 @@ func (q {{ $camelName }}SelectSQL) ToSql() (string, []interface{}, error) {
 	return query + ";", vs, nil
 }
 
-func (q {{ $camelName }}SelectSQL) Single(db sqlla.DB) ({{ $structName }}, error) {
+{{- if .HasPk }}
+func (s {{ .StructName }}) Select() ({{ $camelName }}SelectSQL) {
+	return {{ $constructor }}().Select().{{ .PkColumn.Name | toCamel | Title }}(s.{{ .PkColumn.FieldName }})
+}
+{{ end -}}
+
+func (q {{ $camelName }}SelectSQL) Single(db sqlla.DB) ({{ .StructName }}, error) {
 	q.Columns = allColumns
 	query, args, err := q.ToSql()
 	if err != nil {
-		return {{ $structName }}{}, err
+		return {{ .StructName }}{}, err
 	}
 
 	row := db.QueryRow(query, args...)
 	return q.Scan(row)
 }
 
-func (q {{ $camelName }}SelectSQL) All(db sqlla.DB) ([]{{ $structName }}, error) {
-	rs := make([]{{ $structName }}, 0, 10)
+func (q {{ $camelName }}SelectSQL) All(db sqlla.DB) ([]{{ .StructName }}, error) {
+	rs := make([]{{ .StructName }}, 0, 10)
 	q.Columns = allColumns
 	query, args, err := q.ToSql()
 	if err != nil {
@@ -80,8 +86,8 @@ func (q {{ $camelName }}SelectSQL) All(db sqlla.DB) ([]{{ $structName }}, error)
 	return rs, nil
 }
 
-func (q {{ $camelName }}SelectSQL) Scan(s sqlla.Scanner) ({{ $structName }}, error) {
-	var row {{ $structName }}
+func (q {{ $camelName }}SelectSQL) Scan(s sqlla.Scanner) ({{ .StructName }}, error) {
+	var row {{ .StructName }}
 	err := s.Scan(
 		{{ range .Columns }}&row.{{ (index .Names 0).String }},
 		{{ end }}

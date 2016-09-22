@@ -58,7 +58,6 @@ func toTable(typeInfo *genbase.TypeInfo) (*Table, error) {
 		for _, cm := range columnMaps {
 			if cm == "primarykey" {
 				isPk = true
-				table.HasPk = true
 				break
 			}
 		}
