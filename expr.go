@@ -1,6 +1,7 @@
 package sqlla
 
 import (
+	"database/sql"
 	"strconv"
 )
 
@@ -129,6 +130,90 @@ type ExprMultiInt32 struct {
 }
 
 func (e ExprMultiInt32) ToSql() (string, []interface{}, error) {
+	ops, err := e.Op.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	vs := make([]interface{}, 0, len(e.Values))
+	for _, v := range e.Values {
+		vs = append(vs, interface{}(v))
+	}
+	return e.Column + " " + ops, vs, nil
+}
+
+type ExprNullInt64 struct {
+	Column string
+	Value  sql.NullInt64
+	Op     Operator
+}
+
+func (e ExprNullInt64) ToSql() (string, []interface{}, error) {
+	var ops, placeholder string
+	var err error
+	vs := []interface{}{}
+	if !e.Value.Valid {
+		ops, err = OpIsNull.ToSql()
+	} else {
+		ops, err = e.Op.ToSql()
+		placeholder = " ?"
+		vs = append(vs, e.Value)
+	}
+	if err != nil {
+		return "", nil, err
+	}
+
+	return e.Column + " " + ops + placeholder, vs, nil
+}
+
+type ExprMultiNullInt64 struct {
+	Column string
+	Values []sql.NullInt64
+	Op     Operator
+}
+
+func (e ExprMultiNullInt64) ToSql() (string, []interface{}, error) {
+	ops, err := e.Op.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	vs := make([]interface{}, 0, len(e.Values))
+	for _, v := range e.Values {
+		vs = append(vs, interface{}(v))
+	}
+	return e.Column + " " + ops, vs, nil
+}
+
+type ExprNullString struct {
+	Column string
+	Value  sql.NullString
+	Op     Operator
+}
+
+func (e ExprNullString) ToSql() (string, []interface{}, error) {
+	var ops, placeholder string
+	var err error
+	vs := []interface{}{}
+	if !e.Value.Valid {
+		ops, err = OpIsNull.ToSql()
+	} else {
+		ops, err = e.Op.ToSql()
+		placeholder = " ?"
+		vs = append(vs, e.Value)
+	}
+	if err != nil {
+		return "", nil, err
+	}
+
+	return e.Column + " " + ops + placeholder, vs, nil
+}
+
+type ExprMultiNullString struct {
+	Column string
+	Values []sql.NullString
+	Op     Operator
+}
+
+func (e ExprMultiNullString) ToSql() (string, []interface{}, error) {
 	ops, err := e.Op.ToSql()
 	if err != nil {
 		return "", nil, err

@@ -18,7 +18,7 @@ func NewUserSQL() userSQL {
 }
 
 var allColumns = []string{
-	"id","name",
+	"id","name","age",
 }
 
 type userSelectSQL struct {
@@ -110,6 +110,38 @@ func (q userSelectSQL) OrderByName(order sqlla.Order) userSelectSQL {
 	return q
 }
 
+func (q userSelectSQL) Age(v sql.NullInt64, exprs ...sqlla.Operator) userSelectSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+
+	where := sqlla.ExprNullInt64{Value: v, Op: op, Column: "age"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userSelectSQL) AgeIn(v sql.NullInt64, vs ...sql.NullInt64) userSelectSQL {
+	where := sqlla.ExprMultiNullInt64{Values: append([]sql.NullInt64{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "age"}
+	q.where = append(q.where, where)
+	return q
+}
+
+
+
+func (q userSelectSQL) OrderByAge(order sqlla.Order) userSelectSQL {
+	q.order = " ORDER BY age"
+	if order == sqlla.Asc {
+		q.order += " ASC"
+	} else {
+		q.order += " DESC"
+	}
+
+	return q
+}
+
 func (q userSelectSQL) ToSql() (string, []interface{}, error) {
 	columns := strings.Join(q.Columns, ", ")
 	wheres, vs, err := q.where.ToSql()
@@ -170,6 +202,7 @@ func (q userSelectSQL) Scan(s sqlla.Scanner) (User, error) {
 	err := s.Scan(
 		&row.Id,
 		&row.Name,
+		&row.Age,
 		
 	)
 	return row, err
@@ -222,6 +255,25 @@ func (q userUpdateSQL) WhereName(v string, exprs ...sqlla.Operator) userUpdateSQ
 	}
 
 	where := sqlla.ExprString{Value: v, Op: op, Column: "name"}
+	q.where = append(q.where, where)
+	return q
+}
+
+
+func (q userUpdateSQL) SetAge(v sql.NullInt64) userUpdateSQL {
+	q.setMap["age"] = v
+	return q
+}
+
+func (q userUpdateSQL) WhereAge(v sql.NullInt64, exprs ...sqlla.Operator) userUpdateSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+
+	where := sqlla.ExprNullInt64{Value: v, Op: op, Column: "age"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -288,6 +340,12 @@ func (q userInsertSQL) ValueName(v string) userInsertSQL {
 }
 
 
+func (q userInsertSQL) ValueAge(v sql.NullInt64) userInsertSQL {
+	q.setMap["age"] = v
+	return q
+}
+
+
 func (q userInsertSQL) ToSql() (string, []interface{}, error) {
 	qs, vs, err := q.setMap.ToInsertSql()
 	if err != nil {
@@ -349,6 +407,20 @@ func (q userDeleteSQL) Name(v string, exprs ...sqlla.Operator) userDeleteSQL {
 	}
 
 	where := sqlla.ExprString{Value: v, Op: op, Column: "name"}
+	q.where = append(q.where, where)
+	return q
+}
+
+
+func (q userDeleteSQL) Age(v sql.NullInt64, exprs ...sqlla.Operator) userDeleteSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+
+	where := sqlla.ExprNullInt64{Value: v, Op: op, Column: "age"}
 	q.where = append(q.where, where)
 	return q
 }

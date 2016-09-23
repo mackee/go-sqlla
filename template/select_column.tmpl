@@ -7,13 +7,13 @@ func (q {{ $smallTableName }}SelectSQL) {{ .Name | toCamel | Title }}(v {{ .Type
 		op = exprs[0]
 	}
 
-	where := sqlla.Expr{{ .TypeName | Title }}{Value: v, Op: op, Column: "{{ .Name }}"}
+	where := sqlla.Expr{{ .TypeName | Exprize | Title }}{Value: v, Op: op, Column: "{{ .Name }}"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q {{ $smallTableName }}SelectSQL) {{ .Name | toCamel | Title }}In(v {{ .TypeName }}, vs ...{{ .TypeName }}) {{ $smallTableName }}SelectSQL {
-	where := sqlla.ExprMulti{{ .TypeName | Title }}{Values: append([]{{ .TypeName }}{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "{{ .Name }}"}
+	where := sqlla.ExprMulti{{ .TypeName | Exprize | Title }}{Values: append([]{{ .TypeName }}{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "{{ .Name }}"}
 	q.where = append(q.where, where)
 	return q
 }

@@ -27,7 +27,12 @@ var tmpl = template.New("sqlla")
 func init() {
 	tmpl = tmpl.Funcs(
 		template.FuncMap{
-			"Title":   strings.Title,
+			"Title": strings.Title,
+			"Exprize": func(s string) string {
+				s = strings.TrimPrefix(s, "sql.")
+				s = strings.TrimPrefix(s, "mysql.")
+				return s
+			},
 			"toLower": strings.ToLower,
 			"toSnake": snaker.CamelToSnake,
 			"toCamel": snaker.SnakeToCamel,

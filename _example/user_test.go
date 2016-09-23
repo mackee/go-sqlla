@@ -19,7 +19,7 @@ func TestSelect(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "SELECT id, name FROM user WHERE name = ?;" {
+	if query != "SELECT id, name, age FROM user WHERE name = ?;" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{"hoge"}) {
@@ -33,7 +33,7 @@ func TestSelect__OrderByAndLimit(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "SELECT id, name FROM user WHERE name = ? ORDER BY id ASC LIMIT 100;" {
+	if query != "SELECT id, name, age FROM user WHERE name = ? ORDER BY id ASC LIMIT 100;" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{"hoge"}) {
@@ -47,10 +47,24 @@ func TestSelect__InOperator(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "SELECT id, name FROM user WHERE id IN(?,?,?,?,?);" {
+	if query != "SELECT id, name, age FROM user WHERE id IN(?,?,?,?,?);" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{uint64(1), uint64(2), uint64(3), uint64(4), uint64(5)}) {
+		t.Error("unexpected args:", args)
+	}
+}
+
+func TestSelect__NullInt64(t *testing.T) {
+	q := NewUserSQL().Select().Age(sql.NullInt64{})
+	query, args, err := q.ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	if query != "SELECT id, name, age FROM user WHERE age IS NULL;" {
+		t.Error("unexpected query:", query)
+	}
+	if !reflect.DeepEqual(args, []interface{}{}) {
 		t.Error("unexpected args:", args)
 	}
 }
@@ -146,7 +160,8 @@ func TestCRUD__WithSqlite3(t *testing.T) {
 	row := db.QueryRow(query, args...)
 	var id uint64
 	var name string
-	err = row.Scan(&id, &name)
+	var age sql.NullInt64
+	err = row.Scan(&id, &name, &age)
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
@@ -164,7 +179,8 @@ func TestCRUD__WithSqlite3(t *testing.T) {
 	row = db.QueryRow(query, args...)
 	var rescanId uint64
 	var rescanName string
-	err = row.Scan(&rescanId, &rescanName)
+	var rescanAge sql.NullInt64
+	err = row.Scan(&rescanId, &rescanName, &rescanAge)
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
