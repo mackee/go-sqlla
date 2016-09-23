@@ -40,6 +40,8 @@ func toTable(typeInfo *genbase.TypeInfo) (*Table, error) {
 	tableName := strings.TrimPrefix(comment, "//+table: ")
 	table.Name = tableName
 
+	table.StructName = typeInfo.Name()
+
 	structType, err := typeInfo.StructType()
 	if err != nil {
 		return nil, err
@@ -52,7 +54,14 @@ func toTable(typeInfo *genbase.TypeInfo) (*Table, error) {
 		columnInfo := tag.Get("db")
 		columnMaps := strings.Split(columnInfo, ",")
 		columnName := columnMaps[0]
-		column := Column{FieldInfo: fieldInfo, Name: columnName}
+		isPk := false
+		for _, cm := range columnMaps {
+			if cm == "primarykey" {
+				isPk = true
+				break
+			}
+		}
+		column := Column{FieldInfo: fieldInfo, Name: columnName, IsPk: isPk}
 		table.AddColumn(column)
 	}
 

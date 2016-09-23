@@ -3,6 +3,9 @@ package {{ .PackageName }}
 import (
 	"strings"
 	"strconv"
+	{{- if .HasPk }}
+	"database/sql"
+	{{- end }}
 
 	"github.com/mackee/go-sqlla"
 )

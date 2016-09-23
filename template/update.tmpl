@@ -1,4 +1,5 @@
 {{ define "Update" }}{{ $camelName := .Name | toCamel | toLower }}
+{{- $constructor := printf "New%sSQL" (.Name | toCamel | Title) -}}
 type {{ $camelName }}UpdateSQL struct {
 	{{ .Name }}SQL
 	setMap	sqlla.SetMap
@@ -30,4 +31,32 @@ func (q {{ $camelName }}UpdateSQL) ToSql() (string, []interface{}, error) {
 
 	return query + ";", append(svs, wvs...), nil
 }
+
+{{- if .HasPk }}
+func (s {{ .StructName }}) Update() {{ $camelName }}UpdateSQL {
+	return {{ $constructor }}().Update().Where{{ .PkColumn.Name | toCamel | Title }}(s.{{ .PkColumn.FieldName }})
+}
+
+func (q {{ $camelName }}UpdateSQL) Exec(db sqlla.DB) ([]{{ .StructName }}, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	_, err = db.Exec(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	qq := q.{{ $camelName }}SQL
+
+	return qq.Select().All(db)
+}
+{{- else }}
+func (q {{ $camelName }}UpdateSQL) Exec(db sqlla.DB) (sql.Result, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	return db.Exec(query, args...)
+}
+{{- end }}
 {{ end }}

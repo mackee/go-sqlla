@@ -3,6 +3,7 @@ package example
 import (
 	"strings"
 	"strconv"
+	"database/sql"
 
 	"github.com/mackee/go-sqlla"
 )
@@ -16,6 +17,9 @@ func NewUserSQL() userSQL {
 	return q
 }
 
+var allColumns = []string{
+	"id","name",
+}
 
 type userSelectSQL struct {
 	userSQL
@@ -27,9 +31,7 @@ type userSelectSQL struct {
 func (q userSQL) Select() userSelectSQL {
 	return userSelectSQL{
 		q,
-		[]string{
-			"id","name",
-		},
+		allColumns,
 		"",
 		nil,
 	}
@@ -58,6 +60,11 @@ func (q userSelectSQL) IDIn(v uint64, vs ...uint64) userSelectSQL {
 	where := sqlla.ExprMultiUint64{Values: append([]uint64{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "id"}
 	q.where = append(q.where, where)
 	return q
+}
+
+func (q userSelectSQL) PkColumn(pk int64, exprs ...sqlla.Operator) userSelectSQL {
+	v := uint64(pk)
+	return q.ID(v, exprs...)
 }
 
 func (q userSelectSQL) OrderByID(order sqlla.Order) userSelectSQL {
@@ -90,6 +97,8 @@ func (q userSelectSQL) NameIn(v string, vs ...string) userSelectSQL {
 	return q
 }
 
+
+
 func (q userSelectSQL) OrderByName(order sqlla.Order) userSelectSQL {
 	q.order = " ORDER BY name"
 	if order == sqlla.Asc {
@@ -119,7 +128,52 @@ func (q userSelectSQL) ToSql() (string, []interface{}, error) {
 
 	return query + ";", vs, nil
 }
+func (s User) Select() (userSelectSQL) {
+	return NewUserSQL().Select().ID(s.Id)
+}
+func (q userSelectSQL) Single(db sqlla.DB) (User, error) {
+	q.Columns = allColumns
+	query, args, err := q.ToSql()
+	if err != nil {
+		return User{}, err
+	}
 
+	row := db.QueryRow(query, args...)
+	return q.Scan(row)
+}
+
+func (q userSelectSQL) All(db sqlla.DB) ([]User, error) {
+	rs := make([]User, 0, 10)
+	q.Columns = allColumns
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		r, err := q.Scan(rows)
+		if err != nil {
+			return nil, err
+		}
+		rs = append(rs, r)
+	}
+	return rs, nil
+}
+
+func (q userSelectSQL) Scan(s sqlla.Scanner) (User, error) {
+	var row User
+	err := s.Scan(
+		&row.Id,
+		&row.Name,
+		
+	)
+	return row, err
+}
 
 type userUpdateSQL struct {
 	userSQL
@@ -190,7 +244,23 @@ func (q userUpdateSQL) ToSql() (string, []interface{}, error) {
 
 	return query + ";", append(svs, wvs...), nil
 }
+func (s User) Update() userUpdateSQL {
+	return NewUserSQL().Update().WhereID(s.Id)
+}
 
+func (q userUpdateSQL) Exec(db sqlla.DB) ([]User, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	_, err = db.Exec(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	qq := q.userSQL
+
+	return qq.Select().All(db)
+}
 
 type userInsertSQL struct {
 	userSQL
@@ -229,6 +299,21 @@ func (q userInsertSQL) ToSql() (string, []interface{}, error) {
 	return query + ";", vs, nil
 }
 
+func (q userInsertSQL) Exec(db sqlla.DB) (User, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return User{}, err
+	}
+	result, err := db.Exec(query, args...)
+	if err != nil {
+		return User{}, err
+	}
+	id, err := result.LastInsertId()
+	if err != nil {
+		return User{}, err
+	}
+	return NewUserSQL().Select().PkColumn(id).Single(db)
+}
 
 type userDeleteSQL struct {
 	userSQL
@@ -281,5 +366,12 @@ func (q userDeleteSQL) ToSql() (string, []interface{}, error) {
 	}
 
 	return query + ";", vs, nil
+}
+func (s User) Delete(db sqlla.DB) (sql.Result, error) {
+	query, args, err := NewUserSQL().Delete().ID(s.Id).ToSql()
+	if err != nil {
+		return nil, err
+	}
+	return db.Exec(query, args...)
 }
 
