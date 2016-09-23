@@ -41,6 +41,20 @@ func TestSelect__OrderByAndLimit(t *testing.T) {
 	}
 }
 
+func TestSelect__InOperator(t *testing.T) {
+	q := NewUserSQL().Select().IDIn(1, 2, 3, 4, 5)
+	query, args, err := q.ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	if query != "SELECT id, name FROM user WHERE id IN(?,?,?,?,?);" {
+		t.Error("unexpected query:", query)
+	}
+	if !reflect.DeepEqual(args, []interface{}{uint64(1), uint64(2), uint64(3), uint64(4), uint64(5)}) {
+		t.Error("unexpected args:", args)
+	}
+}
+
 func TestUpdate(t *testing.T) {
 	q := NewUserSQL().Update().SetName("barbar").WhereID(uint64(1))
 	query, args, err := q.ToSql()
@@ -143,15 +157,22 @@ func TestCRUD__WithSqlite3(t *testing.T) {
 		t.Error("empty id:", id)
 	}
 
-	user, err := NewUserSQL().Select().Name("hogehoge").Single(db)
+	query, args, err = NewUserSQL().Select().IDIn(uint64(1)).ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if user.Name != "hogehoge" {
+	row = db.QueryRow(query, args...)
+	var rescanId uint64
+	var rescanName string
+	err = row.Scan(&rescanId, &rescanName)
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	if name != "hogehoge" {
 		t.Error("unexpected name:", name)
 	}
-	if user.Id == uint64(0) {
-		t.Error("empty id:", id)
+	if rescanId != id {
+		t.Error("unmatched id:", rescanId)
 	}
 
 	query, args, err = NewUserSQL().Update().WhereID(id).SetName("barbar").ToSql()

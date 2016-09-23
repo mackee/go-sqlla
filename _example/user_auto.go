@@ -56,6 +56,12 @@ func (q userSelectSQL) ID(v uint64, exprs ...sqlla.Operator) userSelectSQL {
 	return q
 }
 
+func (q userSelectSQL) IDIn(v uint64, vs ...uint64) userSelectSQL {
+	where := sqlla.ExprMultiUint64{Values: append([]uint64{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "id"}
+	q.where = append(q.where, where)
+	return q
+}
+
 func (q userSelectSQL) PkColumn(pk int64, exprs ...sqlla.Operator) userSelectSQL {
 	v := uint64(pk)
 	return q.ID(v, exprs...)
@@ -81,6 +87,12 @@ func (q userSelectSQL) Name(v string, exprs ...sqlla.Operator) userSelectSQL {
 	}
 
 	where := sqlla.ExprString{Value: v, Op: op, Column: "name"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userSelectSQL) NameIn(v string, vs ...string) userSelectSQL {
+	where := sqlla.ExprMultiString{Values: append([]string{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "name"}
 	q.where = append(q.where, where)
 	return q
 }

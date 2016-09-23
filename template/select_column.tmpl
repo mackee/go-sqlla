@@ -12,6 +12,12 @@ func (q {{ $smallTableName }}SelectSQL) {{ .Name | toCamel | Title }}(v {{ .Type
 	return q
 }
 
+func (q {{ $smallTableName }}SelectSQL) {{ .Name | toCamel | Title }}In(v {{ .TypeName }}, vs ...{{ .TypeName }}) {{ $smallTableName }}SelectSQL {
+	where := sqlla.ExprMulti{{ .TypeName | Title }}{Values: append([]{{ .TypeName }}{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "{{ .Name }}"}
+	q.where = append(q.where, where)
+	return q
+}
+
 {{ if .IsPk -}}
 func (q {{ $smallTableName }}SelectSQL) PkColumn(pk int64, exprs ...sqlla.Operator) {{ $smallTableName }}SelectSQL {
 	v := {{ .TypeName }}(pk)
