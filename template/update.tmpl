@@ -15,6 +15,14 @@ func (q {{ $camelName }}SQL) Update() {{ $camelName }}UpdateSQL {
 
 {{ range .Columns }}{{ template "UpdateColumn" . }}{{ end }}
 func (q {{ $camelName }}UpdateSQL) ToSql() (string, []interface{}, error) {
+	var err error
+	var s interface{} = {{ .StructName }}{}
+	if t, ok := s.({{ $camelName }}DefaultUpdateHooker); ok {
+		q, err = t.DefaultUpdateHook(q)
+		if err != nil {
+			return "", []interface{}{}, err
+		}
+	}
 	setColumns, svs, err := q.setMap.ToUpdateSql()
 	if err != nil {
 		return "", []interface{}{}, err
@@ -59,4 +67,8 @@ func (q {{ $camelName }}UpdateSQL) Exec(db sqlla.DB) (sql.Result, error) {
 	return db.Exec(query, args...)
 }
 {{- end }}
+
+type {{ $camelName }}DefaultUpdateHooker interface {
+	DefaultUpdateHook({{ $camelName }}UpdateSQL) ({{ $camelName }}UpdateSQL, error)
+}
 {{ end }}

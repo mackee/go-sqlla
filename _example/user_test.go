@@ -7,11 +7,14 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
-	_ "github.com/mattn/go-sqlite3"
-
+	"github.com/go-sql-driver/mysql"
 	"github.com/mackee/go-sqlla"
+	_ "github.com/mattn/go-sqlite3"
 )
+
+var columns = "id, name, age, created_at, updated_at"
 
 func TestSelect(t *testing.T) {
 	q := NewUserSQL().Select().Name("hoge")
@@ -19,7 +22,7 @@ func TestSelect(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "SELECT id, name, age FROM user WHERE name = ?;" {
+	if query != "SELECT "+columns+" FROM user WHERE name = ?;" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{"hoge"}) {
@@ -33,7 +36,7 @@ func TestSelect__OrderByAndLimit(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "SELECT id, name, age FROM user WHERE name = ? ORDER BY id ASC LIMIT 100;" {
+	if query != "SELECT "+columns+" FROM user WHERE name = ? ORDER BY id ASC LIMIT 100;" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{"hoge"}) {
@@ -47,7 +50,7 @@ func TestSelect__InOperator(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "SELECT id, name, age FROM user WHERE id IN(?,?,?,?,?);" {
+	if query != "SELECT "+columns+" FROM user WHERE id IN(?,?,?,?,?);" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{uint64(1), uint64(2), uint64(3), uint64(4), uint64(5)}) {
@@ -61,7 +64,7 @@ func TestSelect__NullInt64(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "SELECT id, name, age FROM user WHERE age IS NULL;" {
+	if query != "SELECT "+columns+" FROM user WHERE age IS NULL;" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{}) {
@@ -75,10 +78,13 @@ func TestUpdate(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "UPDATE user SET name = ? WHERE id = ?;" {
+	if query != "UPDATE user SET name = ?, updated_at = ? WHERE id = ?;" {
 		t.Error("unexpected query:", query)
 	}
-	if !reflect.DeepEqual(args, []interface{}{"barbar", "1"}) {
+	if !reflect.DeepEqual(args[0], "barbar") {
+		t.Error("unexpected args:", args)
+	}
+	if !reflect.DeepEqual(args[2], "1") {
 		t.Error("unexpected args:", args)
 	}
 }
@@ -89,10 +95,10 @@ func TestInsert(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "INSERT INTO user (name) VALUES(?);" {
+	if query != "INSERT INTO user (name,created_at) VALUES(?,?);" {
 		t.Error("unexpected query:", query)
 	}
-	if !reflect.DeepEqual(args, []interface{}{"hogehoge"}) {
+	if !reflect.DeepEqual(args[0], "hogehoge") {
 		t.Error("unexpected args:", args)
 	}
 }
@@ -161,7 +167,9 @@ func TestCRUD__WithSqlite3(t *testing.T) {
 	var id uint64
 	var name string
 	var age sql.NullInt64
-	err = row.Scan(&id, &name, &age)
+	var createdAt time.Time
+	var updatedAt mysql.NullTime
+	err = row.Scan(&id, &name, &age, &createdAt, &updatedAt)
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
@@ -180,7 +188,9 @@ func TestCRUD__WithSqlite3(t *testing.T) {
 	var rescanId uint64
 	var rescanName string
 	var rescanAge sql.NullInt64
-	err = row.Scan(&rescanId, &rescanName, &rescanAge)
+	var rescanCreatedAt time.Time
+	var rescanUpdatedAt mysql.NullTime
+	err = row.Scan(&rescanId, &rescanName, &rescanAge, &rescanCreatedAt, &rescanUpdatedAt)
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}

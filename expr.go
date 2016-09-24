@@ -3,6 +3,9 @@ package sqlla
 import (
 	"database/sql"
 	"strconv"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
 )
 
 type Expr interface {
@@ -246,6 +249,80 @@ type ExprMultiString struct {
 }
 
 func (e ExprMultiString) ToSql() (string, []interface{}, error) {
+	ops, err := e.Op.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	vs := make([]interface{}, 0, len(e.Values))
+	for _, v := range e.Values {
+		vs = append(vs, interface{}(v))
+	}
+	return e.Column + " " + ops, vs, nil
+}
+
+type ExprTime struct {
+	Column string
+	Value  time.Time
+	Op     Operator
+}
+
+func (e ExprTime) ToSql() (string, []interface{}, error) {
+	ops, err := e.Op.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	return e.Column + " " + ops + " ?", []interface{}{e.Value}, nil
+}
+
+type ExprMultiTime struct {
+	Column string
+	Values []time.Time
+	Op     Operator
+}
+
+func (e ExprMultiTime) ToSql() (string, []interface{}, error) {
+	ops, err := e.Op.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	vs := make([]interface{}, 0, len(e.Values))
+	for _, v := range e.Values {
+		vs = append(vs, interface{}(v))
+	}
+	return e.Column + " " + ops, vs, nil
+}
+
+type ExprNullTime struct {
+	Column string
+	Value  mysql.NullTime
+	Op     Operator
+}
+
+func (e ExprNullTime) ToSql() (string, []interface{}, error) {
+	var ops, placeholder string
+	var err error
+	vs := []interface{}{}
+	if !e.Value.Valid {
+		ops, err = OpIsNull.ToSql()
+	} else {
+		ops, err = e.Op.ToSql()
+		placeholder = " ?"
+		vs = append(vs, e.Value)
+	}
+	if err != nil {
+		return "", nil, err
+	}
+
+	return e.Column + " " + ops + placeholder, []interface{}{e.Value}, nil
+}
+
+type ExprMultiNullTime struct {
+	Column string
+	Values []mysql.NullTime
+	Op     Operator
+}
+
+func (e ExprMultiNullTime) ToSql() (string, []interface{}, error) {
 	ops, err := e.Op.ToSql()
 	if err != nil {
 		return "", nil, err

@@ -3,8 +3,11 @@ package example
 import (
 	"strings"
 	"strconv"
-	"database/sql"
 
+	"database/sql"
+	"time"
+	"github.com/go-sql-driver/mysql"
+	
 	"github.com/mackee/go-sqlla"
 )
 
@@ -18,7 +21,7 @@ func NewUserSQL() userSQL {
 }
 
 var allColumns = []string{
-	"id","name","age",
+	"id","name","age","created_at","updated_at",
 }
 
 type userSelectSQL struct {
@@ -142,6 +145,70 @@ func (q userSelectSQL) OrderByAge(order sqlla.Order) userSelectSQL {
 	return q
 }
 
+func (q userSelectSQL) CreatedAt(v time.Time, exprs ...sqlla.Operator) userSelectSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+
+	where := sqlla.ExprTime{Value: v, Op: op, Column: "created_at"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userSelectSQL) CreatedAtIn(v time.Time, vs ...time.Time) userSelectSQL {
+	where := sqlla.ExprMultiTime{Values: append([]time.Time{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "created_at"}
+	q.where = append(q.where, where)
+	return q
+}
+
+
+
+func (q userSelectSQL) OrderByCreatedAt(order sqlla.Order) userSelectSQL {
+	q.order = " ORDER BY created_at"
+	if order == sqlla.Asc {
+		q.order += " ASC"
+	} else {
+		q.order += " DESC"
+	}
+
+	return q
+}
+
+func (q userSelectSQL) UpdatedAt(v mysql.NullTime, exprs ...sqlla.Operator) userSelectSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+
+	where := sqlla.ExprNullTime{Value: v, Op: op, Column: "updated_at"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userSelectSQL) UpdatedAtIn(v mysql.NullTime, vs ...mysql.NullTime) userSelectSQL {
+	where := sqlla.ExprMultiNullTime{Values: append([]mysql.NullTime{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "updated_at"}
+	q.where = append(q.where, where)
+	return q
+}
+
+
+
+func (q userSelectSQL) OrderByUpdatedAt(order sqlla.Order) userSelectSQL {
+	q.order = " ORDER BY updated_at"
+	if order == sqlla.Asc {
+		q.order += " ASC"
+	} else {
+		q.order += " DESC"
+	}
+
+	return q
+}
+
 func (q userSelectSQL) ToSql() (string, []interface{}, error) {
 	columns := strings.Join(q.Columns, ", ")
 	wheres, vs, err := q.where.ToSql()
@@ -203,6 +270,8 @@ func (q userSelectSQL) Scan(s sqlla.Scanner) (User, error) {
 		&row.Id,
 		&row.Name,
 		&row.Age,
+		&row.CreatedAt,
+		&row.UpdatedAt,
 		
 	)
 	return row, err
@@ -279,7 +348,53 @@ func (q userUpdateSQL) WhereAge(v sql.NullInt64, exprs ...sqlla.Operator) userUp
 }
 
 
+func (q userUpdateSQL) SetCreatedAt(v time.Time) userUpdateSQL {
+	q.setMap["created_at"] = v
+	return q
+}
+
+func (q userUpdateSQL) WhereCreatedAt(v time.Time, exprs ...sqlla.Operator) userUpdateSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+
+	where := sqlla.ExprTime{Value: v, Op: op, Column: "created_at"}
+	q.where = append(q.where, where)
+	return q
+}
+
+
+func (q userUpdateSQL) SetUpdatedAt(v mysql.NullTime) userUpdateSQL {
+	q.setMap["updated_at"] = v
+	return q
+}
+
+func (q userUpdateSQL) WhereUpdatedAt(v mysql.NullTime, exprs ...sqlla.Operator) userUpdateSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+
+	where := sqlla.ExprNullTime{Value: v, Op: op, Column: "updated_at"}
+	q.where = append(q.where, where)
+	return q
+}
+
+
 func (q userUpdateSQL) ToSql() (string, []interface{}, error) {
+	var err error
+	var s interface{} = User{}
+	if t, ok := s.(userDefaultUpdateHooker); ok {
+		q, err = t.DefaultUpdateHook(q)
+		if err != nil {
+			return "", []interface{}{}, err
+		}
+	}
 	setColumns, svs, err := q.setMap.ToUpdateSql()
 	if err != nil {
 		return "", []interface{}{}, err
@@ -314,6 +429,10 @@ func (q userUpdateSQL) Exec(db sqlla.DB) ([]User, error) {
 	return qq.Select().All(db)
 }
 
+type userDefaultUpdateHooker interface {
+	DefaultUpdateHook(userUpdateSQL) (userUpdateSQL, error)
+}
+
 type userInsertSQL struct {
 	userSQL
 	setMap	sqlla.SetMap
@@ -346,7 +465,27 @@ func (q userInsertSQL) ValueAge(v sql.NullInt64) userInsertSQL {
 }
 
 
+func (q userInsertSQL) ValueCreatedAt(v time.Time) userInsertSQL {
+	q.setMap["created_at"] = v
+	return q
+}
+
+
+func (q userInsertSQL) ValueUpdatedAt(v mysql.NullTime) userInsertSQL {
+	q.setMap["updated_at"] = v
+	return q
+}
+
+
 func (q userInsertSQL) ToSql() (string, []interface{}, error) {
+	var err error
+	var s interface{} = User{}
+	if t, ok := s.(userDefaultInsertHooker); ok {
+		q, err = t.DefaultInsertHook(q)
+		if err != nil {
+			return "", []interface{}{}, err
+		}
+	}
 	qs, vs, err := q.setMap.ToInsertSql()
 	if err != nil {
 		return "", []interface{}{}, err
@@ -371,6 +510,10 @@ func (q userInsertSQL) Exec(db sqlla.DB) (User, error) {
 		return User{}, err
 	}
 	return NewUserSQL().Select().PkColumn(id).Single(db)
+}
+
+type userDefaultInsertHooker interface {
+	DefaultInsertHook(userInsertSQL) (userInsertSQL, error)
 }
 
 type userDeleteSQL struct {
@@ -421,6 +564,34 @@ func (q userDeleteSQL) Age(v sql.NullInt64, exprs ...sqlla.Operator) userDeleteS
 	}
 
 	where := sqlla.ExprNullInt64{Value: v, Op: op, Column: "age"}
+	q.where = append(q.where, where)
+	return q
+}
+
+
+func (q userDeleteSQL) CreatedAt(v time.Time, exprs ...sqlla.Operator) userDeleteSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+
+	where := sqlla.ExprTime{Value: v, Op: op, Column: "created_at"}
+	q.where = append(q.where, where)
+	return q
+}
+
+
+func (q userDeleteSQL) UpdatedAt(v mysql.NullTime, exprs ...sqlla.Operator) userDeleteSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+
+	where := sqlla.ExprNullTime{Value: v, Op: op, Column: "updated_at"}
 	q.where = append(q.where, where)
 	return q
 }

@@ -12,7 +12,7 @@ import (
 func Run(from string) {
 	p := &genbase.Parser{}
 	dir := filepath.Dir(from)
-	pinfo, err := p.ParsePackageDir(dir)
+	pinfo, err := p.ParsePackageFiles([]string{from})
 	if err != nil {
 		panic(err)
 	}
