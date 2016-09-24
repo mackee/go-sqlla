@@ -333,3 +333,77 @@ func (e ExprMultiNullTime) ToSql() (string, []interface{}, error) {
 	}
 	return e.Column + " " + ops, vs, nil
 }
+
+type ExprNullFloat64 struct {
+	Column string
+	Value  sql.NullFloat64
+	Op     Operator
+}
+
+func (e ExprNullFloat64) ToSql() (string, []interface{}, error) {
+	var ops, placeholder string
+	var err error
+	vs := []interface{}{}
+	if !e.Value.Valid {
+		ops, err = OpIsNull.ToSql()
+	} else {
+		ops, err = e.Op.ToSql()
+		placeholder = " ?"
+		vs = append(vs, e.Value)
+	}
+	if err != nil {
+		return "", nil, err
+	}
+
+	return e.Column + " " + ops + placeholder, vs, nil
+}
+
+type ExprFloat64 struct {
+	Column string
+	Value  float64
+	Op     Operator
+}
+
+func (e ExprFloat64) ToSql() (string, []interface{}, error) {
+	ops, err := e.Op.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	return e.Column + " " + ops + " ?", []interface{}{e.Value}, nil
+}
+
+type ExprMultiFloat64 struct {
+	Column string
+	Values []float64
+	Op     Operator
+}
+
+func (e ExprMultiFloat64) ToSql() (string, []interface{}, error) {
+	ops, err := e.Op.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	vs := make([]interface{}, 0, len(e.Values))
+	for _, v := range e.Values {
+		vs = append(vs, interface{}(v))
+	}
+	return e.Column + " " + ops, vs, nil
+}
+
+type ExprMultiNullFloat64 struct {
+	Column string
+	Values []sql.NullFloat64
+	Op     Operator
+}
+
+func (e ExprMultiNullFloat64) ToSql() (string, []interface{}, error) {
+	ops, err := e.Op.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	vs := make([]interface{}, 0, len(e.Values))
+	for _, v := range e.Values {
+		vs = append(vs, interface{}(v))
+	}
+	return e.Column + " " + ops, vs, nil
+}

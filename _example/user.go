@@ -15,6 +15,7 @@ type User struct {
 	Id        uint64         `db:"id,primarykey,autoincrement"`
 	Name      string         `db:"name"`
 	Age       sql.NullInt64  `db:"age"`
+	Rate      float64        `db:"rate,default=0"`
 	CreatedAt time.Time      `db:"created_at"`
 	UpdatedAt mysql.NullTime `db:"updated_at"`
 }

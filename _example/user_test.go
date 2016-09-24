@@ -14,7 +14,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var columns = "id, name, age, created_at, updated_at"
+var columns = "id, name, age, rate, created_at, updated_at"
 
 func TestSelect(t *testing.T) {
 	q := NewUserSQL().Select().Name("hoge")
@@ -78,14 +78,23 @@ func TestUpdate(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "UPDATE user SET name = ?, updated_at = ? WHERE id = ?;" {
+	switch query {
+	case "UPDATE user SET name = ?, updated_at = ? WHERE id = ?;":
+		if !reflect.DeepEqual(args[0], "barbar") {
+			t.Error("unexpected args:", args)
+		}
+		if !reflect.DeepEqual(args[2], "1") {
+			t.Error("unexpected args:", args)
+		}
+	case "UPDATE user SET updated_at = ?, name = ? WHERE id = ?;":
+		if !reflect.DeepEqual(args[0], "1") {
+			t.Error("unexpected args:", args)
+		}
+		if !reflect.DeepEqual(args[2], "barbar") {
+			t.Error("unexpected args:", args)
+		}
+	default:
 		t.Error("unexpected query:", query)
-	}
-	if !reflect.DeepEqual(args[0], "barbar") {
-		t.Error("unexpected args:", args)
-	}
-	if !reflect.DeepEqual(args[2], "1") {
-		t.Error("unexpected args:", args)
 	}
 }
 
@@ -95,11 +104,17 @@ func TestInsert(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "INSERT INTO user (name,created_at) VALUES(?,?);" {
+	switch query {
+	case "INSERT INTO user (name,created_at) VALUES(?,?);":
+		if !reflect.DeepEqual(args[0], "hogehoge") {
+			t.Error("unexpected args:", args)
+		}
+	case "INSERT INTO user (created_at,name) VALUES(?,?);":
+		if !reflect.DeepEqual(args[1], "hogehoge") {
+			t.Error("unexpected args:", args)
+		}
+	default:
 		t.Error("unexpected query:", query)
-	}
-	if !reflect.DeepEqual(args[0], "hogehoge") {
-		t.Error("unexpected args:", args)
 	}
 }
 
@@ -167,9 +182,10 @@ func TestCRUD__WithSqlite3(t *testing.T) {
 	var id uint64
 	var name string
 	var age sql.NullInt64
+	var rate float64
 	var createdAt time.Time
 	var updatedAt mysql.NullTime
-	err = row.Scan(&id, &name, &age, &createdAt, &updatedAt)
+	err = row.Scan(&id, &name, &age, &rate, &createdAt, &updatedAt)
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
@@ -188,9 +204,10 @@ func TestCRUD__WithSqlite3(t *testing.T) {
 	var rescanId uint64
 	var rescanName string
 	var rescanAge sql.NullInt64
+	var rescanRate float64
 	var rescanCreatedAt time.Time
 	var rescanUpdatedAt mysql.NullTime
-	err = row.Scan(&rescanId, &rescanName, &rescanAge, &rescanCreatedAt, &rescanUpdatedAt)
+	err = row.Scan(&rescanId, &rescanName, &rescanAge, &rescanRate, &rescanCreatedAt, &rescanUpdatedAt)
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}

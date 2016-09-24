@@ -21,7 +21,7 @@ func NewUserSQL() userSQL {
 }
 
 var allColumns = []string{
-	"id","name","age","created_at","updated_at",
+	"id","name","age","rate","created_at","updated_at",
 }
 
 type userSelectSQL struct {
@@ -136,6 +136,38 @@ func (q userSelectSQL) AgeIn(v sql.NullInt64, vs ...sql.NullInt64) userSelectSQL
 
 func (q userSelectSQL) OrderByAge(order sqlla.Order) userSelectSQL {
 	q.order = " ORDER BY age"
+	if order == sqlla.Asc {
+		q.order += " ASC"
+	} else {
+		q.order += " DESC"
+	}
+
+	return q
+}
+
+func (q userSelectSQL) Rate(v float64, exprs ...sqlla.Operator) userSelectSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+
+	where := sqlla.ExprFloat64{Value: v, Op: op, Column: "rate"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userSelectSQL) RateIn(v float64, vs ...float64) userSelectSQL {
+	where := sqlla.ExprMultiFloat64{Values: append([]float64{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "rate"}
+	q.where = append(q.where, where)
+	return q
+}
+
+
+
+func (q userSelectSQL) OrderByRate(order sqlla.Order) userSelectSQL {
+	q.order = " ORDER BY rate"
 	if order == sqlla.Asc {
 		q.order += " ASC"
 	} else {
@@ -270,6 +302,7 @@ func (q userSelectSQL) Scan(s sqlla.Scanner) (User, error) {
 		&row.Id,
 		&row.Name,
 		&row.Age,
+		&row.Rate,
 		&row.CreatedAt,
 		&row.UpdatedAt,
 		
@@ -343,6 +376,25 @@ func (q userUpdateSQL) WhereAge(v sql.NullInt64, exprs ...sqlla.Operator) userUp
 	}
 
 	where := sqlla.ExprNullInt64{Value: v, Op: op, Column: "age"}
+	q.where = append(q.where, where)
+	return q
+}
+
+
+func (q userUpdateSQL) SetRate(v float64) userUpdateSQL {
+	q.setMap["rate"] = v
+	return q
+}
+
+func (q userUpdateSQL) WhereRate(v float64, exprs ...sqlla.Operator) userUpdateSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+
+	where := sqlla.ExprFloat64{Value: v, Op: op, Column: "rate"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -465,6 +517,12 @@ func (q userInsertSQL) ValueAge(v sql.NullInt64) userInsertSQL {
 }
 
 
+func (q userInsertSQL) ValueRate(v float64) userInsertSQL {
+	q.setMap["rate"] = v
+	return q
+}
+
+
 func (q userInsertSQL) ValueCreatedAt(v time.Time) userInsertSQL {
 	q.setMap["created_at"] = v
 	return q
@@ -564,6 +622,20 @@ func (q userDeleteSQL) Age(v sql.NullInt64, exprs ...sqlla.Operator) userDeleteS
 	}
 
 	where := sqlla.ExprNullInt64{Value: v, Op: op, Column: "age"}
+	q.where = append(q.where, where)
+	return q
+}
+
+
+func (q userDeleteSQL) Rate(v float64, exprs ...sqlla.Operator) userDeleteSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+
+	where := sqlla.ExprFloat64{Value: v, Op: op, Column: "rate"}
 	q.where = append(q.where, where)
 	return q
 }
