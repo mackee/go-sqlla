@@ -64,8 +64,8 @@ func (q userItemSelectSQL) ID(v uint64, exprs ...sqlla.Operator) userItemSelectS
 	return q
 }
 
-func (q userItemSelectSQL) IDIn(v uint64, vs ...uint64) userItemSelectSQL {
-	where := sqlla.ExprMultiUint64{Values: append([]uint64{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "id"}
+func (q userItemSelectSQL) IDIn(vs ...uint64) userItemSelectSQL {
+	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "id"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -99,8 +99,8 @@ func (q userItemSelectSQL) UserID(v uint64, exprs ...sqlla.Operator) userItemSel
 	return q
 }
 
-func (q userItemSelectSQL) UserIDIn(v uint64, vs ...uint64) userItemSelectSQL {
-	where := sqlla.ExprMultiUint64{Values: append([]uint64{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "user_id"}
+func (q userItemSelectSQL) UserIDIn(vs ...uint64) userItemSelectSQL {
+	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "user_id"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -131,8 +131,8 @@ func (q userItemSelectSQL) ItemID(v string, exprs ...sqlla.Operator) userItemSel
 	return q
 }
 
-func (q userItemSelectSQL) ItemIDIn(v string, vs ...string) userItemSelectSQL {
-	where := sqlla.ExprMultiString{Values: append([]string{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "item_id"}
+func (q userItemSelectSQL) ItemIDIn(vs ...string) userItemSelectSQL {
+	where := sqlla.ExprMultiString{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "item_id"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -163,8 +163,8 @@ func (q userItemSelectSQL) IsUsed(v bool, exprs ...sqlla.Operator) userItemSelec
 	return q
 }
 
-func (q userItemSelectSQL) IsUsedIn(v bool, vs ...bool) userItemSelectSQL {
-	where := sqlla.ExprMultiBool{Values: append([]bool{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "is_used"}
+func (q userItemSelectSQL) IsUsedIn(vs ...bool) userItemSelectSQL {
+	where := sqlla.ExprMultiBool{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "is_used"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -195,8 +195,8 @@ func (q userItemSelectSQL) HasExtension(v sql.NullBool, exprs ...sqlla.Operator)
 	return q
 }
 
-func (q userItemSelectSQL) HasExtensionIn(v sql.NullBool, vs ...sql.NullBool) userItemSelectSQL {
-	where := sqlla.ExprMultiNullBool{Values: append([]sql.NullBool{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "has_extension"}
+func (q userItemSelectSQL) HasExtensionIn(vs ...sql.NullBool) userItemSelectSQL {
+	where := sqlla.ExprMultiNullBool{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "has_extension"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -551,8 +551,8 @@ func (q userItemDeleteSQL) ID(v uint64, exprs ...sqlla.Operator) userItemDeleteS
 }
 
 
-func (q userItemDeleteSQL) IDIn(v uint64, vs ...uint64) userItemDeleteSQL {
-	where := sqlla.ExprMultiUint64{Values: append([]uint64{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "id"}
+func (q userItemDeleteSQL) IDIn(vs ...uint64) userItemDeleteSQL {
+	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "id"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -571,8 +571,8 @@ func (q userItemDeleteSQL) UserID(v uint64, exprs ...sqlla.Operator) userItemDel
 }
 
 
-func (q userItemDeleteSQL) UserIDIn(v uint64, vs ...uint64) userItemDeleteSQL {
-	where := sqlla.ExprMultiUint64{Values: append([]uint64{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "user_id"}
+func (q userItemDeleteSQL) UserIDIn(vs ...uint64) userItemDeleteSQL {
+	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "user_id"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -591,8 +591,8 @@ func (q userItemDeleteSQL) ItemID(v string, exprs ...sqlla.Operator) userItemDel
 }
 
 
-func (q userItemDeleteSQL) ItemIDIn(v string, vs ...string) userItemDeleteSQL {
-	where := sqlla.ExprMultiString{Values: append([]string{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "item_id"}
+func (q userItemDeleteSQL) ItemIDIn(vs ...string) userItemDeleteSQL {
+	where := sqlla.ExprMultiString{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "item_id"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -611,8 +611,8 @@ func (q userItemDeleteSQL) IsUsed(v bool, exprs ...sqlla.Operator) userItemDelet
 }
 
 
-func (q userItemDeleteSQL) IsUsedIn(v bool, vs ...bool) userItemDeleteSQL {
-	where := sqlla.ExprMultiBool{Values: append([]bool{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "is_used"}
+func (q userItemDeleteSQL) IsUsedIn(vs ...bool) userItemDeleteSQL {
+	where := sqlla.ExprMultiBool{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "is_used"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -631,8 +631,8 @@ func (q userItemDeleteSQL) HasExtension(v sql.NullBool, exprs ...sqlla.Operator)
 }
 
 
-func (q userItemDeleteSQL) HasExtensionIn(v sql.NullBool, vs ...sql.NullBool) userItemDeleteSQL {
-	where := sqlla.ExprMultiNullBool{Values: append([]sql.NullBool{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "has_extension"}
+func (q userItemDeleteSQL) HasExtensionIn(vs ...sql.NullBool) userItemDeleteSQL {
+	where := sqlla.ExprMultiNullBool{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "has_extension"}
 	q.where = append(q.where, where)
 	return q
 }

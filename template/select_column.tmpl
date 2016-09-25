@@ -12,8 +12,8 @@ func (q {{ $smallTableName }}SelectSQL) {{ .Name | toCamel | Title }}(v {{ .Type
 	return q
 }
 
-func (q {{ $smallTableName }}SelectSQL) {{ .Name | toCamel | Title }}In(v {{ .TypeName }}, vs ...{{ .TypeName }}) {{ $smallTableName }}SelectSQL {
-	where := sqlla.ExprMulti{{ .TypeName | Exprize | Title }}{Values: append([]{{ .TypeName }}{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "{{ .Name }}"}
+func (q {{ $smallTableName }}SelectSQL) {{ .Name | toCamel | Title }}In(vs ...{{ .TypeName }}) {{ $smallTableName }}SelectSQL {
+	where := sqlla.ExprMulti{{ .TypeName | Exprize | Title }}{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "{{ .Name }}"}
 	q.where = append(q.where, where)
 	return q
 }

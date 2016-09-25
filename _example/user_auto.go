@@ -66,8 +66,8 @@ func (q userSelectSQL) ID(v uint64, exprs ...sqlla.Operator) userSelectSQL {
 	return q
 }
 
-func (q userSelectSQL) IDIn(v uint64, vs ...uint64) userSelectSQL {
-	where := sqlla.ExprMultiUint64{Values: append([]uint64{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "id"}
+func (q userSelectSQL) IDIn(vs ...uint64) userSelectSQL {
+	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "id"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -101,8 +101,8 @@ func (q userSelectSQL) Name(v string, exprs ...sqlla.Operator) userSelectSQL {
 	return q
 }
 
-func (q userSelectSQL) NameIn(v string, vs ...string) userSelectSQL {
-	where := sqlla.ExprMultiString{Values: append([]string{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "name"}
+func (q userSelectSQL) NameIn(vs ...string) userSelectSQL {
+	where := sqlla.ExprMultiString{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "name"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -133,8 +133,8 @@ func (q userSelectSQL) Age(v sql.NullInt64, exprs ...sqlla.Operator) userSelectS
 	return q
 }
 
-func (q userSelectSQL) AgeIn(v sql.NullInt64, vs ...sql.NullInt64) userSelectSQL {
-	where := sqlla.ExprMultiNullInt64{Values: append([]sql.NullInt64{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "age"}
+func (q userSelectSQL) AgeIn(vs ...sql.NullInt64) userSelectSQL {
+	where := sqlla.ExprMultiNullInt64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "age"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -165,8 +165,8 @@ func (q userSelectSQL) Rate(v float64, exprs ...sqlla.Operator) userSelectSQL {
 	return q
 }
 
-func (q userSelectSQL) RateIn(v float64, vs ...float64) userSelectSQL {
-	where := sqlla.ExprMultiFloat64{Values: append([]float64{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "rate"}
+func (q userSelectSQL) RateIn(vs ...float64) userSelectSQL {
+	where := sqlla.ExprMultiFloat64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "rate"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -197,8 +197,8 @@ func (q userSelectSQL) CreatedAt(v time.Time, exprs ...sqlla.Operator) userSelec
 	return q
 }
 
-func (q userSelectSQL) CreatedAtIn(v time.Time, vs ...time.Time) userSelectSQL {
-	where := sqlla.ExprMultiTime{Values: append([]time.Time{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "created_at"}
+func (q userSelectSQL) CreatedAtIn(vs ...time.Time) userSelectSQL {
+	where := sqlla.ExprMultiTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "created_at"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -229,8 +229,8 @@ func (q userSelectSQL) UpdatedAt(v mysql.NullTime, exprs ...sqlla.Operator) user
 	return q
 }
 
-func (q userSelectSQL) UpdatedAtIn(v mysql.NullTime, vs ...mysql.NullTime) userSelectSQL {
-	where := sqlla.ExprMultiNullTime{Values: append([]mysql.NullTime{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "updated_at"}
+func (q userSelectSQL) UpdatedAtIn(vs ...mysql.NullTime) userSelectSQL {
+	where := sqlla.ExprMultiNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "updated_at"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -611,8 +611,8 @@ func (q userDeleteSQL) ID(v uint64, exprs ...sqlla.Operator) userDeleteSQL {
 }
 
 
-func (q userDeleteSQL) IDIn(v uint64, vs ...uint64) userDeleteSQL {
-	where := sqlla.ExprMultiUint64{Values: append([]uint64{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "id"}
+func (q userDeleteSQL) IDIn(vs ...uint64) userDeleteSQL {
+	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "id"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -631,8 +631,8 @@ func (q userDeleteSQL) Name(v string, exprs ...sqlla.Operator) userDeleteSQL {
 }
 
 
-func (q userDeleteSQL) NameIn(v string, vs ...string) userDeleteSQL {
-	where := sqlla.ExprMultiString{Values: append([]string{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "name"}
+func (q userDeleteSQL) NameIn(vs ...string) userDeleteSQL {
+	where := sqlla.ExprMultiString{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "name"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -651,8 +651,8 @@ func (q userDeleteSQL) Age(v sql.NullInt64, exprs ...sqlla.Operator) userDeleteS
 }
 
 
-func (q userDeleteSQL) AgeIn(v sql.NullInt64, vs ...sql.NullInt64) userDeleteSQL {
-	where := sqlla.ExprMultiNullInt64{Values: append([]sql.NullInt64{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "age"}
+func (q userDeleteSQL) AgeIn(vs ...sql.NullInt64) userDeleteSQL {
+	where := sqlla.ExprMultiNullInt64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "age"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -671,8 +671,8 @@ func (q userDeleteSQL) Rate(v float64, exprs ...sqlla.Operator) userDeleteSQL {
 }
 
 
-func (q userDeleteSQL) RateIn(v float64, vs ...float64) userDeleteSQL {
-	where := sqlla.ExprMultiFloat64{Values: append([]float64{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "rate"}
+func (q userDeleteSQL) RateIn(vs ...float64) userDeleteSQL {
+	where := sqlla.ExprMultiFloat64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "rate"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -691,8 +691,8 @@ func (q userDeleteSQL) CreatedAt(v time.Time, exprs ...sqlla.Operator) userDelet
 }
 
 
-func (q userDeleteSQL) CreatedAtIn(v time.Time, vs ...time.Time) userDeleteSQL {
-	where := sqlla.ExprMultiTime{Values: append([]time.Time{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "created_at"}
+func (q userDeleteSQL) CreatedAtIn(vs ...time.Time) userDeleteSQL {
+	where := sqlla.ExprMultiTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "created_at"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -711,8 +711,8 @@ func (q userDeleteSQL) UpdatedAt(v mysql.NullTime, exprs ...sqlla.Operator) user
 }
 
 
-func (q userDeleteSQL) UpdatedAtIn(v mysql.NullTime, vs ...mysql.NullTime) userDeleteSQL {
-	where := sqlla.ExprMultiNullTime{Values: append([]mysql.NullTime{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "updated_at"}
+func (q userDeleteSQL) UpdatedAtIn(vs ...mysql.NullTime) userDeleteSQL {
+	where := sqlla.ExprMultiNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "updated_at"}
 	q.where = append(q.where, where)
 	return q
 }
