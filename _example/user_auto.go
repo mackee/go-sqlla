@@ -730,6 +730,14 @@ func (q userDeleteSQL) ToSql() (string, []interface{}, error) {
 
 	return query + ";", vs, nil
 }
+
+func ( q userDeleteSQL) Exec(db sqlla.DB) (sql.Result, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	return db.Exec(query, args...)
+}
 func (s User) Delete(db sqlla.DB) (sql.Result, error) {
 	query, args, err := NewUserSQL().Delete().ID(s.Id).ToSql()
 	if err != nil {
