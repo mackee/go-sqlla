@@ -1,4 +1,4 @@
-{{ define "UpdateColumn" }}{{ $smallTableName := .TableName | toCamel | toLower }}
+{{ define "UpdateColumn" }}{{ $smallTableName := .TableName | toCamel | Untitle }}
 func (q {{ $smallTableName }}UpdateSQL) Set{{ .Name | toCamel | Title }}(v {{ .TypeName }}) {{ $smallTableName }}UpdateSQL {
 	q.setMap["{{ .Name }}"] = v
 	return q

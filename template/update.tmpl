@@ -1,7 +1,7 @@
-{{ define "Update" }}{{ $camelName := .Name | toCamel | toLower }}
+{{ define "Update" }}{{ $camelName := .Name | toCamel | Untitle }}
 {{- $constructor := printf "New%sSQL" (.Name | toCamel | Title) -}}
 type {{ $camelName }}UpdateSQL struct {
-	{{ .Name }}SQL
+	{{ $camelName }}SQL
 	setMap	sqlla.SetMap
 	Columns []string
 }

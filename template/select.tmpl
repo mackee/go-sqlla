@@ -1,12 +1,12 @@
 {{ define "Select" }}
-{{- $camelName := .Name | toCamel | toLower -}}
+{{- $camelName := .Name | toCamel | Untitle -}}
 {{- $constructor := printf "New%sSQL" (.Name | toCamel | Title) -}}
-var allColumns = []string{
+var {{ $camelName }}AllColumns = []string{
 	{{ range .Columns }}"{{ .Name }}",{{ end }}
 }
 
 type {{ $camelName }}SelectSQL struct {
-	{{ .Name }}SQL
+	{{ $camelName }}SQL
 	Columns []string
 	order   string
 	limit   *uint64
@@ -15,7 +15,7 @@ type {{ $camelName }}SelectSQL struct {
 func (q {{ $camelName }}SQL) Select() {{ $camelName }}SelectSQL {
 	return {{ $camelName }}SelectSQL{
 		q,
-		allColumns,
+		{{ $camelName }}AllColumns,
 		"",
 		nil,
 	}
@@ -53,7 +53,7 @@ func (s {{ .StructName }}) Select() ({{ $camelName }}SelectSQL) {
 {{ end -}}
 
 func (q {{ $camelName }}SelectSQL) Single(db sqlla.DB) ({{ .StructName }}, error) {
-	q.Columns = allColumns
+	q.Columns = {{ $camelName }}AllColumns
 	query, args, err := q.ToSql()
 	if err != nil {
 		return {{ .StructName }}{}, err
@@ -65,7 +65,7 @@ func (q {{ $camelName }}SelectSQL) Single(db sqlla.DB) ({{ .StructName }}, error
 
 func (q {{ $camelName }}SelectSQL) All(db sqlla.DB) ([]{{ .StructName }}, error) {
 	rs := make([]{{ .StructName }}, 0, 10)
-	q.Columns = allColumns
+	q.Columns = {{ $camelName }}AllColumns
 	query, args, err := q.ToSql()
 	if err != nil {
 		return nil, err
