@@ -161,6 +161,7 @@ func (q userItemSelectSQL) ToSql() (string, []interface{}, error) {
 
 	return query + ";", vs, nil
 }
+
 func (s UserItem) Select() (userItemSelectSQL) {
 	return NewUserItemSQL().Select().ID(s.Id)
 }

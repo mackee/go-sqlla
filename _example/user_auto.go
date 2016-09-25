@@ -4,9 +4,9 @@ import (
 	"strings"
 	"strconv"
 
-	"github.com/go-sql-driver/mysql"
 	"database/sql"
 	"time"
+	"github.com/go-sql-driver/mysql"
 	
 	"github.com/mackee/go-sqlla"
 )
@@ -259,6 +259,7 @@ func (q userSelectSQL) ToSql() (string, []interface{}, error) {
 
 	return query + ";", vs, nil
 }
+
 func (s User) Select() (userSelectSQL) {
 	return NewUserSQL().Select().ID(s.Id)
 }

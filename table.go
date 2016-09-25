@@ -2,7 +2,6 @@ package sqlla
 
 import (
 	"io"
-	"strings"
 
 	"github.com/favclip/genbase"
 )
@@ -23,11 +22,8 @@ func (t *Table) AddColumn(c Column) {
 	c.TableName = t.Name
 	if c.IsPk {
 		t.PkColumn = &c
-		t.additionalPackagesMap["database/sql"] = struct{}{}
 	}
 	switch {
-	case strings.HasPrefix(c.TypeName(), "sql.Null"):
-		t.additionalPackagesMap["database/sql"] = struct{}{}
 	case c.TypeName() == "time.Time":
 		t.additionalPackagesMap["time"] = struct{}{}
 	case c.TypeName() == "mysql.NullTime":

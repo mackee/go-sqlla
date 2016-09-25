@@ -37,11 +37,15 @@ func (q {{ $camelName }}InsertSQL) ToSql() (string, []interface{}, error) {
 {{ if .HasPk -}}
 func (q {{ $camelName }}InsertSQL) Exec(db sqlla.DB) ({{ .StructName }}, error) {
 {{- else -}}
-func (q {{ $camelName }}InsertSQL) Exec(db sqlla.DB) (db.Result, error) {
+func (q {{ $camelName }}InsertSQL) Exec(db sqlla.DB) (sql.Result, error) {
 {{- end }}
 	query, args, err := q.ToSql()
 	if err != nil {
+		{{ if .HasPk -}}
 		return {{ .StructName }}{}, err
+		{{- else }}
+		return nil, err
+		{{- end }}
 	}
 	result, err := db.Exec(query, args...)
 	{{ if .HasPk -}}

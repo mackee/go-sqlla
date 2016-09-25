@@ -46,7 +46,7 @@ func (q {{ $camelName }}SelectSQL) ToSql() (string, []interface{}, error) {
 	return query + ";", vs, nil
 }
 
-{{- if .HasPk }}
+{{ if .HasPk -}}
 func (s {{ .StructName }}) Select() ({{ $camelName }}SelectSQL) {
 	return {{ $constructor }}().Select().{{ .PkColumn.Name | toCamel | Title }}(s.{{ .PkColumn.FieldName }})
 }
