@@ -1,3 +1,10 @@
+DROP TABLE IF EXISTS "user_item";
+
+CREATE TABLE "user_item" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "user_id" INTEGER NOT NULL,
+    "item_id" TEXT NOT NULL
+);
 DROP TABLE IF EXISTS "user";
 
 CREATE TABLE "user" (

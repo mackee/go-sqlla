@@ -4,6 +4,7 @@ import (
 	"io"
 	"strings"
 	"text/template"
+	"unicode"
 
 	"github.com/serenize/snaker"
 )
@@ -34,6 +35,14 @@ func init() {
 				s = strings.TrimPrefix(s, "mysql.")
 
 				return s
+			},
+			"Untitle": func(s string) string {
+				s0 := rune(s[0])
+				if !unicode.IsUpper(s0) {
+					return s
+				}
+				s0l := unicode.ToLower(rune(s[0]))
+				return string(s0l) + s[1:]
 			},
 			"toLower": strings.ToLower,
 			"toSnake": snaker.CamelToSnake,

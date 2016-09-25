@@ -1,4 +1,4 @@
-{{ define "DeleteColumn" }}{{ $smallTableName := .TableName | toCamel | toLower }}
+{{ define "DeleteColumn" }}{{ $smallTableName := .TableName | toCamel | Untitle }}
 func (q {{ $smallTableName }}DeleteSQL) {{ .Name | toCamel | Title }}(v {{ .TypeName }}, exprs ...sqlla.Operator) {{ $smallTableName }}DeleteSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {

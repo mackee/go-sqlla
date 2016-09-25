@@ -1,4 +1,4 @@
-{{ define "InsertColumn" }}{{ $smallTableName := .TableName | toCamel | toLower }}
+{{ define "InsertColumn" }}{{ $smallTableName := .TableName | toCamel | Untitle }}
 func (q {{ $smallTableName }}InsertSQL) Value{{ .Name | toCamel | Title }}(v {{ .TypeName }}) {{ $smallTableName }}InsertSQL {
 	q.setMap["{{ .Name }}"] = v
 	return q

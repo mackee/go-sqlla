@@ -1,8 +1,8 @@
 {{ define "Insert" }}
-{{- $camelName := .Name | toCamel | toLower -}}
+{{- $camelName := .Name | toCamel | Untitle -}}
 {{- $constructor := printf "New%sSQL" (.Name | toCamel) -}}
 type {{ $camelName }}InsertSQL struct {
-	{{ .Name }}SQL
+	{{ $camelName }}SQL
 	setMap	sqlla.SetMap
 	Columns []string
 }

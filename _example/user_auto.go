@@ -4,9 +4,9 @@ import (
 	"strings"
 	"strconv"
 
+	"github.com/go-sql-driver/mysql"
 	"database/sql"
 	"time"
-	"github.com/go-sql-driver/mysql"
 	
 	"github.com/mackee/go-sqlla"
 )
@@ -20,7 +20,7 @@ func NewUserSQL() userSQL {
 	return q
 }
 
-var allColumns = []string{
+var userAllColumns = []string{
 	"id","name","age","rate","created_at","updated_at",
 }
 
@@ -34,7 +34,7 @@ type userSelectSQL struct {
 func (q userSQL) Select() userSelectSQL {
 	return userSelectSQL{
 		q,
-		allColumns,
+		userAllColumns,
 		"",
 		nil,
 	}
@@ -263,7 +263,7 @@ func (s User) Select() (userSelectSQL) {
 	return NewUserSQL().Select().ID(s.Id)
 }
 func (q userSelectSQL) Single(db sqlla.DB) (User, error) {
-	q.Columns = allColumns
+	q.Columns = userAllColumns
 	query, args, err := q.ToSql()
 	if err != nil {
 		return User{}, err
@@ -275,7 +275,7 @@ func (q userSelectSQL) Single(db sqlla.DB) (User, error) {
 
 func (q userSelectSQL) All(db sqlla.DB) ([]User, error) {
 	rs := make([]User, 0, 10)
-	q.Columns = allColumns
+	q.Columns = userAllColumns
 	query, args, err := q.ToSql()
 	if err != nil {
 		return nil, err
