@@ -100,10 +100,10 @@ func TestUpdate(t *testing.T) {
 			t.Error("unexpected args:", args)
 		}
 	case "UPDATE user SET updated_at = ?, name = ? WHERE id = ?;":
-		if !reflect.DeepEqual(args[0], "1") {
+		if !reflect.DeepEqual(args[3], "1") {
 			t.Error("unexpected args:", args)
 		}
-		if !reflect.DeepEqual(args[2], "barbar") {
+		if !reflect.DeepEqual(args[1], "barbar") {
 			t.Error("unexpected args:", args)
 		}
 	default:
@@ -141,6 +141,20 @@ func TestDelete(t *testing.T) {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{"hogehoge"}) {
+		t.Error("unexpected args:", args)
+	}
+}
+
+func TestDelete__In(t *testing.T) {
+	q := NewUserSQL().Delete().NameIn("hogehoge", "fugafuga")
+	query, args, err := q.ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	if query != "DELETE FROM user WHERE name IN(?,?);" {
+		t.Error("unexpected query:", query)
+	}
+	if !reflect.DeepEqual(args, []interface{}{"hogehoge", "fugafuga"}) {
 		t.Error("unexpected args:", args)
 	}
 }

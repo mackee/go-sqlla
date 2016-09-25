@@ -551,6 +551,12 @@ func (q userItemDeleteSQL) ID(v uint64, exprs ...sqlla.Operator) userItemDeleteS
 }
 
 
+func (q userItemDeleteSQL) IDIn(v uint64, vs ...uint64) userItemDeleteSQL {
+	where := sqlla.ExprMultiUint64{Values: append([]uint64{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "id"}
+	q.where = append(q.where, where)
+	return q
+}
+
 func (q userItemDeleteSQL) UserID(v uint64, exprs ...sqlla.Operator) userItemDeleteSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
@@ -564,6 +570,12 @@ func (q userItemDeleteSQL) UserID(v uint64, exprs ...sqlla.Operator) userItemDel
 	return q
 }
 
+
+func (q userItemDeleteSQL) UserIDIn(v uint64, vs ...uint64) userItemDeleteSQL {
+	where := sqlla.ExprMultiUint64{Values: append([]uint64{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "user_id"}
+	q.where = append(q.where, where)
+	return q
+}
 
 func (q userItemDeleteSQL) ItemID(v string, exprs ...sqlla.Operator) userItemDeleteSQL {
 	var op sqlla.Operator
@@ -579,6 +591,12 @@ func (q userItemDeleteSQL) ItemID(v string, exprs ...sqlla.Operator) userItemDel
 }
 
 
+func (q userItemDeleteSQL) ItemIDIn(v string, vs ...string) userItemDeleteSQL {
+	where := sqlla.ExprMultiString{Values: append([]string{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "item_id"}
+	q.where = append(q.where, where)
+	return q
+}
+
 func (q userItemDeleteSQL) IsUsed(v bool, exprs ...sqlla.Operator) userItemDeleteSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
@@ -593,6 +611,12 @@ func (q userItemDeleteSQL) IsUsed(v bool, exprs ...sqlla.Operator) userItemDelet
 }
 
 
+func (q userItemDeleteSQL) IsUsedIn(v bool, vs ...bool) userItemDeleteSQL {
+	where := sqlla.ExprMultiBool{Values: append([]bool{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "is_used"}
+	q.where = append(q.where, where)
+	return q
+}
+
 func (q userItemDeleteSQL) HasExtension(v sql.NullBool, exprs ...sqlla.Operator) userItemDeleteSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
@@ -606,6 +630,12 @@ func (q userItemDeleteSQL) HasExtension(v sql.NullBool, exprs ...sqlla.Operator)
 	return q
 }
 
+
+func (q userItemDeleteSQL) HasExtensionIn(v sql.NullBool, vs ...sql.NullBool) userItemDeleteSQL {
+	where := sqlla.ExprMultiNullBool{Values: append([]sql.NullBool{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "has_extension"}
+	q.where = append(q.where, where)
+	return q
+}
 
 func (q userItemDeleteSQL) ToSql() (string, []interface{}, error) {
 	wheres, vs, err := q.where.ToSql()

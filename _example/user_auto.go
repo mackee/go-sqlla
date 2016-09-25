@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"database/sql"
-	"github.com/go-sql-driver/mysql"
 	"time"
+	"github.com/go-sql-driver/mysql"
 	
 	"github.com/mackee/go-sqlla"
 )
@@ -611,6 +611,12 @@ func (q userDeleteSQL) ID(v uint64, exprs ...sqlla.Operator) userDeleteSQL {
 }
 
 
+func (q userDeleteSQL) IDIn(v uint64, vs ...uint64) userDeleteSQL {
+	where := sqlla.ExprMultiUint64{Values: append([]uint64{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "id"}
+	q.where = append(q.where, where)
+	return q
+}
+
 func (q userDeleteSQL) Name(v string, exprs ...sqlla.Operator) userDeleteSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
@@ -624,6 +630,12 @@ func (q userDeleteSQL) Name(v string, exprs ...sqlla.Operator) userDeleteSQL {
 	return q
 }
 
+
+func (q userDeleteSQL) NameIn(v string, vs ...string) userDeleteSQL {
+	where := sqlla.ExprMultiString{Values: append([]string{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "name"}
+	q.where = append(q.where, where)
+	return q
+}
 
 func (q userDeleteSQL) Age(v sql.NullInt64, exprs ...sqlla.Operator) userDeleteSQL {
 	var op sqlla.Operator
@@ -639,6 +651,12 @@ func (q userDeleteSQL) Age(v sql.NullInt64, exprs ...sqlla.Operator) userDeleteS
 }
 
 
+func (q userDeleteSQL) AgeIn(v sql.NullInt64, vs ...sql.NullInt64) userDeleteSQL {
+	where := sqlla.ExprMultiNullInt64{Values: append([]sql.NullInt64{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "age"}
+	q.where = append(q.where, where)
+	return q
+}
+
 func (q userDeleteSQL) Rate(v float64, exprs ...sqlla.Operator) userDeleteSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
@@ -652,6 +670,12 @@ func (q userDeleteSQL) Rate(v float64, exprs ...sqlla.Operator) userDeleteSQL {
 	return q
 }
 
+
+func (q userDeleteSQL) RateIn(v float64, vs ...float64) userDeleteSQL {
+	where := sqlla.ExprMultiFloat64{Values: append([]float64{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "rate"}
+	q.where = append(q.where, where)
+	return q
+}
 
 func (q userDeleteSQL) CreatedAt(v time.Time, exprs ...sqlla.Operator) userDeleteSQL {
 	var op sqlla.Operator
@@ -667,6 +691,12 @@ func (q userDeleteSQL) CreatedAt(v time.Time, exprs ...sqlla.Operator) userDelet
 }
 
 
+func (q userDeleteSQL) CreatedAtIn(v time.Time, vs ...time.Time) userDeleteSQL {
+	where := sqlla.ExprMultiTime{Values: append([]time.Time{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "created_at"}
+	q.where = append(q.where, where)
+	return q
+}
+
 func (q userDeleteSQL) UpdatedAt(v mysql.NullTime, exprs ...sqlla.Operator) userDeleteSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
@@ -680,6 +710,12 @@ func (q userDeleteSQL) UpdatedAt(v mysql.NullTime, exprs ...sqlla.Operator) user
 	return q
 }
 
+
+func (q userDeleteSQL) UpdatedAtIn(v mysql.NullTime, vs ...mysql.NullTime) userDeleteSQL {
+	where := sqlla.ExprMultiNullTime{Values: append([]mysql.NullTime{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "updated_at"}
+	q.where = append(q.where, where)
+	return q
+}
 
 func (q userDeleteSQL) ToSql() (string, []interface{}, error) {
 	wheres, vs, err := q.where.ToSql()
