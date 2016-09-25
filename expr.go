@@ -128,7 +128,7 @@ func (e ExprInt32) ToSql() (string, []interface{}, error) {
 
 type ExprMultiInt32 struct {
 	Column string
-	Values []uint32
+	Values []int32
 	Op     Operator
 }
 
