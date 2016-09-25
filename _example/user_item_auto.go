@@ -24,9 +24,10 @@ var userItemAllColumns = []string{
 
 type userItemSelectSQL struct {
 	userItemSQL
-	Columns []string
-	order   string
-	limit   *uint64
+	Columns     []string
+	order       string
+	limit       *uint64
+	isForUpdate bool
 }
 
 func (q userItemSQL) Select() userItemSelectSQL {
@@ -35,11 +36,17 @@ func (q userItemSQL) Select() userItemSelectSQL {
 		userItemAllColumns,
 		"",
 		nil,
+		false,
 	}
 }
 
 func (q userItemSelectSQL) Limit(l uint64) userItemSelectSQL {
 	q.limit = &l
+	return q
+}
+
+func (q userItemSelectSQL) ForUpdate() userItemSelectSQL {
+	q.isForUpdate = true
 	return q
 }
 
@@ -221,6 +228,10 @@ func (q userItemSelectSQL) ToSql() (string, []interface{}, error) {
 	query += q.order
 	if q.limit != nil {
 		query += " LIMIT " + strconv.FormatUint(*q.limit, 10)
+	}
+
+	if q.isForUpdate {
+		query += " FOR UPDATE"
 	}
 
 	return query + ";", vs, nil

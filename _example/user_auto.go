@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"database/sql"
-	"time"
 	"github.com/go-sql-driver/mysql"
+	"time"
 	
 	"github.com/mackee/go-sqlla"
 )
@@ -26,9 +26,10 @@ var userAllColumns = []string{
 
 type userSelectSQL struct {
 	userSQL
-	Columns []string
-	order   string
-	limit   *uint64
+	Columns     []string
+	order       string
+	limit       *uint64
+	isForUpdate bool
 }
 
 func (q userSQL) Select() userSelectSQL {
@@ -37,11 +38,17 @@ func (q userSQL) Select() userSelectSQL {
 		userAllColumns,
 		"",
 		nil,
+		false,
 	}
 }
 
 func (q userSelectSQL) Limit(l uint64) userSelectSQL {
 	q.limit = &l
+	return q
+}
+
+func (q userSelectSQL) ForUpdate() userSelectSQL {
+	q.isForUpdate = true
 	return q
 }
 
@@ -255,6 +262,10 @@ func (q userSelectSQL) ToSql() (string, []interface{}, error) {
 	query += q.order
 	if q.limit != nil {
 		query += " LIMIT " + strconv.FormatUint(*q.limit, 10)
+	}
+
+	if q.isForUpdate {
+		query += " FOR UPDATE"
 	}
 
 	return query + ";", vs, nil

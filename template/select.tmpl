@@ -7,9 +7,10 @@ var {{ $camelName }}AllColumns = []string{
 
 type {{ $camelName }}SelectSQL struct {
 	{{ $camelName }}SQL
-	Columns []string
-	order   string
-	limit   *uint64
+	Columns     []string
+	order       string
+	limit       *uint64
+	isForUpdate bool
 }
 
 func (q {{ $camelName }}SQL) Select() {{ $camelName }}SelectSQL {
@@ -18,11 +19,17 @@ func (q {{ $camelName }}SQL) Select() {{ $camelName }}SelectSQL {
 		{{ $camelName }}AllColumns,
 		"",
 		nil,
+		false,
 	}
 }
 
 func (q {{ $camelName }}SelectSQL) Limit(l uint64) {{ $camelName }}SelectSQL {
 	q.limit = &l
+	return q
+}
+
+func (q {{ $camelName}}SelectSQL) ForUpdate() {{ $camelName }}SelectSQL {
+	q.isForUpdate = true
 	return q
 }
 
@@ -41,6 +48,10 @@ func (q {{ $camelName }}SelectSQL) ToSql() (string, []interface{}, error) {
 	query += q.order
 	if q.limit != nil {
 		query += " LIMIT " + strconv.FormatUint(*q.limit, 10)
+	}
+
+	if q.isForUpdate {
+		query += " FOR UPDATE"
 	}
 
 	return query + ";", vs, nil

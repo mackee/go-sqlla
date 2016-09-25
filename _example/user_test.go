@@ -72,6 +72,19 @@ func TestSelect__NullInt64(t *testing.T) {
 	}
 }
 
+func TestSelect__ForUpdate(t *testing.T) {
+	q := NewUserSQL().Select().ID(uint64(1)).ForUpdate()
+	query, args, err := q.ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	if query != "SELECT "+columns+" FROM user WHERE id = ? FOR UPDATE;" {
+		t.Error("unexpected query:", query)
+	}
+	if !reflect.DeepEqual(args, []interface{}{"1"}) {
+		t.Error("unexpected args:", args)
+	}
+}
 func TestUpdate(t *testing.T) {
 	q := NewUserSQL().Update().SetName("barbar").WhereID(uint64(1))
 	query, args, err := q.ToSql()
