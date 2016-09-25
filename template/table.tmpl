@@ -3,10 +3,10 @@ package {{ .PackageName }}
 import (
 	"strings"
 	"strconv"
-	{{- if .HasPk }}
-	"database/sql"
-	{{- end }}
 
+	{{ range .AdditionalPackages -}}
+	"{{ . }}"
+	{{ end }}
 	"github.com/mackee/go-sqlla"
 )
 {{ $camelName := .Name | toCamel | toLower }}

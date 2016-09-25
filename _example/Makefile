@@ -6,7 +6,7 @@ clean:
 		rm user_auto.go ; \
 	fi \
 
-build: clean
+build:
 	go generate .
 
 test:
