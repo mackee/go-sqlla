@@ -19,7 +19,7 @@ func NewUserItemSQL() userItemSQL {
 }
 
 var userItemAllColumns = []string{
-	"id","user_id","item_id",
+	"id","user_id","item_id","is_used","has_extension",
 }
 
 type userItemSelectSQL struct {
@@ -143,6 +143,70 @@ func (q userItemSelectSQL) OrderByItemID(order sqlla.Order) userItemSelectSQL {
 	return q
 }
 
+func (q userItemSelectSQL) IsUsed(v bool, exprs ...sqlla.Operator) userItemSelectSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+
+	where := sqlla.ExprBool{Value: v, Op: op, Column: "is_used"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userItemSelectSQL) IsUsedIn(v bool, vs ...bool) userItemSelectSQL {
+	where := sqlla.ExprMultiBool{Values: append([]bool{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "is_used"}
+	q.where = append(q.where, where)
+	return q
+}
+
+
+
+func (q userItemSelectSQL) OrderByIsUsed(order sqlla.Order) userItemSelectSQL {
+	q.order = " ORDER BY is_used"
+	if order == sqlla.Asc {
+		q.order += " ASC"
+	} else {
+		q.order += " DESC"
+	}
+
+	return q
+}
+
+func (q userItemSelectSQL) HasExtension(v sql.NullBool, exprs ...sqlla.Operator) userItemSelectSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+
+	where := sqlla.ExprNullBool{Value: v, Op: op, Column: "has_extension"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userItemSelectSQL) HasExtensionIn(v sql.NullBool, vs ...sql.NullBool) userItemSelectSQL {
+	where := sqlla.ExprMultiNullBool{Values: append([]sql.NullBool{v}, vs...), Op: sqlla.MakeInOperator(len(vs) + 1), Column: "has_extension"}
+	q.where = append(q.where, where)
+	return q
+}
+
+
+
+func (q userItemSelectSQL) OrderByHasExtension(order sqlla.Order) userItemSelectSQL {
+	q.order = " ORDER BY has_extension"
+	if order == sqlla.Asc {
+		q.order += " ASC"
+	} else {
+		q.order += " DESC"
+	}
+
+	return q
+}
+
 func (q userItemSelectSQL) ToSql() (string, []interface{}, error) {
 	columns := strings.Join(q.Columns, ", ")
 	wheres, vs, err := q.where.ToSql()
@@ -205,6 +269,8 @@ func (q userItemSelectSQL) Scan(s sqlla.Scanner) (UserItem, error) {
 		&row.Id,
 		&row.UserId,
 		&row.ItemId,
+		&row.IsUsed,
+		&row.HasExtension,
 		
 	)
 	return row, err
@@ -276,6 +342,44 @@ func (q userItemUpdateSQL) WhereItemID(v string, exprs ...sqlla.Operator) userIt
 	}
 
 	where := sqlla.ExprString{Value: v, Op: op, Column: "item_id"}
+	q.where = append(q.where, where)
+	return q
+}
+
+
+func (q userItemUpdateSQL) SetIsUsed(v bool) userItemUpdateSQL {
+	q.setMap["is_used"] = v
+	return q
+}
+
+func (q userItemUpdateSQL) WhereIsUsed(v bool, exprs ...sqlla.Operator) userItemUpdateSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+
+	where := sqlla.ExprBool{Value: v, Op: op, Column: "is_used"}
+	q.where = append(q.where, where)
+	return q
+}
+
+
+func (q userItemUpdateSQL) SetHasExtension(v sql.NullBool) userItemUpdateSQL {
+	q.setMap["has_extension"] = v
+	return q
+}
+
+func (q userItemUpdateSQL) WhereHasExtension(v sql.NullBool, exprs ...sqlla.Operator) userItemUpdateSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+
+	where := sqlla.ExprNullBool{Value: v, Op: op, Column: "has_extension"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -356,6 +460,18 @@ func (q userItemInsertSQL) ValueUserID(v uint64) userItemInsertSQL {
 
 func (q userItemInsertSQL) ValueItemID(v string) userItemInsertSQL {
 	q.setMap["item_id"] = v
+	return q
+}
+
+
+func (q userItemInsertSQL) ValueIsUsed(v bool) userItemInsertSQL {
+	q.setMap["is_used"] = v
+	return q
+}
+
+
+func (q userItemInsertSQL) ValueHasExtension(v sql.NullBool) userItemInsertSQL {
+	q.setMap["has_extension"] = v
 	return q
 }
 
@@ -447,6 +563,34 @@ func (q userItemDeleteSQL) ItemID(v string, exprs ...sqlla.Operator) userItemDel
 	}
 
 	where := sqlla.ExprString{Value: v, Op: op, Column: "item_id"}
+	q.where = append(q.where, where)
+	return q
+}
+
+
+func (q userItemDeleteSQL) IsUsed(v bool, exprs ...sqlla.Operator) userItemDeleteSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+
+	where := sqlla.ExprBool{Value: v, Op: op, Column: "is_used"}
+	q.where = append(q.where, where)
+	return q
+}
+
+
+func (q userItemDeleteSQL) HasExtension(v sql.NullBool, exprs ...sqlla.Operator) userItemDeleteSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+
+	where := sqlla.ExprNullBool{Value: v, Op: op, Column: "has_extension"}
 	q.where = append(q.where, where)
 	return q
 }
