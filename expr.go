@@ -1,6 +1,7 @@
 package sqlla
 
 import (
+	"bytes"
 	"database/sql"
 	"strconv"
 	"time"
@@ -480,4 +481,33 @@ func (e ExprMultiNullBool) ToSql() (string, []interface{}, error) {
 		vs = append(vs, interface{}(v))
 	}
 	return e.Column + " " + ops, vs, nil
+}
+
+type ExprOr []Where
+
+func (e ExprOr) ToSql() (string, []interface{}, error) {
+	if len(e) == 0 {
+		return "", []interface{}{}, nil
+	}
+
+	b := new(bytes.Buffer)
+	vs := make([]interface{}, 0, 10)
+	b.WriteString("(")
+	for i, w := range e {
+		if i > 0 {
+			b.WriteString(" OR ")
+		}
+		b.WriteString("(")
+		q, wvs, err := w.ToSql()
+		if err != nil {
+			return "", nil, err
+		}
+		b.WriteString(q)
+		b.WriteString(" )")
+		vs = append(vs, wvs...)
+	}
+
+	b.WriteString(")")
+
+	return b.String(), vs, nil
 }
