@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"database/sql"
-	"time"
 	"github.com/go-sql-driver/mysql"
+	"time"
 	
 	"github.com/mackee/go-sqlla"
 )
@@ -40,6 +40,15 @@ func (q userSQL) Select() userSelectSQL {
 		nil,
 		false,
 	}
+}
+
+func (q userSelectSQL) Or(qs ...userSelectSQL) userSelectSQL {
+	ws := make([]sqlla.Where, 0, len(qs))
+	for _, q := range qs {
+		ws = append(ws, q.where)
+	}
+	q.where = append(q.where, sqlla.ExprOr(ws))
+	return q
 }
 
 func (q userSelectSQL) Limit(l uint64) userSelectSQL {

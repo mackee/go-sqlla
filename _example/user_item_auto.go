@@ -40,6 +40,15 @@ func (q userItemSQL) Select() userItemSelectSQL {
 	}
 }
 
+func (q userItemSelectSQL) Or(qs ...userItemSelectSQL) userItemSelectSQL {
+	ws := make([]sqlla.Where, 0, len(qs))
+	for _, q := range qs {
+		ws = append(ws, q.where)
+	}
+	q.where = append(q.where, sqlla.ExprOr(ws))
+	return q
+}
+
 func (q userItemSelectSQL) Limit(l uint64) userItemSelectSQL {
 	q.limit = &l
 	return q

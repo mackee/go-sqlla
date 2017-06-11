@@ -85,6 +85,25 @@ func TestSelect__ForUpdate(t *testing.T) {
 		t.Error("unexpected args:", args)
 	}
 }
+
+func TestSelect__Or(t *testing.T) {
+	q := NewUserSQL().Select().Or(
+		NewUserSQL().Select().ID(uint64(1)),
+		NewUserSQL().Select().ID(uint64(2)),
+	)
+	query, args, err := q.ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	expectedQuery := "SELECT " + columns + " FROM user WHERE (( id = ? ) OR ( id = ? ));"
+	if query != expectedQuery {
+		t.Error("unexpected query:", query, expectedQuery)
+	}
+	if !reflect.DeepEqual(args, []interface{}{"1", "2"}) {
+		t.Error("unexpected args:", args)
+	}
+}
+
 func TestUpdate(t *testing.T) {
 	q := NewUserSQL().Update().SetName("barbar").WhereID(uint64(1))
 	query, args, err := q.ToSql()
@@ -100,7 +119,7 @@ func TestUpdate(t *testing.T) {
 			t.Error("unexpected args:", args)
 		}
 	case "UPDATE user SET updated_at = ?, name = ? WHERE id = ?;":
-		if !reflect.DeepEqual(args[3], "1") {
+		if !reflect.DeepEqual(args[2], "1") {
 			t.Error("unexpected args:", args)
 		}
 		if !reflect.DeepEqual(args[1], "barbar") {
