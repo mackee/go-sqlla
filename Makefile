@@ -2,7 +2,7 @@ VERSION := $(shell git describe --tags)
 
 _bin/sqlla: *.go
 	go generate
-	go build -o _bin/sqlla cmd/sqlla/main.go -ldflags="-X main.Version=$(VERSION)"
+	go build -o _bin/sqlla -ldflags="-X main.Version=$(VERSION)" cmd/sqlla/main.go
 
 .PHONY: clean install get-deps test build
 
@@ -22,8 +22,8 @@ install: _bin/sqlla
 
 build: clean get-deps test
 	go generate
-	gox -output "_artifacts/{{.Dir}}-{{.OS}}-{{.Arch}}-${VERSION}/sqlla" -ldflags "-w -s -X main.Version=$(VERSION)"
-	cd _artifacts/ && find . -name 'sqlla*' -type d | sed 's/\.\///' | xargs -I{} zip -m -q -r {}.zip {}
+	mkdir -p _artifacts
+	goxz -pv=${VERSION} -d=_artifacts -build-ldflags="-w -s -X main.Version=$(VERSION)" ./cmd/sqlla
 
 release:
 	ghr ${VERSION} _artifacts

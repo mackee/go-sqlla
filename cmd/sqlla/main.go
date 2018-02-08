@@ -17,7 +17,7 @@ func main() {
 
 	if isShowVersion {
 		fmt.Println("sqlla - Type safe, reflect free, generative SQL Builder + ORM-like methods")
-		fmt.Println("version %s", Version)
+		fmt.Printf("version %s\n", Version)
 		os.Exit(0)
 	}
 
