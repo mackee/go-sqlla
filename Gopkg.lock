@@ -15,6 +15,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/jessevdk/go-assets"
+  packages = ["."]
+  revision = "4f4301a06e153ff90e17793577ab6bf79f8dc5c5"
+
+[[projects]]
+  branch = "master"
   name = "github.com/serenize/snaker"
   packages = ["."]
   revision = "a683aaf2d516deecd70cad0c72e3ca773ecfcef0"
@@ -22,6 +28,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d93b5e9b9bfb6d493f5d7a85d93d4daa63b5686419182af0d3a09831a7cf8577"
+  inputs-digest = "e1a86627467d738a10d7eda40f3c581030adbcb2489315d0853013d9c7e50b14"
   solver-name = "gps-cdcl"
   solver-version = 1
