@@ -8,21 +8,24 @@ import (
 	"text/template"
 	"unicode"
 
+	_ "github.com/mackee/go-sqlla/statik"
+
+	"github.com/rakyll/statik/fs"
 	"github.com/serenize/snaker"
 )
 
-//go:generate go-assets-builder --output=template.gen.go --package=sqlla template
+//go:generate statik -src=template -m
 
 var templates = []string{
-	"/template/table.tmpl",
-	"/template/select.tmpl",
-	"/template/select_column.tmpl",
-	"/template/update.tmpl",
-	"/template/update_column.tmpl",
-	"/template/insert.tmpl",
-	"/template/insert_column.tmpl",
-	"/template/delete.tmpl",
-	"/template/delete_column.tmpl",
+	"/table.tmpl",
+	"/select.tmpl",
+	"/select_column.tmpl",
+	"/update.tmpl",
+	"/update_column.tmpl",
+	"/insert.tmpl",
+	"/insert_column.tmpl",
+	"/delete.tmpl",
+	"/delete_column.tmpl",
 }
 
 var tmpl = template.New("sqlla")
@@ -53,7 +56,12 @@ func init() {
 	)
 
 	for _, filename := range templates {
-		af, err := Assets.Open(filename)
+		afs, err := fs.New()
+		if err != nil {
+			log.Fatalf("failed open bundled filesystem: %s", err)
+		}
+
+		af, err := afs.Open(filename)
 		if err != nil {
 			log.Fatalf("failed open bundled templates: %s", err)
 		}
