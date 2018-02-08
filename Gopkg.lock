@@ -14,10 +14,10 @@
   version = "v1.3"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/jessevdk/go-assets"
-  packages = ["."]
-  revision = "4f4301a06e153ff90e17793577ab6bf79f8dc5c5"
+  name = "github.com/rakyll/statik"
+  packages = ["fs"]
+  revision = "fd36b3595eb2ec8da4b8153b107f7ea08504899d"
+  version = "v0.1.1"
 
 [[projects]]
   branch = "master"
@@ -28,6 +28,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e1a86627467d738a10d7eda40f3c581030adbcb2489315d0853013d9c7e50b14"
+  inputs-digest = "85649af7890c6ed94db56bb347405d38cd45244e90e9a439e78086548fc3c7c1"
   solver-name = "gps-cdcl"
   solver-version = 1
