@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"database/sql"
-	"github.com/go-sql-driver/mysql"
 	"time"
+	"github.com/go-sql-driver/mysql"
 	
 	"github.com/mackee/go-sqlla"
 )

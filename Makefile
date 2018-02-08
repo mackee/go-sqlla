@@ -1,6 +1,7 @@
 all: generate build
 
 generate:
+	go get github.com/jessevdk/go-assets-builder
 	go generate .
 
 build:

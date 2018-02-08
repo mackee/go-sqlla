@@ -2,6 +2,8 @@ package sqlla
 
 import (
 	"io"
+	"io/ioutil"
+	"log"
 	"strings"
 	"text/template"
 	"unicode"
@@ -9,18 +11,18 @@ import (
 	"github.com/serenize/snaker"
 )
 
-//go:generate go-bindata -pkg sqlla template
+//go:generate go-assets-builder --output=template.gen.go --package=sqlla template
 
 var templates = []string{
-	"template/table.tmpl",
-	"template/select.tmpl",
-	"template/select_column.tmpl",
-	"template/update.tmpl",
-	"template/update_column.tmpl",
-	"template/insert.tmpl",
-	"template/insert_column.tmpl",
-	"template/delete.tmpl",
-	"template/delete_column.tmpl",
+	"/template/table.tmpl",
+	"/template/select.tmpl",
+	"/template/select_column.tmpl",
+	"/template/update.tmpl",
+	"/template/update_column.tmpl",
+	"/template/insert.tmpl",
+	"/template/insert_column.tmpl",
+	"/template/delete.tmpl",
+	"/template/delete_column.tmpl",
 }
 
 var tmpl = template.New("sqlla")
@@ -49,11 +51,21 @@ func init() {
 			"toCamel": snaker.SnakeToCamel,
 		},
 	)
+
 	for _, filename := range templates {
-		data, err := Asset(filename)
-		tmpl, err = tmpl.Parse(string(data))
+		af, err := Assets.Open(filename)
 		if err != nil {
-			panic(err)
+			log.Fatalf("failed open bundled templates: %s", err)
+		}
+
+		bs, err := ioutil.ReadAll(af)
+		if err != nil {
+			log.Fatalf("failed read bundled templates: %s", err)
+		}
+
+		tmpl, err = tmpl.Parse(string(bs))
+		if err != nil {
+			log.Fatalf("failed parse bundled templates: %s", err)
 		}
 	}
 }
