@@ -34,6 +34,14 @@ func ( q {{ $camelName }}DeleteSQL) Exec(db sqlla.DB) (sql.Result, error) {
 	return db.Exec(query, args...)
 }
 
+func ( q {{ $camelName }}DeleteSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	return db.ExecContext(ctx, query, args...)
+}
+
 {{- if .HasPk }}
 func (s {{ .StructName }}) Delete(db sqlla.DB) (sql.Result, error) {
 	query, args, err := {{ $constructor }}().Delete().{{ .PkColumn.Name | toCamel | Title }}(s.{{ .PkColumn.FieldName }}).ToSql()
@@ -41,6 +49,14 @@ func (s {{ .StructName }}) Delete(db sqlla.DB) (sql.Result, error) {
 		return nil, err
 	}
 	return db.Exec(query, args...)
+}
+
+func (s {{ .StructName }}) DeleteContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+	query, args, err := {{ $constructor }}().Delete().{{ .PkColumn.Name | toCamel | Title }}(s.{{ .PkColumn.FieldName }}).ToSql()
+	if err != nil {
+		return nil, err
+	}
+	return db.ExecContext(ctx, query, args...)
 }
 {{- end }}
 {{ end }}

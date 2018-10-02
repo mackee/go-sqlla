@@ -83,6 +83,17 @@ func (q {{ $camelName }}SelectSQL) Single(db sqlla.DB) ({{ .StructName }}, error
 	return q.Scan(row)
 }
 
+func (q {{ $camelName }}SelectSQL) SingleContext(ctx context.Context, db sqlla.DB) ({{ .StructName }}, error) {
+	q.Columns = {{ $camelName }}AllColumns
+	query, args, err := q.ToSql()
+	if err != nil {
+		return {{ .StructName }}{}, err
+	}
+
+	row := db.QueryRowContext(ctx, query, args...)
+	return q.Scan(row)
+}
+
 func (q {{ $camelName }}SelectSQL) All(db sqlla.DB) ([]{{ .StructName }}, error) {
 	rs := make([]{{ .StructName }}, 0, 10)
 	q.Columns = {{ $camelName }}AllColumns
@@ -92,6 +103,29 @@ func (q {{ $camelName }}SelectSQL) All(db sqlla.DB) ([]{{ .StructName }}, error)
 	}
 
 	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		r, err := q.Scan(rows)
+		if err != nil {
+			return nil, err
+		}
+		rs = append(rs, r)
+	}
+	return rs, nil
+}
+
+func (q {{ $camelName }}SelectSQL) AllContext(ctx context.Context, db sqlla.DB) ([]{{ .StructName }}, error) {
+	rs := make([]{{ .StructName }}, 0, 10)
+	q.Columns = {{ $camelName }}AllColumns
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
