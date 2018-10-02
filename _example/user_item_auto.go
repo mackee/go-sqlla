@@ -3,6 +3,7 @@ package example
 import (
 	"strings"
 	"strconv"
+	"context"
 
 	"database/sql"
 	
@@ -260,6 +261,17 @@ func (q userItemSelectSQL) Single(db sqlla.DB) (UserItem, error) {
 	return q.Scan(row)
 }
 
+func (q userItemSelectSQL) SingleContext(ctx context.Context, db sqlla.DB) (UserItem, error) {
+	q.Columns = userItemAllColumns
+	query, args, err := q.ToSql()
+	if err != nil {
+		return UserItem{}, err
+	}
+
+	row := db.QueryRowContext(ctx, query, args...)
+	return q.Scan(row)
+}
+
 func (q userItemSelectSQL) All(db sqlla.DB) ([]UserItem, error) {
 	rs := make([]UserItem, 0, 10)
 	q.Columns = userItemAllColumns
@@ -269,6 +281,29 @@ func (q userItemSelectSQL) All(db sqlla.DB) ([]UserItem, error) {
 	}
 
 	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		r, err := q.Scan(rows)
+		if err != nil {
+			return nil, err
+		}
+		rs = append(rs, r)
+	}
+	return rs, nil
+}
+
+func (q userItemSelectSQL) AllContext(ctx context.Context, db sqlla.DB) ([]UserItem, error) {
+	rs := make([]UserItem, 0, 10)
+	q.Columns = userItemAllColumns
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -448,6 +483,20 @@ func (q userItemUpdateSQL) Exec(db sqlla.DB) ([]UserItem, error) {
 	return qq.Select().All(db)
 }
 
+func (q userItemUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]UserItem, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	_, err = db.ExecContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	qq := q.userItemSQL
+
+	return qq.Select().AllContext(ctx, db)
+}
+
 type userItemDefaultUpdateHooker interface {
 	DefaultUpdateHook(userItemUpdateSQL) (userItemUpdateSQL, error)
 }
@@ -529,6 +578,22 @@ func (q userItemInsertSQL) Exec(db sqlla.DB) (UserItem, error) {
 		return UserItem{}, err
 	}
 	return NewUserItemSQL().Select().PkColumn(id).Single(db)
+}
+
+func (q userItemInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (UserItem, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return UserItem{}, err
+	}
+	result, err := db.ExecContext(ctx, query, args...)
+	if err != nil {
+		return UserItem{}, err
+	}
+	id, err := result.LastInsertId()
+	if err != nil {
+		return UserItem{}, err
+	}
+	return NewUserItemSQL().Select().PkColumn(id).SingleContext(ctx, db)
 }
 
 type userItemDefaultInsertHooker interface {
@@ -667,11 +732,27 @@ func ( q userItemDeleteSQL) Exec(db sqlla.DB) (sql.Result, error) {
 	}
 	return db.Exec(query, args...)
 }
+
+func ( q userItemDeleteSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	return db.ExecContext(ctx, query, args...)
+}
 func (s UserItem) Delete(db sqlla.DB) (sql.Result, error) {
 	query, args, err := NewUserItemSQL().Delete().ID(s.Id).ToSql()
 	if err != nil {
 		return nil, err
 	}
 	return db.Exec(query, args...)
+}
+
+func (s UserItem) DeleteContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+	query, args, err := NewUserItemSQL().Delete().ID(s.Id).ToSql()
+	if err != nil {
+		return nil, err
+	}
+	return db.ExecContext(ctx, query, args...)
 }
 

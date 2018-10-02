@@ -8,7 +8,8 @@ CREATE TABLE "user" (
     "age" INTEGER NULL,
     "rate" REAL NOT NULL DEFAULT 0,
     "created_at" DATETIME NOT NULL,
-    "updated_at" DATETIME NULL
+    "updated_at" DATETIME NULL,
+    UNIQUE ("name")
 );
 
 DROP TABLE IF EXISTS "user_item";

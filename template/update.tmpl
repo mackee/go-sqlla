@@ -58,6 +58,20 @@ func (q {{ $camelName }}UpdateSQL) Exec(db sqlla.DB) ([]{{ .StructName }}, error
 
 	return qq.Select().All(db)
 }
+
+func (q {{ $camelName }}UpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]{{ .StructName }}, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	_, err = db.ExecContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	qq := q.{{ $camelName }}SQL
+
+	return qq.Select().AllContext(ctx, db)
+}
 {{- else }}
 func (q {{ $camelName }}UpdateSQL) Exec(db sqlla.DB) (sql.Result, error) {
 	query, args, err := q.ToSql()
@@ -65,6 +79,14 @@ func (q {{ $camelName }}UpdateSQL) Exec(db sqlla.DB) (sql.Result, error) {
 		return nil, err
 	}
 	return db.Exec(query, args...)
+}
+
+func (q {{ $camelName }}UpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	return db.ExecContext(ctx, query, args...)
 }
 {{- end }}
 

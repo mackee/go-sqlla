@@ -62,6 +62,34 @@ func (q {{ $camelName }}InsertSQL) Exec(db sqlla.DB) (sql.Result, error) {
 	{{- end }}
 }
 
+{{ if .HasPk -}}
+func (q {{ $camelName }}InsertSQL) ExecContext(ctx context.Context, db sqlla.DB) ({{ .StructName }}, error) {
+{{- else -}}
+func (q {{ $camelName }}InsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+{{- end }}
+	query, args, err := q.ToSql()
+	if err != nil {
+		{{ if .HasPk -}}
+		return {{ .StructName }}{}, err
+		{{- else }}
+		return nil, err
+		{{- end }}
+	}
+	result, err := db.ExecContext(ctx, query, args...)
+	{{ if .HasPk -}}
+	if err != nil {
+		return {{ .StructName }}{}, err
+	}
+	id, err := result.LastInsertId()
+	if err != nil {
+		return {{ .StructName }}{}, err
+	}
+	return {{ $constructor }}().Select().PkColumn(id).SingleContext(ctx, db)
+	{{- else -}}
+	return result, err
+	{{- end }}
+}
+
 type {{ $camelName }}DefaultInsertHooker interface {
 	DefaultInsertHook({{ $camelName }}InsertSQL) ({{ $camelName }}InsertSQL, error)
 }

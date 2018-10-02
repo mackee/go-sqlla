@@ -10,20 +10,26 @@
 [[projects]]
   name = "github.com/go-sql-driver/mysql"
   packages = ["."]
-  revision = "a0583e0143b1624142adab07e0e97fe106d99561"
-  version = "v1.3"
+  revision = "d523deb1b23d913de5bdada721a6071e71283618"
+  version = "v1.4.0"
 
 [[projects]]
   name = "github.com/rakyll/statik"
   packages = ["fs"]
-  revision = "fd36b3595eb2ec8da4b8153b107f7ea08504899d"
-  version = "v0.1.1"
+  revision = "1355192d24db2566a83c3914e187e2a7e7679832"
+  version = "v0.1.5"
 
 [[projects]]
   branch = "master"
   name = "github.com/serenize/snaker"
   packages = ["."]
   revision = "a683aaf2d516deecd70cad0c72e3ca773ecfcef0"
+
+[[projects]]
+  name = "google.golang.org/appengine"
+  packages = ["cloudsql"]
+  revision = "ae0ab99deb4dc413a2b4bd6c8bdd0eb67f1e4d06"
+  version = "v1.2.0"
 
 [solve-meta]
   analyzer-name = "dep"
