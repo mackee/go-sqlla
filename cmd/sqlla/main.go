@@ -29,5 +29,9 @@ func main() {
 		}
 		from = args[0]
 	}
-	sqlla.Run(from)
+	ext := os.Getenv("SQLLA_GENERATE_FILE_EXT")
+	if ext == "" {
+		ext = ".gen.go"
+	}
+	sqlla.Run(from, ext)
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/favclip/genbase"
 )
 
-func Run(from string) {
+func Run(from, ext string) {
 	p := &genbase.Parser{}
 	dir := filepath.Dir(from)
 	pinfo, err := p.ParsePackageFiles([]string{from})
@@ -23,7 +23,7 @@ func Run(from string) {
 		if err != nil {
 			panic(err)
 		}
-		filename := filepath.Join(dir, table.Name+"_auto.go")
+		filename := filepath.Join(dir, table.Name+ext)
 		f, err := os.Create(filename)
 		if err != nil {
 			panic(err)
