@@ -28,6 +28,7 @@ type userItemSelectSQL struct {
 	Columns     []string
 	order       string
 	limit       *uint64
+	offset      *uint64
 	isForUpdate bool
 }
 
@@ -36,6 +37,7 @@ func (q userItemSQL) Select() userItemSelectSQL {
 		q,
 		userItemAllColumns,
 		"",
+		nil,
 		nil,
 		false,
 	}
@@ -52,6 +54,11 @@ func (q userItemSelectSQL) Or(qs ...userItemSelectSQL) userItemSelectSQL {
 
 func (q userItemSelectSQL) Limit(l uint64) userItemSelectSQL {
 	q.limit = &l
+	return q
+}
+
+func (q userItemSelectSQL) Offset(o uint64) userItemSelectSQL {
+	q.offset = &o
 	return q
 }
 
@@ -238,6 +245,9 @@ func (q userItemSelectSQL) ToSql() (string, []interface{}, error) {
 	query += q.order
 	if q.limit != nil {
 		query += " LIMIT " + strconv.FormatUint(*q.limit, 10)
+	}
+	if q.offset != nil {
+		query += " OFFSET " + strconv.FormatUint(*q.offset, 10)
 	}
 
 	if q.isForUpdate {

@@ -10,7 +10,8 @@ CREATE TABLE "user" (
     "created_at" DATETIME NOT NULL,
     "updated_at" DATETIME NULL,
     UNIQUE ("name")
-);
+) ;
+
 
 DROP TABLE IF EXISTS "user_item";
 
@@ -20,4 +21,5 @@ CREATE TABLE "user_item" (
     "item_id" TEXT NOT NULL,
     "is_used" INTEGER NOT NULL,
     "has_extension" INTEGER NULL
-);
+) ;
+

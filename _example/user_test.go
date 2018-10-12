@@ -247,21 +247,21 @@ func TestCRUD__WithSqlite3(t *testing.T) {
 		t.Error("unexpected error:", err)
 	}
 	row = db.QueryRow(query, args...)
-	var rescanId uint64
+	var rescanID uint64
 	var rescanName string
 	var rescanAge sql.NullInt64
 	var rescanRate float64
 	var rescanCreatedAt time.Time
 	var rescanUpdatedAt mysql.NullTime
-	err = row.Scan(&rescanId, &rescanName, &rescanAge, &rescanRate, &rescanCreatedAt, &rescanUpdatedAt)
+	err = row.Scan(&rescanID, &rescanName, &rescanAge, &rescanRate, &rescanCreatedAt, &rescanUpdatedAt)
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
 	if name != "hogehoge" {
 		t.Error("unexpected name:", name)
 	}
-	if rescanId != id {
-		t.Error("unmatched id:", rescanId)
+	if rescanID != id {
+		t.Error("unmatched id:", rescanID)
 	}
 
 	query, args, err = NewUserSQL().Update().WhereID(id).SetName("barbar").ToSql()

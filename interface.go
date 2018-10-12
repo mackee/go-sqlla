@@ -21,3 +21,13 @@ type DB interface {
 type Scanner interface {
 	Scan(...interface{}) error
 }
+
+// RowAffected is result of upsert
+type RowAffected int64
+
+// RowAffected results
+const (
+	RowAffectedNoupdated RowAffected = iota
+	RowAffectedInserted
+	RowAffectedUpdated
+)
