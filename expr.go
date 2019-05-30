@@ -511,3 +511,69 @@ func (e ExprOr) ToSql() (string, []interface{}, error) {
 
 	return b.String(), vs, nil
 }
+
+type ExprUint8 struct {
+	Column string
+	Value  uint8
+	Op     Operator
+}
+
+func (e ExprUint8) ToSql() (string, []interface{}, error) {
+	s := strconv.FormatUint(uint64(e.Value), 10)
+	ops, err := e.Op.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	return e.Column + " " + ops + " ?", []interface{}{s}, nil
+}
+
+type ExprMultiUint8 struct {
+	Column string
+	Values []uint8
+	Op     Operator
+}
+
+func (e ExprMultiUint8) ToSql() (string, []interface{}, error) {
+	ops, err := e.Op.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	vs := make([]interface{}, 0, len(e.Values))
+	for _, v := range e.Values {
+		vs = append(vs, interface{}(v))
+	}
+	return e.Column + " " + ops, vs, nil
+}
+
+type ExprInt8 struct {
+	Column string
+	Value  int8
+	Op     Operator
+}
+
+func (e ExprInt8) ToSql() (string, []interface{}, error) {
+	s := strconv.FormatInt(int64(e.Value), 10)
+	ops, err := e.Op.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	return e.Column + " " + ops + " ?", []interface{}{s}, nil
+}
+
+type ExprMultiInt8 struct {
+	Column string
+	Values []int8
+	Op     Operator
+}
+
+func (e ExprMultiInt8) ToSql() (string, []interface{}, error) {
+	ops, err := e.Op.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	vs := make([]interface{}, 0, len(e.Values))
+	for _, v := range e.Values {
+		vs = append(vs, interface{}(v))
+	}
+	return e.Column + " " + ops, vs, nil
+}
