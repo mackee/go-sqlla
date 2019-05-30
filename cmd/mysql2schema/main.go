@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"golang.org/x/tools/imports"
@@ -74,6 +75,8 @@ func main() {
 				log.Fatalf("fail write to output file: %s", err)
 			}
 			f.Close()
+		} else {
+			out.WriteTo(os.Stdout)
 		}
 	}
 }
@@ -83,6 +86,7 @@ type Column struct {
 	Type       string
 	IsUnsigned bool
 	IsNull     bool
+	IsPk       bool
 }
 
 func outputSchema(db *sql.DB, table string, out io.Writer) error {
@@ -119,6 +123,29 @@ func outputSchema(db *sql.DB, table string, out io.Writer) error {
 			}
 		default:
 			break
+		}
+		if state == ScanStateDefineIndex {
+			if strings.HasPrefix(l, "PRIMARY KEY") {
+				trimed := strings.Trim(l, "PRIMARY KEY (")
+				trimed = strings.TrimSuffix(trimed, ",")
+				trimed = strings.TrimSuffix(trimed, ")")
+				unquoted, err := strconv.Unquote(trimed)
+				if err != nil {
+					println(trimed)
+					return err
+				}
+				if strings.Contains(unquoted, ",") {
+					// ignore complex primary key
+					continue
+				}
+				for i, c := range columns {
+					if c.Name == unquoted {
+						c.IsPk = true
+						columns[i] = c
+						break
+					}
+				}
+			}
 		}
 		if state != ScanStateInColumns {
 			continue
@@ -160,7 +187,11 @@ func outputSchema(db *sql.DB, table string, out io.Writer) error {
 			return err
 		}
 		outBuf.WriteString(schemaType)
-		outBuf.WriteString(fmt.Sprintf(" `db:\"%s\"`\n", c.Name))
+		if c.IsPk {
+			outBuf.WriteString(fmt.Sprintf(" `db:\"%s,primarykey\"`\n", c.Name))
+		} else {
+			outBuf.WriteString(fmt.Sprintf(" `db:\"%s\"`\n", c.Name))
+		}
 	}
 	outBuf.WriteString("}")
 
