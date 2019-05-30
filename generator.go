@@ -1,6 +1,8 @@
 package sqlla
 
 import (
+	"bytes"
+	"go/format"
 	"io"
 	"io/ioutil"
 	"log"
@@ -79,5 +81,15 @@ func init() {
 }
 
 func WriteCode(w io.Writer, table *Table) error {
-	return tmpl.Execute(w, table)
+	buf := new(bytes.Buffer)
+	err := tmpl.Execute(buf, table)
+	if err != nil {
+		return err
+	}
+	bs, err := format.Source(buf.Bytes())
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(bs)
+	return err
 }

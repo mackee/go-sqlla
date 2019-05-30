@@ -1,6 +1,6 @@
 {{ define "UpdateColumn" }}{{ $smallTableName := .TableName | toCamel | Untitle }}
 func (q {{ $smallTableName }}UpdateSQL) Set{{ .Name | toCamel | Title }}(v {{ .TypeName }}) {{ $smallTableName }}UpdateSQL {
-	q.setMap["{{ .Name }}"] = v
+	q.setMap["`{{ .Name }}`"] = v
 	return q
 }
 
@@ -12,7 +12,7 @@ func (q {{ $smallTableName }}UpdateSQL) Where{{ .Name | toCamel | Title }}(v {{ 
 		op = exprs[0]
 	}
 
-	where := sqlla.Expr{{ .TypeName | Exprize | Title }}{Value: v, Op: op, Column: "{{ .Name }}"}
+	where := sqlla.Expr{{ .TypeName | Exprize | Title }}{Value: v, Op: op, Column: "`{{ .Name }}`"}
 	q.where = append(q.where, where)
 	return q
 }

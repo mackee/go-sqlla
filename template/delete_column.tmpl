@@ -7,14 +7,14 @@ func (q {{ $smallTableName }}DeleteSQL) {{ .Name | toCamel | Title }}(v {{ .Type
 		op = exprs[0]
 	}
 
-	where := sqlla.Expr{{ .TypeName | Exprize | Title }}{Value: v, Op: op, Column: "{{ .Name }}"}
+	where := sqlla.Expr{{ .TypeName | Exprize | Title }}{Value: v, Op: op, Column: "`{{ .Name }}`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 
 func (q {{ $smallTableName }}DeleteSQL) {{ .Name | toCamel | Title }}In(vs ...{{ .TypeName }}) {{ $smallTableName }}DeleteSQL {
-	where := sqlla.ExprMulti{{ .TypeName | Exprize | Title }}{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "{{ .Name }}"}
+	where := sqlla.ExprMulti{{ .TypeName | Exprize | Title }}{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`{{ .Name }}`"}
 	q.where = append(q.where, where)
 	return q
 }

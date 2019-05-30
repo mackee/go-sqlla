@@ -7,13 +7,13 @@ func (q {{ $smallTableName }}SelectSQL) {{ .Name | toCamel | Title }}(v {{ .Type
 		op = exprs[0]
 	}
 
-	where := sqlla.Expr{{ .TypeName | Exprize | Title }}{Value: v, Op: op, Column: "{{ .Name }}"}
+	where := sqlla.Expr{{ .TypeName | Exprize | Title }}{Value: v, Op: op, Column: "`{{ .Name }}`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q {{ $smallTableName }}SelectSQL) {{ .Name | toCamel | Title }}In(vs ...{{ .TypeName }}) {{ $smallTableName }}SelectSQL {
-	where := sqlla.ExprMulti{{ .TypeName | Exprize | Title }}{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "{{ .Name }}"}
+	where := sqlla.ExprMulti{{ .TypeName | Exprize | Title }}{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`{{ .Name }}`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -26,7 +26,7 @@ func (q {{ $smallTableName }}SelectSQL) PkColumn(pk int64, exprs ...sqlla.Operat
 {{- end }}
 
 func (q {{ $smallTableName }}SelectSQL) OrderBy{{ .Name | toCamel }}(order sqlla.Order) {{ $smallTableName }}SelectSQL {
-	q.order = " ORDER BY {{ .Name }}"
+	q.order = " ORDER BY `{{ .Name }}`"
 	if order == sqlla.Asc {
 		q.order += " ASC"
 	} else {

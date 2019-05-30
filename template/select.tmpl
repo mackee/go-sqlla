@@ -2,7 +2,7 @@
 {{- $camelName := .Name | toCamel | Untitle -}}
 {{- $constructor := printf "New%sSQL" (.Name | toCamel | Title) -}}
 var {{ $camelName }}AllColumns = []string{
-	{{ range .Columns }}"{{ .Name }}",{{ end }}
+	{{ range .Columns }}"`{{ .Name }}`",{{ end }}
 }
 
 type {{ $camelName }}SelectSQL struct {
