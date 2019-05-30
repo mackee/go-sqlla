@@ -7,9 +7,13 @@ import (
 	"flag"
 	"fmt"
 	"go/format"
+	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
+
+	"golang.org/x/tools/imports"
 
 	"github.com/serenize/snaker"
 
@@ -23,12 +27,18 @@ const (
 	ScanStateAfterColmuns
 )
 
-var dsn string
-var tables []string
+var (
+	dsn         string
+	tables      []string
+	outdir      string
+	packageName string
+)
 
 func main() {
 	var err error
 	flag.StringVar(&dsn, "dsn", "user:password@tcp(localhost:3306)/dbname", "target data source name (see github.com/go-sql-driver/mysql)")
+	flag.StringVar(&outdir, "outdir", "", "output directory")
+	flag.StringVar(&packageName, "package", "", "package name when output to file")
 
 	flag.Parse()
 	tables = flag.Args()
@@ -40,9 +50,30 @@ func main() {
 	defer db.Close()
 
 	for _, table := range tables {
-		err = outputSchema(db, table)
+		out := new(bytes.Buffer)
+		if packageName != "" {
+			io.WriteString(out, "package "+packageName+"\n\n")
+			io.WriteString(out, "//go:generate sqlla\n\n")
+		}
+		err = outputSchema(db, table, out)
 		if err != nil {
 			log.Fatalf("failed output source in %s: %s", table, err)
+		}
+		if outdir != "" {
+			filename := filepath.Join(outdir, fmt.Sprintf("%s.schema.go", table))
+			f, err := os.Create(filename)
+			if err != nil {
+				log.Fatalf("fail create output file: %s", err)
+			}
+			bs, err := imports.Process(filename, out.Bytes(), nil)
+			if err != nil {
+				log.Fatalf("fail run goimports to output file: %s", err)
+			}
+			_, err = f.Write(bs)
+			if err != nil {
+				log.Fatalf("fail write to output file: %s", err)
+			}
+			f.Close()
 		}
 	}
 }
@@ -54,7 +85,7 @@ type Column struct {
 	IsNull     bool
 }
 
-func outputSchema(db *sql.DB, table string) error {
+func outputSchema(db *sql.DB, table string, out io.Writer) error {
 	query := fmt.Sprintf("SHOW CREATE TABLE %s", table)
 	row := db.QueryRow(query)
 	var tableName string
@@ -116,27 +147,28 @@ func outputSchema(db *sql.DB, table string) error {
 		columns = append(columns, c)
 	}
 
-	out := new(bytes.Buffer)
-	out.WriteString("type ")
-	out.WriteString(snaker.SnakeToCamel(table))
-	out.WriteString(" struct {\n")
+	outBuf := new(bytes.Buffer)
+	outBuf.WriteString("//+table: " + table + "\n")
+	outBuf.WriteString("type ")
+	outBuf.WriteString(snaker.SnakeToCamel(table))
+	outBuf.WriteString(" struct {\n")
 	for _, c := range columns {
-		out.WriteString(snaker.SnakeToCamel(c.Name))
-		out.WriteString(" ")
+		outBuf.WriteString(snaker.SnakeToCamel(c.Name))
+		outBuf.WriteString(" ")
 		schemaType, err := sqlTypeToSchemaType(c)
 		if err != nil {
 			return err
 		}
-		out.WriteString(schemaType)
-		out.WriteString(fmt.Sprintf(" `db:\"%s\"`\n", c.Name))
+		outBuf.WriteString(schemaType)
+		outBuf.WriteString(fmt.Sprintf(" `db:\"%s\"`\n", c.Name))
 	}
-	out.WriteString("}")
+	outBuf.WriteString("}")
 
-	formated, err := format.Source(out.Bytes())
+	formated, err := format.Source(outBuf.Bytes())
 	if err != nil {
 		return fmt.Errorf("go format error: %s", err)
 	}
-	os.Stdout.Write(formated)
+	out.Write(formated)
 
 	return nil
 }
@@ -164,7 +196,15 @@ func sqlTypeToSchemaType(c Column) (string, error) {
 			return "uint32", nil
 		}
 		return "int32", nil
-	case strings.HasPrefix(c.Type, "varchar"):
+	case strings.HasPrefix(c.Type, "tinyint"):
+		if c.IsNull {
+			return "sql.NullInt64", nil
+		}
+		if c.IsUnsigned {
+			return "uint8", nil
+		}
+		return "int8", nil
+	case strings.HasPrefix(c.Type, "varchar"), strings.HasPrefix(c.Type, "text"), strings.HasPrefix(c.Type, "json"):
 		if c.IsNull {
 			return "sql.NullString", nil
 		}

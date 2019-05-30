@@ -26,6 +26,25 @@
   revision = "a683aaf2d516deecd70cad0c72e3ca773ecfcef0"
 
 [[projects]]
+  branch = "master"
+  name = "golang.org/x/tools"
+  packages = [
+    "go/ast/astutil",
+    "go/gcexportdata",
+    "go/internal/gcimporter",
+    "go/internal/packagesdriver",
+    "go/packages",
+    "go/types/typeutil",
+    "imports",
+    "internal/fastwalk",
+    "internal/gopathwalk",
+    "internal/imports",
+    "internal/module",
+    "internal/semver"
+  ]
+  revision = "b97706b7f64d6771fed3c72922d4a663c7b19b56"
+
+[[projects]]
   name = "google.golang.org/appengine"
   packages = ["cloudsql"]
   revision = "ae0ab99deb4dc413a2b4bd6c8bdd0eb67f1e4d06"
@@ -34,6 +53,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "85649af7890c6ed94db56bb347405d38cd45244e90e9a439e78086548fc3c7c1"
+  inputs-digest = "ddc98b805638003d488dcf777d38caaa9f0aae41e82323f77d2919aa33b56135"
   solver-name = "gps-cdcl"
   solver-version = 1
