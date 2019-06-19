@@ -96,7 +96,7 @@ func (e ExprInt64) ToSql() (string, []interface{}, error) {
 
 type ExprMultiInt64 struct {
 	Column string
-	Values []uint64
+	Values []int64
 	Op     Operator
 }
 
