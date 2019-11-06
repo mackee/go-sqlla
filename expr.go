@@ -314,7 +314,7 @@ func (e ExprNullTime) ToSql() (string, []interface{}, error) {
 		return "", nil, err
 	}
 
-	return e.Column + " " + ops + placeholder, []interface{}{e.Value}, nil
+	return e.Column + " " + ops + placeholder, vs, nil
 }
 
 type ExprMultiNullTime struct {
