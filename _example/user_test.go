@@ -14,7 +14,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var columns = "id, name, age, rate, created_at, updated_at"
+var columns = "`id`, `name`, `age`, `rate`, `created_at`, `updated_at`"
 
 func TestSelect(t *testing.T) {
 	q := NewUserSQL().Select().Name("hoge")
@@ -22,7 +22,7 @@ func TestSelect(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "SELECT "+columns+" FROM user WHERE name = ?;" {
+	if query != "SELECT "+columns+" FROM user WHERE `name` = ?;" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{"hoge"}) {
@@ -36,7 +36,7 @@ func TestSelect__OrderByAndLimit(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "SELECT "+columns+" FROM user WHERE name = ? ORDER BY id ASC LIMIT 100;" {
+	if query != "SELECT "+columns+" FROM user WHERE `name` = ? ORDER BY `id` ASC LIMIT 100;" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{"hoge"}) {
@@ -50,7 +50,7 @@ func TestSelect__InOperator(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "SELECT "+columns+" FROM user WHERE id IN(?,?,?,?,?);" {
+	if query != "SELECT "+columns+" FROM user WHERE `id` IN(?,?,?,?,?);" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{uint64(1), uint64(2), uint64(3), uint64(4), uint64(5)}) {
@@ -64,7 +64,7 @@ func TestSelect__NullInt64(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "SELECT "+columns+" FROM user WHERE age IS NULL;" {
+	if query != "SELECT "+columns+" FROM user WHERE `age` IS NULL;" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{}) {
@@ -78,7 +78,7 @@ func TestSelect__ForUpdate(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "SELECT "+columns+" FROM user WHERE id = ? FOR UPDATE;" {
+	if query != "SELECT "+columns+" FROM user WHERE `id` = ? FOR UPDATE;" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{"1"}) {
@@ -95,11 +95,33 @@ func TestSelect__Or(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	expectedQuery := "SELECT " + columns + " FROM user WHERE (( id = ? ) OR ( id = ? ));"
+	expectedQuery := "SELECT " + columns + " FROM user WHERE (( `id` = ? ) OR ( `id` = ? ));"
 	if query != expectedQuery {
 		t.Error("unexpected query:", query, expectedQuery)
 	}
 	if !reflect.DeepEqual(args, []interface{}{"1", "2"}) {
+		t.Error("unexpected args:", args)
+	}
+}
+
+func TestSelect__OrNull(t *testing.T) {
+	now := time.Now()
+	nt := mysql.NullTime{Time: now, Valid: true}
+	q := NewUserItemSQL().Select().
+		IDIn(uint64(1), uint64(2)).
+		Or(
+			NewUserItemSQL().Select().UsedAt(mysql.NullTime{}, sqlla.OpIs),
+			NewUserItemSQL().Select().UsedAt(nt, sqlla.OpLess),
+		)
+	query, args, err := q.ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	expectedQuery := "SELECT `id`, `user_id`, `item_id`, `is_used`, `has_extension`, `used_at` FROM user_item WHERE `id` IN(?,?) AND (( `used_at` IS NULL ) OR ( `used_at` < ? ));"
+	if query != expectedQuery {
+		t.Error("unexpected query:", query, expectedQuery)
+	}
+	if !reflect.DeepEqual(args, []interface{}{uint64(1), uint64(2), nt}) {
 		t.Error("unexpected args:", args)
 	}
 }
@@ -111,14 +133,14 @@ func TestUpdate(t *testing.T) {
 		t.Error("unexpected error:", err)
 	}
 	switch query {
-	case "UPDATE user SET name = ?, updated_at = ? WHERE id = ?;":
+	case "UPDATE user SET `name` = ?, `updated_at` = ? WHERE `id` = ?;":
 		if !reflect.DeepEqual(args[0], "barbar") {
 			t.Error("unexpected args:", args)
 		}
 		if !reflect.DeepEqual(args[2], "1") {
 			t.Error("unexpected args:", args)
 		}
-	case "UPDATE user SET updated_at = ?, name = ? WHERE id = ?;":
+	case "UPDATE user SET `updated_at` = ?, `name` = ? WHERE `id` = ?;":
 		if !reflect.DeepEqual(args[2], "1") {
 			t.Error("unexpected args:", args)
 		}
@@ -137,11 +159,11 @@ func TestInsert(t *testing.T) {
 		t.Error("unexpected error:", err)
 	}
 	switch query {
-	case "INSERT INTO user (name,created_at) VALUES(?,?);":
+	case "INSERT INTO user (`name`,`created_at`) VALUES(?,?);":
 		if !reflect.DeepEqual(args[0], "hogehoge") {
 			t.Error("unexpected args:", args)
 		}
-	case "INSERT INTO user (created_at,name) VALUES(?,?);":
+	case "INSERT INTO user (`created_at`,`name`) VALUES(?,?);":
 		if !reflect.DeepEqual(args[1], "hogehoge") {
 			t.Error("unexpected args:", args)
 		}
@@ -156,7 +178,7 @@ func TestDelete(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "DELETE FROM user WHERE name = ?;" {
+	if query != "DELETE FROM user WHERE `name` = ?;" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{"hogehoge"}) {
@@ -170,7 +192,7 @@ func TestDelete__In(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "DELETE FROM user WHERE name IN(?,?);" {
+	if query != "DELETE FROM user WHERE `name` IN(?,?);" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{"hogehoge", "fugafuga"}) {

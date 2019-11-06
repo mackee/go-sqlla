@@ -1,14 +1,14 @@
 package example
 
 import (
-	"strings"
-	"strconv"
 	"context"
+	"strconv"
+	"strings"
 
 	"database/sql"
-	"time"
 	"github.com/go-sql-driver/mysql"
-	
+	"time"
+
 	"github.com/mackee/go-sqlla"
 )
 
@@ -22,7 +22,7 @@ func NewUserSQL() userSQL {
 }
 
 var userAllColumns = []string{
-	"id","name","age","rate","created_at","updated_at",
+	"`id`", "`name`", "`age`", "`rate`", "`created_at`", "`updated_at`",
 }
 
 type userSelectSQL struct {
@@ -69,7 +69,6 @@ func (q userSelectSQL) ForUpdate() userSelectSQL {
 	return q
 }
 
-
 func (q userSelectSQL) ID(v uint64, exprs ...sqlla.Operator) userSelectSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
@@ -78,13 +77,13 @@ func (q userSelectSQL) ID(v uint64, exprs ...sqlla.Operator) userSelectSQL {
 		op = exprs[0]
 	}
 
-	where := sqlla.ExprUint64{Value: v, Op: op, Column: "id"}
+	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) IDIn(vs ...uint64) userSelectSQL {
-	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "id"}
+	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -95,7 +94,7 @@ func (q userSelectSQL) PkColumn(pk int64, exprs ...sqlla.Operator) userSelectSQL
 }
 
 func (q userSelectSQL) OrderByID(order sqlla.Order) userSelectSQL {
-	q.order = " ORDER BY id"
+	q.order = " ORDER BY `id`"
 	if order == sqlla.Asc {
 		q.order += " ASC"
 	} else {
@@ -113,21 +112,19 @@ func (q userSelectSQL) Name(v string, exprs ...sqlla.Operator) userSelectSQL {
 		op = exprs[0]
 	}
 
-	where := sqlla.ExprString{Value: v, Op: op, Column: "name"}
+	where := sqlla.ExprString{Value: v, Op: op, Column: "`name`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) NameIn(vs ...string) userSelectSQL {
-	where := sqlla.ExprMultiString{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "name"}
+	where := sqlla.ExprMultiString{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`name`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-
-
 func (q userSelectSQL) OrderByName(order sqlla.Order) userSelectSQL {
-	q.order = " ORDER BY name"
+	q.order = " ORDER BY `name`"
 	if order == sqlla.Asc {
 		q.order += " ASC"
 	} else {
@@ -145,21 +142,19 @@ func (q userSelectSQL) Age(v sql.NullInt64, exprs ...sqlla.Operator) userSelectS
 		op = exprs[0]
 	}
 
-	where := sqlla.ExprNullInt64{Value: v, Op: op, Column: "age"}
+	where := sqlla.ExprNullInt64{Value: v, Op: op, Column: "`age`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) AgeIn(vs ...sql.NullInt64) userSelectSQL {
-	where := sqlla.ExprMultiNullInt64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "age"}
+	where := sqlla.ExprMultiNullInt64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`age`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-
-
 func (q userSelectSQL) OrderByAge(order sqlla.Order) userSelectSQL {
-	q.order = " ORDER BY age"
+	q.order = " ORDER BY `age`"
 	if order == sqlla.Asc {
 		q.order += " ASC"
 	} else {
@@ -177,21 +172,19 @@ func (q userSelectSQL) Rate(v float64, exprs ...sqlla.Operator) userSelectSQL {
 		op = exprs[0]
 	}
 
-	where := sqlla.ExprFloat64{Value: v, Op: op, Column: "rate"}
+	where := sqlla.ExprFloat64{Value: v, Op: op, Column: "`rate`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) RateIn(vs ...float64) userSelectSQL {
-	where := sqlla.ExprMultiFloat64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "rate"}
+	where := sqlla.ExprMultiFloat64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`rate`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-
-
 func (q userSelectSQL) OrderByRate(order sqlla.Order) userSelectSQL {
-	q.order = " ORDER BY rate"
+	q.order = " ORDER BY `rate`"
 	if order == sqlla.Asc {
 		q.order += " ASC"
 	} else {
@@ -209,21 +202,19 @@ func (q userSelectSQL) CreatedAt(v time.Time, exprs ...sqlla.Operator) userSelec
 		op = exprs[0]
 	}
 
-	where := sqlla.ExprTime{Value: v, Op: op, Column: "created_at"}
+	where := sqlla.ExprTime{Value: v, Op: op, Column: "`created_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) CreatedAtIn(vs ...time.Time) userSelectSQL {
-	where := sqlla.ExprMultiTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "created_at"}
+	where := sqlla.ExprMultiTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`created_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-
-
 func (q userSelectSQL) OrderByCreatedAt(order sqlla.Order) userSelectSQL {
-	q.order = " ORDER BY created_at"
+	q.order = " ORDER BY `created_at`"
 	if order == sqlla.Asc {
 		q.order += " ASC"
 	} else {
@@ -241,21 +232,19 @@ func (q userSelectSQL) UpdatedAt(v mysql.NullTime, exprs ...sqlla.Operator) user
 		op = exprs[0]
 	}
 
-	where := sqlla.ExprNullTime{Value: v, Op: op, Column: "updated_at"}
+	where := sqlla.ExprNullTime{Value: v, Op: op, Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) UpdatedAtIn(vs ...mysql.NullTime) userSelectSQL {
-	where := sqlla.ExprMultiNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "updated_at"}
+	where := sqlla.ExprMultiNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-
-
 func (q userSelectSQL) OrderByUpdatedAt(order sqlla.Order) userSelectSQL {
-	q.order = " ORDER BY updated_at"
+	q.order = " ORDER BY `updated_at`"
 	if order == sqlla.Asc {
 		q.order += " ASC"
 	} else {
@@ -291,7 +280,7 @@ func (q userSelectSQL) ToSql() (string, []interface{}, error) {
 	return query + ";", vs, nil
 }
 
-func (s User) Select() (userSelectSQL) {
+func (s User) Select() userSelectSQL {
 	return NewUserSQL().Select().ID(s.Id)
 }
 func (q userSelectSQL) Single(db sqlla.DB) (User, error) {
@@ -371,27 +360,25 @@ func (q userSelectSQL) Scan(s sqlla.Scanner) (User, error) {
 		&row.Rate,
 		&row.CreatedAt,
 		&row.UpdatedAt,
-		
 	)
 	return row, err
 }
 
 type userUpdateSQL struct {
 	userSQL
-	setMap	sqlla.SetMap
+	setMap  sqlla.SetMap
 	Columns []string
 }
 
 func (q userSQL) Update() userUpdateSQL {
 	return userUpdateSQL{
 		userSQL: q,
-		setMap: sqlla.SetMap{},
+		setMap:  sqlla.SetMap{},
 	}
 }
 
-
 func (q userUpdateSQL) SetID(v uint64) userUpdateSQL {
-	q.setMap["id"] = v
+	q.setMap["`id`"] = v
 	return q
 }
 
@@ -403,14 +390,13 @@ func (q userUpdateSQL) WhereID(v uint64, exprs ...sqlla.Operator) userUpdateSQL 
 		op = exprs[0]
 	}
 
-	where := sqlla.ExprUint64{Value: v, Op: op, Column: "id"}
+	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-
 func (q userUpdateSQL) SetName(v string) userUpdateSQL {
-	q.setMap["name"] = v
+	q.setMap["`name`"] = v
 	return q
 }
 
@@ -422,14 +408,13 @@ func (q userUpdateSQL) WhereName(v string, exprs ...sqlla.Operator) userUpdateSQ
 		op = exprs[0]
 	}
 
-	where := sqlla.ExprString{Value: v, Op: op, Column: "name"}
+	where := sqlla.ExprString{Value: v, Op: op, Column: "`name`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-
 func (q userUpdateSQL) SetAge(v sql.NullInt64) userUpdateSQL {
-	q.setMap["age"] = v
+	q.setMap["`age`"] = v
 	return q
 }
 
@@ -441,14 +426,13 @@ func (q userUpdateSQL) WhereAge(v sql.NullInt64, exprs ...sqlla.Operator) userUp
 		op = exprs[0]
 	}
 
-	where := sqlla.ExprNullInt64{Value: v, Op: op, Column: "age"}
+	where := sqlla.ExprNullInt64{Value: v, Op: op, Column: "`age`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-
 func (q userUpdateSQL) SetRate(v float64) userUpdateSQL {
-	q.setMap["rate"] = v
+	q.setMap["`rate`"] = v
 	return q
 }
 
@@ -460,14 +444,13 @@ func (q userUpdateSQL) WhereRate(v float64, exprs ...sqlla.Operator) userUpdateS
 		op = exprs[0]
 	}
 
-	where := sqlla.ExprFloat64{Value: v, Op: op, Column: "rate"}
+	where := sqlla.ExprFloat64{Value: v, Op: op, Column: "`rate`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-
 func (q userUpdateSQL) SetCreatedAt(v time.Time) userUpdateSQL {
-	q.setMap["created_at"] = v
+	q.setMap["`created_at`"] = v
 	return q
 }
 
@@ -479,14 +462,13 @@ func (q userUpdateSQL) WhereCreatedAt(v time.Time, exprs ...sqlla.Operator) user
 		op = exprs[0]
 	}
 
-	where := sqlla.ExprTime{Value: v, Op: op, Column: "created_at"}
+	where := sqlla.ExprTime{Value: v, Op: op, Column: "`created_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-
 func (q userUpdateSQL) SetUpdatedAt(v mysql.NullTime) userUpdateSQL {
-	q.setMap["updated_at"] = v
+	q.setMap["`updated_at`"] = v
 	return q
 }
 
@@ -498,11 +480,10 @@ func (q userUpdateSQL) WhereUpdatedAt(v mysql.NullTime, exprs ...sqlla.Operator)
 		op = exprs[0]
 	}
 
-	where := sqlla.ExprNullTime{Value: v, Op: op, Column: "updated_at"}
+	where := sqlla.ExprNullTime{Value: v, Op: op, Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
-
 
 func (q userUpdateSQL) ToSql() (string, []interface{}, error) {
 	var err error
@@ -567,53 +548,46 @@ type userDefaultUpdateHooker interface {
 
 type userInsertSQL struct {
 	userSQL
-	setMap	sqlla.SetMap
+	setMap  sqlla.SetMap
 	Columns []string
 }
 
 func (q userSQL) Insert() userInsertSQL {
 	return userInsertSQL{
 		userSQL: q,
-		setMap: sqlla.SetMap{},
+		setMap:  sqlla.SetMap{},
 	}
 }
 
-
 func (q userInsertSQL) ValueID(v uint64) userInsertSQL {
-	q.setMap["id"] = v
+	q.setMap["`id`"] = v
 	return q
 }
-
 
 func (q userInsertSQL) ValueName(v string) userInsertSQL {
-	q.setMap["name"] = v
+	q.setMap["`name`"] = v
 	return q
 }
-
 
 func (q userInsertSQL) ValueAge(v sql.NullInt64) userInsertSQL {
-	q.setMap["age"] = v
+	q.setMap["`age`"] = v
 	return q
 }
-
 
 func (q userInsertSQL) ValueRate(v float64) userInsertSQL {
-	q.setMap["rate"] = v
+	q.setMap["`rate`"] = v
 	return q
 }
-
 
 func (q userInsertSQL) ValueCreatedAt(v time.Time) userInsertSQL {
-	q.setMap["created_at"] = v
+	q.setMap["`created_at`"] = v
 	return q
 }
-
 
 func (q userInsertSQL) ValueUpdatedAt(v mysql.NullTime) userInsertSQL {
-	q.setMap["updated_at"] = v
+	q.setMap["`updated_at`"] = v
 	return q
 }
-
 
 func (q userInsertSQL) ToSql() (string, []interface{}, error) {
 	var err error
@@ -680,7 +654,6 @@ func (q userSQL) Delete() userDeleteSQL {
 	}
 }
 
-
 func (q userDeleteSQL) ID(v uint64, exprs ...sqlla.Operator) userDeleteSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
@@ -689,14 +662,13 @@ func (q userDeleteSQL) ID(v uint64, exprs ...sqlla.Operator) userDeleteSQL {
 		op = exprs[0]
 	}
 
-	where := sqlla.ExprUint64{Value: v, Op: op, Column: "id"}
+	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-
 func (q userDeleteSQL) IDIn(vs ...uint64) userDeleteSQL {
-	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "id"}
+	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -709,14 +681,13 @@ func (q userDeleteSQL) Name(v string, exprs ...sqlla.Operator) userDeleteSQL {
 		op = exprs[0]
 	}
 
-	where := sqlla.ExprString{Value: v, Op: op, Column: "name"}
+	where := sqlla.ExprString{Value: v, Op: op, Column: "`name`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-
 func (q userDeleteSQL) NameIn(vs ...string) userDeleteSQL {
-	where := sqlla.ExprMultiString{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "name"}
+	where := sqlla.ExprMultiString{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`name`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -729,14 +700,13 @@ func (q userDeleteSQL) Age(v sql.NullInt64, exprs ...sqlla.Operator) userDeleteS
 		op = exprs[0]
 	}
 
-	where := sqlla.ExprNullInt64{Value: v, Op: op, Column: "age"}
+	where := sqlla.ExprNullInt64{Value: v, Op: op, Column: "`age`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-
 func (q userDeleteSQL) AgeIn(vs ...sql.NullInt64) userDeleteSQL {
-	where := sqlla.ExprMultiNullInt64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "age"}
+	where := sqlla.ExprMultiNullInt64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`age`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -749,14 +719,13 @@ func (q userDeleteSQL) Rate(v float64, exprs ...sqlla.Operator) userDeleteSQL {
 		op = exprs[0]
 	}
 
-	where := sqlla.ExprFloat64{Value: v, Op: op, Column: "rate"}
+	where := sqlla.ExprFloat64{Value: v, Op: op, Column: "`rate`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-
 func (q userDeleteSQL) RateIn(vs ...float64) userDeleteSQL {
-	where := sqlla.ExprMultiFloat64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "rate"}
+	where := sqlla.ExprMultiFloat64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`rate`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -769,14 +738,13 @@ func (q userDeleteSQL) CreatedAt(v time.Time, exprs ...sqlla.Operator) userDelet
 		op = exprs[0]
 	}
 
-	where := sqlla.ExprTime{Value: v, Op: op, Column: "created_at"}
+	where := sqlla.ExprTime{Value: v, Op: op, Column: "`created_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-
 func (q userDeleteSQL) CreatedAtIn(vs ...time.Time) userDeleteSQL {
-	where := sqlla.ExprMultiTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "created_at"}
+	where := sqlla.ExprMultiTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`created_at`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -789,14 +757,13 @@ func (q userDeleteSQL) UpdatedAt(v mysql.NullTime, exprs ...sqlla.Operator) user
 		op = exprs[0]
 	}
 
-	where := sqlla.ExprNullTime{Value: v, Op: op, Column: "updated_at"}
+	where := sqlla.ExprNullTime{Value: v, Op: op, Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-
 func (q userDeleteSQL) UpdatedAtIn(vs ...mysql.NullTime) userDeleteSQL {
-	where := sqlla.ExprMultiNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "updated_at"}
+	where := sqlla.ExprMultiNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -815,7 +782,7 @@ func (q userDeleteSQL) ToSql() (string, []interface{}, error) {
 	return query + ";", vs, nil
 }
 
-func ( q userDeleteSQL) Exec(db sqlla.DB) (sql.Result, error) {
+func (q userDeleteSQL) Exec(db sqlla.DB) (sql.Result, error) {
 	query, args, err := q.ToSql()
 	if err != nil {
 		return nil, err
@@ -823,7 +790,7 @@ func ( q userDeleteSQL) Exec(db sqlla.DB) (sql.Result, error) {
 	return db.Exec(query, args...)
 }
 
-func ( q userDeleteSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+func (q userDeleteSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
 	query, args, err := q.ToSql()
 	if err != nil {
 		return nil, err
@@ -845,4 +812,3 @@ func (s User) DeleteContext(ctx context.Context, db sqlla.DB) (sql.Result, error
 	}
 	return db.ExecContext(ctx, query, args...)
 }
-
