@@ -20,6 +20,7 @@ CREATE TABLE "user_item" (
     "user_id" INTEGER NOT NULL,
     "item_id" TEXT NOT NULL,
     "is_used" INTEGER NOT NULL,
-    "has_extension" INTEGER NULL
+    "has_extension" INTEGER NULL,
+    "used_at" DATETIME NULL
 ) ;
 

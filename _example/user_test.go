@@ -104,6 +104,27 @@ func TestSelect__Or(t *testing.T) {
 	}
 }
 
+func TestSelect__OrNull(t *testing.T) {
+	now := time.Now()
+	q := NewUserItemSQL().Select().
+		IDIn(uint64(1), uint64(2)).
+		Or(
+			NewUserItemSQL().Select().UsedAt(mysql.NullTime{}, sqlla.OpIs),
+			NewUserItemSQL().Select().UsedAt(mysql.NullTime{Time: now, Valid: true}, sqlla.OpLess),
+		)
+	query, args, err := q.ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	expectedQuery := "SELECT `id`, `user_id`, `item_id`, `is_used`, `has_extension`, `used_at` FROM user_item WHERE `id` IN(?,?) AND (( `used_at` IS NULL ) OR ( `used_at` < ? ));"
+	if query != expectedQuery {
+		t.Error("unexpected query:", query, expectedQuery)
+	}
+	if !reflect.DeepEqual(args, []interface{}{"1", "2", now}) {
+		t.Error("unexpected args:", args)
+	}
+}
+
 func TestUpdate(t *testing.T) {
 	q := NewUserSQL().Update().SetName("barbar").WhereID(uint64(1))
 	query, args, err := q.ToSql()

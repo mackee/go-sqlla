@@ -8,7 +8,7 @@ import (
 	"github.com/mackee/go-genddl/index"
 )
 
-//go:generate sqlla
+//go:generate go run ../cmd/sqlla/main.go
 //go:generate genddl -outpath=./sqlite3.sql -driver=sqlite3
 
 //+table: user
