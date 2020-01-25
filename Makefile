@@ -1,5 +1,7 @@
 VERSION := $(shell git describe --tags)
 
+export PATH=$(shell echo $$PWD/_gobin):$(shell echo $$PATH)
+
 _bin/sqlla: *.go
 	go generate
 	go build -o _bin/sqlla -ldflags="-X main.Version=$(VERSION)" cmd/sqlla/main.go
@@ -18,13 +20,17 @@ clean:
 install: _bin/sqlla
 	install _bin/sqlla $(GOPATH)/bin
 
-generate:
+get-deps:
+	export GOBIN=${PWD}/_gobin
+	mkdir -p _gobin
+	go get github.com/rakyll/statik github.com/Songmu/goxz/cmd/goxz github.com/tcnksm/ghr
+
+generate: get-deps
 	go generate
 
 build: clean generate test
-	go generate
 	mkdir -p _artifacts
 	goxz -pv=${VERSION} -d=_artifacts -build-ldflags="-w -s -X main.Version=$(VERSION)" ./cmd/sqlla
 
-release:
+release: get-deps
 	ghr ${VERSION} _artifacts

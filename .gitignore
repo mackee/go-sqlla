@@ -27,3 +27,4 @@ _bin
 .envrc
 vendor/
 _artifacts
+_gobin
