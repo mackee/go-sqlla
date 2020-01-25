@@ -28,7 +28,7 @@ get-deps:
 generate: get-deps
 	go generate
 
-build: clean generate test
+build: clean test
 	mkdir -p _artifacts
 	goxz -pv=${VERSION} -d=_artifacts -build-ldflags="-w -s -X main.Version=$(VERSION)" ./cmd/sqlla
 
