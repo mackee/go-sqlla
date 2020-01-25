@@ -13,5 +13,5 @@ func (u User) DefaultInsertHook(q userInsertSQL) (userInsertSQL, error) {
 
 func (u User) DefaultUpdateHook(q userUpdateSQL) (userUpdateSQL, error) {
 	now := time.Now()
-	return q.SetUpdatedAt(mysql.NullTime{now, true}), nil
+	return q.SetUpdatedAt(mysql.NullTime{Time: now, Valid: true}), nil
 }

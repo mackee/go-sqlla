@@ -6,13 +6,11 @@ _bin/sqlla: *.go
 
 .PHONY: clean install get-deps test build
 
-test:
-	go test -v -race
-	go vet
-
-get-deps:
-	go get github.com/golang/dep/cmd/dep
-	dep ensure
+test: generate
+	go test -v -race ./...
+	cd _example && go test -v -race ./...
+	go vet ./...
+	cd _example && go vet ./...
 
 clean:
 	rm -Rf _bin/* _artifacts/*
@@ -20,7 +18,10 @@ clean:
 install: _bin/sqlla
 	install _bin/sqlla $(GOPATH)/bin
 
-build: clean get-deps test
+generate:
+	go generate
+
+build: clean generate test
 	go generate
 	mkdir -p _artifacts
 	goxz -pv=${VERSION} -d=_artifacts -build-ldflags="-w -s -X main.Version=$(VERSION)" ./cmd/sqlla
