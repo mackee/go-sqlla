@@ -153,7 +153,7 @@ func (q {{ $camelName }}SelectSQL) AllContext(ctx context.Context, db sqlla.DB) 
 func (q {{ $camelName }}SelectSQL) Scan(s sqlla.Scanner) ({{ .StructName }}, error) {
 	var row {{ .StructName }}
 	err := s.Scan(
-		{{ range .Columns }}&row.{{ (index .Names 0).String }},
+		{{ range .Columns }}&row.{{ .FieldName }},
 		{{ end }}
 	)
 	return row, err

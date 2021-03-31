@@ -1,9 +1,8 @@
 package sqlla
 
 import (
+	"go/ast"
 	"io"
-
-	"github.com/favclip/genbase"
 )
 
 type Table struct {
@@ -23,18 +22,15 @@ func (t *Table) AddColumn(c Column) {
 	if c.IsPk {
 		t.PkColumn = &c
 	}
-	switch {
-	case c.TypeName() == "time.Time":
-		t.additionalPackagesMap["time"] = struct{}{}
-	case c.TypeName() == "mysql.NullTime":
-		t.additionalPackagesMap["github.com/go-sql-driver/mysql"] = struct{}{}
+	if c.PkgName != "" {
+		t.additionalPackagesMap[c.PkgName] = struct{}{}
 	}
 	t.Columns = append(t.Columns, c)
 }
 
 func (t *Table) AdditionalPackages() []string {
 	packages := make([]string, 0, len(t.additionalPackagesMap))
-	for pkg, _ := range t.additionalPackagesMap {
+	for pkg := range t.additionalPackagesMap {
 		packages = append(packages, pkg)
 	}
 	return packages
@@ -51,10 +47,13 @@ func (t Table) Render(w io.Writer) error {
 type Columns []Column
 
 type Column struct {
-	*genbase.FieldInfo
-	Name      string
-	TableName string
-	IsPk      bool
+	Field        *ast.Field
+	Name         string
+	TypeName     string
+	PkgName      string
+	BaseTypeName string
+	TableName    string
+	IsPk         bool
 }
 
 func (c Column) String() string {
@@ -62,8 +61,8 @@ func (c Column) String() string {
 }
 
 func (c Column) FieldName() string {
-	if len(c.Names) > 0 {
-		return c.Names[0].Name
+	if len(c.Field.Names) > 0 {
+		return c.Field.Names[0].Name
 	}
 	return ""
 }

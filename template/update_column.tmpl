@@ -12,7 +12,11 @@ func (q {{ $smallTableName }}UpdateSQL) Where{{ .Name | toCamel | Title }}(v {{ 
 		op = exprs[0]
 	}
 
-	where := sqlla.Expr{{ .TypeName | Exprize | Title }}{Value: v, Op: op, Column: "`{{ .Name }}`"}
+{{- if ne .BaseTypeName .TypeName }}
+	where := sqlla.Expr{{ .BaseTypeName | Exprize | Title }}{Value: {{ .BaseTypeName }}(v), Op: op, Column: "`{{ .Name }}`"}
+{{- else }}
+	where := sqlla.Expr{{ .BaseTypeName | Exprize | Title }}{Value: v, Op: op, Column: "`{{ .Name }}`"}
+{{- end }}
 	q.where = append(q.where, where)
 	return q
 }
