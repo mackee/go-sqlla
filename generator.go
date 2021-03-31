@@ -2,36 +2,26 @@ package sqlla
 
 import (
 	"bytes"
+	"embed"
 	"go/format"
 	"io"
-	"io/ioutil"
 	"log"
 	"strings"
 	"text/template"
 	"unicode"
 
-	_ "github.com/mackee/go-sqlla/statik"
 	"github.com/pkg/errors"
 
-	"github.com/rakyll/statik/fs"
 	"github.com/serenize/snaker"
 )
 
-//go:generate statik -src=template -m
+//go:embed template/*
+var templates embed.FS
 
-var templates = []string{
-	"/table.tmpl",
-	"/select.tmpl",
-	"/select_column.tmpl",
-	"/update.tmpl",
-	"/update_column.tmpl",
-	"/insert.tmpl",
-	"/insert_column.tmpl",
-	"/delete.tmpl",
-	"/delete_column.tmpl",
-}
+//go:embed template/table.tmpl
+var tableTmpl []byte
 
-var tmpl = template.New("sqlla")
+var tmpl = template.New("table")
 
 func init() {
 	tmpl = tmpl.Funcs(
@@ -57,27 +47,14 @@ func init() {
 			"toCamel": snaker.SnakeToCamel,
 		},
 	)
-
-	for _, filename := range templates {
-		afs, err := fs.New()
-		if err != nil {
-			log.Fatalf("failed open bundled filesystem: %s", err)
-		}
-
-		af, err := afs.Open(filename)
-		if err != nil {
-			log.Fatalf("failed open bundled templates: %s", err)
-		}
-
-		bs, err := ioutil.ReadAll(af)
-		if err != nil {
-			log.Fatalf("failed read bundled templates: %s", err)
-		}
-
-		tmpl, err = tmpl.Parse(string(bs))
-		if err != nil {
-			log.Fatalf("failed parse bundled templates: %s", err)
-		}
+	var err error
+	tmpl, err = tmpl.ParseFS(templates, "template/*.tmpl")
+	if err != nil {
+		log.Fatal(err)
+	}
+	tmpl, err = tmpl.Parse(string(tableTmpl))
+	if err != nil {
+		log.Fatal(err)
 	}
 }
 
