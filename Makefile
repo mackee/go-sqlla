@@ -1,6 +1,7 @@
 VERSION := $(shell git describe --tags)
 
 export PATH=$(shell echo $$PWD/_gobin):$(shell echo $$PATH)
+export GOBIN=${PWD}/_gobin
 
 _bin/sqlla: *.go
 	go generate
@@ -21,9 +22,10 @@ install: _bin/sqlla
 	install _bin/sqlla $(GOPATH)/bin
 
 get-deps:
-	export GOBIN=${PWD}/_gobin
 	mkdir -p _gobin
-	go get github.com/rakyll/statik github.com/Songmu/goxz/cmd/goxz github.com/tcnksm/ghr
+	go install github.com/Songmu/goxz/cmd/goxz@latest
+	go install github.com/tcnksm/ghr@latest
+	go install github.com/mackee/go-genddl/cmd/genddl@latest
 
 generate: get-deps
 	go generate
