@@ -11,6 +11,7 @@ import (
 	"unicode"
 
 	_ "github.com/mackee/go-sqlla/statik"
+	"github.com/pkg/errors"
 
 	"github.com/rakyll/statik/fs"
 	"github.com/serenize/snaker"
@@ -84,11 +85,11 @@ func WriteCode(w io.Writer, table *Table) error {
 	buf := new(bytes.Buffer)
 	err := tmpl.Execute(buf, table)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "fail to render")
 	}
 	bs, err := format.Source(buf.Bytes())
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "fail to format")
 	}
 	_, err = w.Write(bs)
 	return err
