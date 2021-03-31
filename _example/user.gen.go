@@ -76,7 +76,6 @@ func (q userSelectSQL) ID(v uint64, exprs ...sqlla.Operator) userSelectSQL {
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
@@ -111,7 +110,6 @@ func (q userSelectSQL) Name(v string, exprs ...sqlla.Operator) userSelectSQL {
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprString{Value: v, Op: op, Column: "`name`"}
 	q.where = append(q.where, where)
 	return q
@@ -141,7 +139,6 @@ func (q userSelectSQL) Age(v sql.NullInt64, exprs ...sqlla.Operator) userSelectS
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprNullInt64{Value: v, Op: op, Column: "`age`"}
 	q.where = append(q.where, where)
 	return q
@@ -171,7 +168,6 @@ func (q userSelectSQL) Rate(v float64, exprs ...sqlla.Operator) userSelectSQL {
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprFloat64{Value: v, Op: op, Column: "`rate`"}
 	q.where = append(q.where, where)
 	return q
@@ -201,7 +197,6 @@ func (q userSelectSQL) CreatedAt(v time.Time, exprs ...sqlla.Operator) userSelec
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprTime{Value: v, Op: op, Column: "`created_at`"}
 	q.where = append(q.where, where)
 	return q
@@ -231,7 +226,6 @@ func (q userSelectSQL) UpdatedAt(v mysql.NullTime, exprs ...sqlla.Operator) user
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprNullTime{Value: v, Op: op, Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
@@ -389,7 +383,6 @@ func (q userUpdateSQL) WhereID(v uint64, exprs ...sqlla.Operator) userUpdateSQL 
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
@@ -407,7 +400,6 @@ func (q userUpdateSQL) WhereName(v string, exprs ...sqlla.Operator) userUpdateSQ
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprString{Value: v, Op: op, Column: "`name`"}
 	q.where = append(q.where, where)
 	return q
@@ -425,7 +417,6 @@ func (q userUpdateSQL) WhereAge(v sql.NullInt64, exprs ...sqlla.Operator) userUp
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprNullInt64{Value: v, Op: op, Column: "`age`"}
 	q.where = append(q.where, where)
 	return q
@@ -443,7 +434,6 @@ func (q userUpdateSQL) WhereRate(v float64, exprs ...sqlla.Operator) userUpdateS
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprFloat64{Value: v, Op: op, Column: "`rate`"}
 	q.where = append(q.where, where)
 	return q
@@ -461,7 +451,6 @@ func (q userUpdateSQL) WhereCreatedAt(v time.Time, exprs ...sqlla.Operator) user
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprTime{Value: v, Op: op, Column: "`created_at`"}
 	q.where = append(q.where, where)
 	return q
@@ -479,7 +468,6 @@ func (q userUpdateSQL) WhereUpdatedAt(v mysql.NullTime, exprs ...sqlla.Operator)
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprNullTime{Value: v, Op: op, Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
@@ -661,7 +649,6 @@ func (q userDeleteSQL) ID(v uint64, exprs ...sqlla.Operator) userDeleteSQL {
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
@@ -680,7 +667,6 @@ func (q userDeleteSQL) Name(v string, exprs ...sqlla.Operator) userDeleteSQL {
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprString{Value: v, Op: op, Column: "`name`"}
 	q.where = append(q.where, where)
 	return q
@@ -699,7 +685,6 @@ func (q userDeleteSQL) Age(v sql.NullInt64, exprs ...sqlla.Operator) userDeleteS
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprNullInt64{Value: v, Op: op, Column: "`age`"}
 	q.where = append(q.where, where)
 	return q
@@ -718,7 +703,6 @@ func (q userDeleteSQL) Rate(v float64, exprs ...sqlla.Operator) userDeleteSQL {
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprFloat64{Value: v, Op: op, Column: "`rate`"}
 	q.where = append(q.where, where)
 	return q
@@ -737,7 +721,6 @@ func (q userDeleteSQL) CreatedAt(v time.Time, exprs ...sqlla.Operator) userDelet
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprTime{Value: v, Op: op, Column: "`created_at`"}
 	q.where = append(q.where, where)
 	return q
@@ -756,7 +739,6 @@ func (q userDeleteSQL) UpdatedAt(v mysql.NullTime, exprs ...sqlla.Operator) user
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprNullTime{Value: v, Op: op, Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q

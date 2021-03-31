@@ -118,6 +118,7 @@ func toTable(pkgName string, annotationComment string, gd *ast.GenDecl, ti *type
 		if ok {
 			pkgName = nt.Obj().Pkg().Path()
 			typeName = strings.Join([]string{nt.Obj().Pkg().Name(), nt.Obj().Name()}, ".")
+			baseTypeName = typeName
 			if _, ok := supportedNonPrimitiveTypes[typeName]; !ok {
 				bt := nt.Underlying()
 				for _, ok := bt.Underlying().(*types.Named); ok; bt = bt.Underlying() {

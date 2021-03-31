@@ -75,7 +75,6 @@ func (q userItemSelectSQL) ID(v uint64, exprs ...sqlla.Operator) userItemSelectS
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
@@ -110,7 +109,6 @@ func (q userItemSelectSQL) UserID(v uint64, exprs ...sqlla.Operator) userItemSel
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`user_id`"}
 	q.where = append(q.where, where)
 	return q
@@ -140,7 +138,6 @@ func (q userItemSelectSQL) ItemID(v string, exprs ...sqlla.Operator) userItemSel
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprString{Value: v, Op: op, Column: "`item_id`"}
 	q.where = append(q.where, where)
 	return q
@@ -170,7 +167,6 @@ func (q userItemSelectSQL) IsUsed(v bool, exprs ...sqlla.Operator) userItemSelec
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprBool{Value: v, Op: op, Column: "`is_used`"}
 	q.where = append(q.where, where)
 	return q
@@ -200,7 +196,6 @@ func (q userItemSelectSQL) HasExtension(v sql.NullBool, exprs ...sqlla.Operator)
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprNullBool{Value: v, Op: op, Column: "`has_extension`"}
 	q.where = append(q.where, where)
 	return q
@@ -230,7 +225,6 @@ func (q userItemSelectSQL) UsedAt(v mysql.NullTime, exprs ...sqlla.Operator) use
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprNullTime{Value: v, Op: op, Column: "`used_at`"}
 	q.where = append(q.where, where)
 	return q
@@ -388,7 +382,6 @@ func (q userItemUpdateSQL) WhereID(v uint64, exprs ...sqlla.Operator) userItemUp
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
@@ -406,7 +399,6 @@ func (q userItemUpdateSQL) WhereUserID(v uint64, exprs ...sqlla.Operator) userIt
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`user_id`"}
 	q.where = append(q.where, where)
 	return q
@@ -424,7 +416,6 @@ func (q userItemUpdateSQL) WhereItemID(v string, exprs ...sqlla.Operator) userIt
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprString{Value: v, Op: op, Column: "`item_id`"}
 	q.where = append(q.where, where)
 	return q
@@ -442,7 +433,6 @@ func (q userItemUpdateSQL) WhereIsUsed(v bool, exprs ...sqlla.Operator) userItem
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprBool{Value: v, Op: op, Column: "`is_used`"}
 	q.where = append(q.where, where)
 	return q
@@ -460,7 +450,6 @@ func (q userItemUpdateSQL) WhereHasExtension(v sql.NullBool, exprs ...sqlla.Oper
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprNullBool{Value: v, Op: op, Column: "`has_extension`"}
 	q.where = append(q.where, where)
 	return q
@@ -478,7 +467,6 @@ func (q userItemUpdateSQL) WhereUsedAt(v mysql.NullTime, exprs ...sqlla.Operator
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprNullTime{Value: v, Op: op, Column: "`used_at`"}
 	q.where = append(q.where, where)
 	return q
@@ -660,7 +648,6 @@ func (q userItemDeleteSQL) ID(v uint64, exprs ...sqlla.Operator) userItemDeleteS
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
@@ -679,7 +666,6 @@ func (q userItemDeleteSQL) UserID(v uint64, exprs ...sqlla.Operator) userItemDel
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`user_id`"}
 	q.where = append(q.where, where)
 	return q
@@ -698,7 +684,6 @@ func (q userItemDeleteSQL) ItemID(v string, exprs ...sqlla.Operator) userItemDel
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprString{Value: v, Op: op, Column: "`item_id`"}
 	q.where = append(q.where, where)
 	return q
@@ -717,7 +702,6 @@ func (q userItemDeleteSQL) IsUsed(v bool, exprs ...sqlla.Operator) userItemDelet
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprBool{Value: v, Op: op, Column: "`is_used`"}
 	q.where = append(q.where, where)
 	return q
@@ -736,7 +720,6 @@ func (q userItemDeleteSQL) HasExtension(v sql.NullBool, exprs ...sqlla.Operator)
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprNullBool{Value: v, Op: op, Column: "`has_extension`"}
 	q.where = append(q.where, where)
 	return q
@@ -755,7 +738,6 @@ func (q userItemDeleteSQL) UsedAt(v mysql.NullTime, exprs ...sqlla.Operator) use
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprNullTime{Value: v, Op: op, Column: "`used_at`"}
 	q.where = append(q.where, where)
 	return q
