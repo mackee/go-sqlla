@@ -70,26 +70,30 @@ func (q userSelectSQL) ForUpdate() userSelectSQL {
 	return q
 }
 
-func (q userSelectSQL) ID(v uint64, exprs ...sqlla.Operator) userSelectSQL {
+func (q userSelectSQL) ID(v UserId, exprs ...sqlla.Operator) userSelectSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
 		op = sqlla.OpEqual
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`id`"}
+	where := sqlla.ExprUint64{Value: uint64(v), Op: op, Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-func (q userSelectSQL) IDIn(vs ...uint64) userSelectSQL {
-	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`id`"}
+func (q userSelectSQL) IDIn(vs ...UserId) userSelectSQL {
+	_vs := make([]uint64, 0, len(vs))
+	for _, v := range vs {
+		_vs = append(_vs, uint64(v))
+	}
+	where := sqlla.ExprMultiUint64{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) PkColumn(pk int64, exprs ...sqlla.Operator) userSelectSQL {
-	v := uint64(pk)
+	v := UserId(pk)
 	return q.ID(v, exprs...)
 }
 
@@ -372,19 +376,19 @@ func (q userSQL) Update() userUpdateSQL {
 	}
 }
 
-func (q userUpdateSQL) SetID(v uint64) userUpdateSQL {
+func (q userUpdateSQL) SetID(v UserId) userUpdateSQL {
 	q.setMap["`id`"] = v
 	return q
 }
 
-func (q userUpdateSQL) WhereID(v uint64, exprs ...sqlla.Operator) userUpdateSQL {
+func (q userUpdateSQL) WhereID(v UserId, exprs ...sqlla.Operator) userUpdateSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
 		op = sqlla.OpEqual
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`id`"}
+	where := sqlla.ExprUint64{Value: uint64(v), Op: op, Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -548,7 +552,7 @@ func (q userSQL) Insert() userInsertSQL {
 	}
 }
 
-func (q userInsertSQL) ValueID(v uint64) userInsertSQL {
+func (q userInsertSQL) ValueID(v UserId) userInsertSQL {
 	q.setMap["`id`"] = v
 	return q
 }
@@ -643,20 +647,24 @@ func (q userSQL) Delete() userDeleteSQL {
 	}
 }
 
-func (q userDeleteSQL) ID(v uint64, exprs ...sqlla.Operator) userDeleteSQL {
+func (q userDeleteSQL) ID(v UserId, exprs ...sqlla.Operator) userDeleteSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
 		op = sqlla.OpEqual
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`id`"}
+	where := sqlla.ExprUint64{Value: uint64(v), Op: op, Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-func (q userDeleteSQL) IDIn(vs ...uint64) userDeleteSQL {
-	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`id`"}
+func (q userDeleteSQL) IDIn(vs ...UserId) userDeleteSQL {
+	_vs := make([]uint64, 0, len(vs))
+	for _, v := range vs {
+		_vs = append(_vs, uint64(v))
+	}
+	where := sqlla.ExprMultiUint64{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
 }

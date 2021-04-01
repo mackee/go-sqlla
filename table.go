@@ -2,10 +2,12 @@ package sqlla
 
 import (
 	"go/ast"
+	"go/types"
 	"io"
 )
 
 type Table struct {
+	Package               *types.Package
 	PackageName           string
 	StructName            string
 	Name                  string
@@ -23,7 +25,9 @@ func (t *Table) AddColumn(c Column) {
 		t.PkColumn = &c
 	}
 	if c.PkgName != "" {
-		t.additionalPackagesMap[c.PkgName] = struct{}{}
+		if t.Package.Path() != c.PkgName {
+			t.additionalPackagesMap[c.PkgName] = struct{}{}
+		}
 	}
 	t.Columns = append(t.Columns, c)
 }

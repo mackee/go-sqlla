@@ -73,7 +73,7 @@ func TestSelect__NullInt64(t *testing.T) {
 }
 
 func TestSelect__ForUpdate(t *testing.T) {
-	q := NewUserSQL().Select().ID(uint64(1)).ForUpdate()
+	q := NewUserSQL().Select().ID(UserId(1)).ForUpdate()
 	query, args, err := q.ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
@@ -88,8 +88,8 @@ func TestSelect__ForUpdate(t *testing.T) {
 
 func TestSelect__Or(t *testing.T) {
 	q := NewUserSQL().Select().Or(
-		NewUserSQL().Select().ID(uint64(1)),
-		NewUserSQL().Select().ID(uint64(2)),
+		NewUserSQL().Select().ID(UserId(1)),
+		NewUserSQL().Select().ID(UserId(2)),
 	)
 	query, args, err := q.ToSql()
 	if err != nil {
@@ -127,7 +127,7 @@ func TestSelect__OrNull(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	q := NewUserSQL().Update().SetName("barbar").WhereID(uint64(1))
+	q := NewUserSQL().Update().SetName("barbar").WhereID(UserId(1))
 	query, args, err := q.ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
@@ -264,7 +264,7 @@ func TestCRUD__WithSqlite3(t *testing.T) {
 		t.Error("empty id:", id)
 	}
 
-	query, args, err = NewUserSQL().Select().IDIn(uint64(1)).ToSql()
+	query, args, err = NewUserSQL().Select().IDIn(UserId(1)).ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
@@ -286,7 +286,7 @@ func TestCRUD__WithSqlite3(t *testing.T) {
 		t.Error("unmatched id:", rescanID)
 	}
 
-	query, args, err = NewUserSQL().Update().WhereID(id).SetName("barbar").ToSql()
+	query, args, err = NewUserSQL().Update().WhereID(UserId(id)).SetName("barbar").ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
@@ -318,7 +318,7 @@ func TestORM__WithSqlite3(t *testing.T) {
 	if err != nil {
 		t.Error("cannot insert row error:", err)
 	}
-	if insertedRow.Id == uint64(0) {
+	if insertedRow.Id == UserId(0) {
 		t.Error("empty id:", insertedRow.Id)
 	}
 	if insertedRow.Name != "hogehoge" {
@@ -329,7 +329,7 @@ func TestORM__WithSqlite3(t *testing.T) {
 	if err != nil {
 		t.Error("cannot select row error:", err)
 	}
-	if singleRow.Id == uint64(0) {
+	if singleRow.Id == UserId(0) {
 		t.Error("empty id:", singleRow.Id)
 	}
 	if singleRow.Name != "hogehoge" {
@@ -347,7 +347,7 @@ func TestORM__WithSqlite3(t *testing.T) {
 	}
 
 	for _, row := range rows {
-		if row.Id == uint64(0) {
+		if row.Id == UserId(0) {
 			t.Error("empty id:", row.Id)
 		}
 		if row.Name != "hogehoge" && row.Name != "fugafuga" {

@@ -53,7 +53,7 @@ func Run(from, ext string) {
 				if !hasAnnotation {
 					continue
 				}
-				table, err := toTable(pkg.Types.Name(), annotationComment, genDecl, pkg.TypesInfo)
+				table, err := toTable(pkg.Types, annotationComment, genDecl, pkg.TypesInfo)
 				if err != nil {
 					panic(err)
 				}
@@ -79,9 +79,10 @@ var supportedNonPrimitiveTypes = map[string]struct{}{
 	"sql.NullBool":    {},
 }
 
-func toTable(pkgName string, annotationComment string, gd *ast.GenDecl, ti *types.Info) (*Table, error) {
+func toTable(tablePkg *types.Package, annotationComment string, gd *ast.GenDecl, ti *types.Info) (*Table, error) {
 	table := new(Table)
-	table.PackageName = pkgName
+	table.Package = tablePkg
+	table.PackageName = tablePkg.Name()
 
 	tableName := strings.TrimPrefix(annotationComment, "//+table: ")
 	table.Name = tableName
@@ -117,7 +118,11 @@ func toTable(pkgName string, annotationComment string, gd *ast.GenDecl, ti *type
 		nt, ok := t.(*types.Named)
 		if ok {
 			pkgName = nt.Obj().Pkg().Path()
-			typeName = strings.Join([]string{nt.Obj().Pkg().Name(), nt.Obj().Name()}, ".")
+			if tablePkg.Path() != pkgName {
+				typeName = strings.Join([]string{nt.Obj().Pkg().Name(), nt.Obj().Name()}, ".")
+			} else {
+				typeName = nt.Obj().Name()
+			}
 			baseTypeName = typeName
 			if _, ok := supportedNonPrimitiveTypes[typeName]; !ok {
 				bt := nt.Underlying()
