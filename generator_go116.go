@@ -3,12 +3,16 @@
 package sqlla
 
 import (
+	"bytes"
 	"embed"
+	"go/format"
+	"io"
 	"log"
 	"strings"
 	"text/template"
 	"unicode"
 
+	"github.com/pkg/errors"
 	"github.com/serenize/snaker"
 )
 
@@ -17,6 +21,8 @@ var templates embed.FS
 
 //go:embed template/table.tmpl
 var tableTmpl []byte
+
+var tmpl = template.New("table")
 
 func init() {
 	tmpl = tmpl.Funcs(
@@ -51,4 +57,18 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func WriteCode(w io.Writer, table *Table) error {
+	buf := new(bytes.Buffer)
+	err := tmpl.Execute(buf, table)
+	if err != nil {
+		return errors.Wrapf(err, "fail to render")
+	}
+	bs, err := format.Source(buf.Bytes())
+	if err != nil {
+		return errors.Wrapf(err, "fail to format")
+	}
+	_, err = w.Write(bs)
+	return err
 }
