@@ -1,4 +1,4 @@
-module github.com/mackee/go-sqlla
+module github.com/mackee/go-sqlla/v2
 
 go 1.16
 
