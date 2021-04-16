@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/go-sql-driver/mysql"
-	"github.com/mackee/go-sqlla"
+	"github.com/mackee/go-sqlla/v2"
 	_ "github.com/mattn/go-sqlite3"
 )
 

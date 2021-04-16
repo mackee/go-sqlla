@@ -6,7 +6,7 @@ Type safe, reflect free, generative SQL Builder
 ## INSTALL
 
 ```
-$ go get github.com/mackee/go-sqlla/cmd/sqlla
+$ go get github.com/mackee/go-sqlla/v2/cmd/sqlla@latest
 ```
 
 ## SYNOPSIS

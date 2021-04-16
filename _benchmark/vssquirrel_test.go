@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	sq "github.com/lann/squirrel"
-	"github.com/mackee/go-sqlla/_example"
 )
 
 func BenchmarkSelect__Squirrel(b *testing.B) {

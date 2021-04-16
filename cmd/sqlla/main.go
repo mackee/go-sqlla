@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/mackee/go-sqlla"
+	"github.com/mackee/go-sqlla/v2"
 )
 
 var Version string

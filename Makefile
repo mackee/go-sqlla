@@ -28,7 +28,7 @@ get-deps:
 	go install github.com/mackee/go-genddl/cmd/genddl@latest
 
 generate: get-deps
-	go generate
+	go generate ./...
 
 build: clean test
 	mkdir -p _artifacts
