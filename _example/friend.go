@@ -16,9 +16,9 @@ type Friend struct {
 // FriendWithUsers is management friend with users
 //+sqlla: join
 type FriendWithUsers struct {
-	Friend Friend
-	User1  User
-	User2  User
+	Friend Friend `sqlla:"table=friend"`
+	User1  User   `sqlla:"table=user"`
+	User2  User   `sqlla:"table=user"`
 }
 
 func (uf FriendWithUsers) _innerJoin(methods sqlla.JoinMethods) []sqlla.JoinCondition {

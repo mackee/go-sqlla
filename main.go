@@ -41,30 +41,55 @@ func Run(from, ext string) {
 				if genDecl.Doc == nil {
 					continue
 				}
-				var hasAnnotation bool
+				var hasTableDefinition, hasJoinDefinition bool
 				var annotationComment string
 				for _, comment := range genDecl.Doc.List {
 					if strings.HasPrefix(comment.Text, "//+table:") {
-						hasAnnotation = true
+						hasTableDefinition = true
 						annotationComment = comment.Text
 						break
 					}
+					if strings.HasPrefix(comment.Text, "//+sqlla: join") {
+						hasJoinDefinition = true
+					}
 				}
-				if !hasAnnotation {
+				if !hasTableDefinition && !hasJoinDefinition {
 					continue
 				}
-				table, err := toTable(pkg.Types, annotationComment, genDecl, pkg.TypesInfo)
+				if hasTableDefinition {
+					table, err := toTable(pkg.Types, annotationComment, genDecl, pkg.TypesInfo)
+					if err != nil {
+						panic(err)
+					}
+					filename := filepath.Join(dir, table.Name+ext)
+					f, err := os.Create(filename)
+					if err != nil {
+						panic(err)
+					}
+					if err := WriteCode(f, table); err != nil {
+						panic(err)
+					}
+					continue
+				}
+				joinDef, err := toJoinDefinition(toJoinDefinitionOpts{
+					defPkg:            pkg.Types,
+					annotationComment: annotationComment,
+					gd:                genDecl,
+					ti:                pkg.TypesInfo,
+				})
 				if err != nil {
 					panic(err)
 				}
-				filename := filepath.Join(dir, table.Name+ext)
+				filename := filepath.Join(dir, joinDef.Name+ext)
 				f, err := os.Create(filename)
 				if err != nil {
 					panic(err)
 				}
-				if err := WriteCode(f, table); err != nil {
+				if err := WriteCodeJoin(f, joinDef); err != nil {
 					panic(err)
 				}
+				continue
+
 			}
 		}
 	}

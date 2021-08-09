@@ -72,3 +72,7 @@ func WriteCode(w io.Writer, table *Table) error {
 	_, err = w.Write(bs)
 	return err
 }
+
+func WriteCodeJoin(w io.Writer, joinDef *JoinDefinition) error {
+	return nil
+}

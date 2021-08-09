@@ -7,8 +7,8 @@ import (
 // UserAndTeam is User and Team
 //+sqlla: join
 type UserAndTeam struct {
-	User User `sqlla:"join"`
-	Team Team `sqlla:"join"`
+	User User `sqlla:"table=user"`
+	Team Team `sqlla:"table=team"`
 }
 
 func (ut UserAndTeam) _innerJoin(methods sqlla.JoinMethods) []sqlla.JoinCondition {
