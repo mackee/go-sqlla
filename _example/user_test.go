@@ -152,6 +152,37 @@ func TestUpdate(t *testing.T) {
 	}
 }
 
+func TestUpdate__InOperator(t *testing.T) {
+	q := NewUserSQL().Update().SetRate(42).WhereIDIn(UserId(1), UserId(2), UserId(3))
+	query, args, err := q.ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	switch query {
+	case "UPDATE user SET `rate` = ?, `updated_at` = ? WHERE `id` IN(?,?,?);":
+		if !reflect.DeepEqual(args[0], float64(42)) {
+			t.Errorf("unexpected args: %+v", args[0])
+		}
+		for i, v := range []uint64{1, 2, 3} {
+			if !reflect.DeepEqual(args[2+i], v) {
+				t.Errorf("unexpected args: i=%d, %+v", i, args[2:])
+			}
+		}
+	case "UPDATE user SET `updated_at` = ?, `rate` = ? WHERE `id` IN(?,?,?);":
+		if !reflect.DeepEqual(args[1], float64(42)) {
+			t.Errorf("unexpected args: %+v", args[1])
+		}
+		for i, v := range []uint64{1, 2, 3} {
+			if !reflect.DeepEqual(args[2+i], v) {
+				t.Errorf("unexpected args: i=%d, %+v", i, args[2:])
+			}
+		}
+	default:
+		t.Error("unexpected query:", query)
+	}
+
+}
+
 func TestInsert(t *testing.T) {
 	q := NewUserSQL().Insert().ValueName("hogehoge")
 	query, args, err := q.ToSql()

@@ -393,6 +393,16 @@ func (q userUpdateSQL) WhereID(v UserId, exprs ...sqlla.Operator) userUpdateSQL 
 	return q
 }
 
+func (q userUpdateSQL) WhereIDIn(vs ...UserId) userUpdateSQL {
+	_vs := make([]uint64, 0, len(vs))
+	for _, v := range vs {
+		_vs = append(_vs, uint64(v))
+	}
+	where := sqlla.ExprMultiUint64{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`id`"}
+	q.where = append(q.where, where)
+	return q
+}
+
 func (q userUpdateSQL) SetName(v string) userUpdateSQL {
 	q.setMap["`name`"] = v
 	return q
@@ -406,6 +416,12 @@ func (q userUpdateSQL) WhereName(v string, exprs ...sqlla.Operator) userUpdateSQ
 		op = exprs[0]
 	}
 	where := sqlla.ExprString{Value: v, Op: op, Column: "`name`"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userUpdateSQL) WhereNameIn(vs ...string) userUpdateSQL {
+	where := sqlla.ExprMultiString{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`name`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -427,6 +443,12 @@ func (q userUpdateSQL) WhereAge(v sql.NullInt64, exprs ...sqlla.Operator) userUp
 	return q
 }
 
+func (q userUpdateSQL) WhereAgeIn(vs ...sql.NullInt64) userUpdateSQL {
+	where := sqlla.ExprMultiNullInt64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`age`"}
+	q.where = append(q.where, where)
+	return q
+}
+
 func (q userUpdateSQL) SetRate(v float64) userUpdateSQL {
 	q.setMap["`rate`"] = v
 	return q
@@ -440,6 +462,12 @@ func (q userUpdateSQL) WhereRate(v float64, exprs ...sqlla.Operator) userUpdateS
 		op = exprs[0]
 	}
 	where := sqlla.ExprFloat64{Value: v, Op: op, Column: "`rate`"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userUpdateSQL) WhereRateIn(vs ...float64) userUpdateSQL {
+	where := sqlla.ExprMultiFloat64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`rate`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -461,6 +489,12 @@ func (q userUpdateSQL) WhereCreatedAt(v time.Time, exprs ...sqlla.Operator) user
 	return q
 }
 
+func (q userUpdateSQL) WhereCreatedAtIn(vs ...time.Time) userUpdateSQL {
+	where := sqlla.ExprMultiTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`created_at`"}
+	q.where = append(q.where, where)
+	return q
+}
+
 func (q userUpdateSQL) SetUpdatedAt(v mysql.NullTime) userUpdateSQL {
 	q.setMap["`updated_at`"] = v
 	return q
@@ -474,6 +508,12 @@ func (q userUpdateSQL) WhereUpdatedAt(v mysql.NullTime, exprs ...sqlla.Operator)
 		op = exprs[0]
 	}
 	where := sqlla.ExprNullTime{Value: v, Op: op, Column: "`updated_at`"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userUpdateSQL) WhereUpdatedAtIn(vs ...mysql.NullTime) userUpdateSQL {
+	where := sqlla.ExprMultiNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }

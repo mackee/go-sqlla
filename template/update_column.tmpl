@@ -21,4 +21,17 @@ func (q {{ $smallTableName }}UpdateSQL) Where{{ .Name | toCamel | Title }}(v {{ 
 	return q
 }
 
+func (q {{ $smallTableName }}UpdateSQL) Where{{ .Name | toCamel | Title }}In(vs ...{{ .TypeName }}) {{ $smallTableName }}UpdateSQL {
+{{- if ne .BaseTypeName .TypeName }}
+	_vs := make([]{{ .BaseTypeName }}, 0, len(vs))
+	for _, v := range vs {
+		_vs = append(_vs, {{ .BaseTypeName }}(v))
+	}
+	where := sqlla.ExprMulti{{ .BaseTypeName | Exprize | Title }}{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`{{ .Name }}`"}
+{{- else }}
+	where := sqlla.ExprMulti{{ .BaseTypeName | Exprize | Title }}{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`{{ .Name }}`"}
+{{- end }}
+	q.where = append(q.where, where)
+	return q
+}
 {{ end }}
