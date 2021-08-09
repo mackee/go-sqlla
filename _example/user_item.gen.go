@@ -388,6 +388,12 @@ func (q userItemUpdateSQL) WhereID(v uint64, exprs ...sqlla.Operator) userItemUp
 	return q
 }
 
+func (q userItemUpdateSQL) WhereIDIn(vs ...uint64) userItemUpdateSQL {
+	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`id`"}
+	q.where = append(q.where, where)
+	return q
+}
+
 func (q userItemUpdateSQL) SetUserID(v uint64) userItemUpdateSQL {
 	q.setMap["`user_id`"] = v
 	return q
@@ -401,6 +407,12 @@ func (q userItemUpdateSQL) WhereUserID(v uint64, exprs ...sqlla.Operator) userIt
 		op = exprs[0]
 	}
 	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`user_id`"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userItemUpdateSQL) WhereUserIDIn(vs ...uint64) userItemUpdateSQL {
+	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`user_id`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -422,6 +434,12 @@ func (q userItemUpdateSQL) WhereItemID(v string, exprs ...sqlla.Operator) userIt
 	return q
 }
 
+func (q userItemUpdateSQL) WhereItemIDIn(vs ...string) userItemUpdateSQL {
+	where := sqlla.ExprMultiString{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`item_id`"}
+	q.where = append(q.where, where)
+	return q
+}
+
 func (q userItemUpdateSQL) SetIsUsed(v bool) userItemUpdateSQL {
 	q.setMap["`is_used`"] = v
 	return q
@@ -435,6 +453,12 @@ func (q userItemUpdateSQL) WhereIsUsed(v bool, exprs ...sqlla.Operator) userItem
 		op = exprs[0]
 	}
 	where := sqlla.ExprBool{Value: v, Op: op, Column: "`is_used`"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userItemUpdateSQL) WhereIsUsedIn(vs ...bool) userItemUpdateSQL {
+	where := sqlla.ExprMultiBool{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`is_used`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -456,6 +480,12 @@ func (q userItemUpdateSQL) WhereHasExtension(v sql.NullBool, exprs ...sqlla.Oper
 	return q
 }
 
+func (q userItemUpdateSQL) WhereHasExtensionIn(vs ...sql.NullBool) userItemUpdateSQL {
+	where := sqlla.ExprMultiNullBool{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`has_extension`"}
+	q.where = append(q.where, where)
+	return q
+}
+
 func (q userItemUpdateSQL) SetUsedAt(v mysql.NullTime) userItemUpdateSQL {
 	q.setMap["`used_at`"] = v
 	return q
@@ -469,6 +499,12 @@ func (q userItemUpdateSQL) WhereUsedAt(v mysql.NullTime, exprs ...sqlla.Operator
 		op = exprs[0]
 	}
 	where := sqlla.ExprNullTime{Value: v, Op: op, Column: "`used_at`"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userItemUpdateSQL) WhereUsedAtIn(vs ...mysql.NullTime) userItemUpdateSQL {
+	where := sqlla.ExprMultiNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`used_at`"}
 	q.where = append(q.where, where)
 	return q
 }
