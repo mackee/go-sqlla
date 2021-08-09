@@ -23,7 +23,7 @@ func NewUserSQL() userSQL {
 }
 
 var userAllColumns = []string{
-	"`id`", "`name`", "`age`", "`rate`", "`created_at`", "`updated_at`",
+	"`id`", "`name`", "`age`", "`rate`", "`team_id`", "`created_at`", "`updated_at`",
 }
 
 type userSelectSQL struct {
@@ -70,7 +70,7 @@ func (q userSelectSQL) ForUpdate() userSelectSQL {
 	return q
 }
 
-func (q userSelectSQL) ID(v UserId, exprs ...sqlla.Operator) userSelectSQL {
+func (q userSelectSQL) ID(v UserID, exprs ...sqlla.Operator) userSelectSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
 		op = sqlla.OpEqual
@@ -82,7 +82,7 @@ func (q userSelectSQL) ID(v UserId, exprs ...sqlla.Operator) userSelectSQL {
 	return q
 }
 
-func (q userSelectSQL) IDIn(vs ...UserId) userSelectSQL {
+func (q userSelectSQL) IDIn(vs ...UserID) userSelectSQL {
 	_vs := make([]uint64, 0, len(vs))
 	for _, v := range vs {
 		_vs = append(_vs, uint64(v))
@@ -93,7 +93,7 @@ func (q userSelectSQL) IDIn(vs ...UserId) userSelectSQL {
 }
 
 func (q userSelectSQL) PkColumn(pk int64, exprs ...sqlla.Operator) userSelectSQL {
-	v := UserId(pk)
+	v := UserID(pk)
 	return q.ID(v, exprs...)
 }
 
@@ -195,6 +195,39 @@ func (q userSelectSQL) OrderByRate(order sqlla.Order) userSelectSQL {
 	return q
 }
 
+func (q userSelectSQL) TeamID(v TeamID, exprs ...sqlla.Operator) userSelectSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+	where := sqlla.ExprInt64{Value: int64(v), Op: op, Column: "`team_id`"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userSelectSQL) TeamIDIn(vs ...TeamID) userSelectSQL {
+	_vs := make([]int64, 0, len(vs))
+	for _, v := range vs {
+		_vs = append(_vs, int64(v))
+	}
+	where := sqlla.ExprMultiInt64{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`team_id`"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userSelectSQL) OrderByTeamID(order sqlla.Order) userSelectSQL {
+	q.order = " ORDER BY `team_id`"
+	if order == sqlla.Asc {
+		q.order += " ASC"
+	} else {
+		q.order += " DESC"
+	}
+
+	return q
+}
+
 func (q userSelectSQL) CreatedAt(v time.Time, exprs ...sqlla.Operator) userSelectSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
@@ -280,7 +313,7 @@ func (q userSelectSQL) ToSql() (string, []interface{}, error) {
 }
 
 func (s User) Select() userSelectSQL {
-	return NewUserSQL().Select().ID(s.Id)
+	return NewUserSQL().Select().ID(s.ID)
 }
 func (q userSelectSQL) Single(db sqlla.DB) (User, error) {
 	q.Columns = userAllColumns
@@ -353,10 +386,11 @@ func (q userSelectSQL) AllContext(ctx context.Context, db sqlla.DB) ([]User, err
 func (q userSelectSQL) Scan(s sqlla.Scanner) (User, error) {
 	var row User
 	err := s.Scan(
-		&row.Id,
+		&row.ID,
 		&row.Name,
 		&row.Age,
 		&row.Rate,
+		&row.TeamID,
 		&row.CreatedAt,
 		&row.UpdatedAt,
 	)
@@ -376,12 +410,12 @@ func (q userSQL) Update() userUpdateSQL {
 	}
 }
 
-func (q userUpdateSQL) SetID(v UserId) userUpdateSQL {
+func (q userUpdateSQL) SetID(v UserID) userUpdateSQL {
 	q.setMap["`id`"] = v
 	return q
 }
 
-func (q userUpdateSQL) WhereID(v UserId, exprs ...sqlla.Operator) userUpdateSQL {
+func (q userUpdateSQL) WhereID(v UserID, exprs ...sqlla.Operator) userUpdateSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
 		op = sqlla.OpEqual
@@ -393,7 +427,7 @@ func (q userUpdateSQL) WhereID(v UserId, exprs ...sqlla.Operator) userUpdateSQL 
 	return q
 }
 
-func (q userUpdateSQL) WhereIDIn(vs ...UserId) userUpdateSQL {
+func (q userUpdateSQL) WhereIDIn(vs ...UserID) userUpdateSQL {
 	_vs := make([]uint64, 0, len(vs))
 	for _, v := range vs {
 		_vs = append(_vs, uint64(v))
@@ -472,6 +506,33 @@ func (q userUpdateSQL) WhereRateIn(vs ...float64) userUpdateSQL {
 	return q
 }
 
+func (q userUpdateSQL) SetTeamID(v TeamID) userUpdateSQL {
+	q.setMap["`team_id`"] = v
+	return q
+}
+
+func (q userUpdateSQL) WhereTeamID(v TeamID, exprs ...sqlla.Operator) userUpdateSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+	where := sqlla.ExprInt64{Value: int64(v), Op: op, Column: "`team_id`"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userUpdateSQL) WhereTeamIDIn(vs ...TeamID) userUpdateSQL {
+	_vs := make([]int64, 0, len(vs))
+	for _, v := range vs {
+		_vs = append(_vs, int64(v))
+	}
+	where := sqlla.ExprMultiInt64{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`team_id`"}
+	q.where = append(q.where, where)
+	return q
+}
+
 func (q userUpdateSQL) SetCreatedAt(v time.Time) userUpdateSQL {
 	q.setMap["`created_at`"] = v
 	return q
@@ -544,7 +605,7 @@ func (q userUpdateSQL) ToSql() (string, []interface{}, error) {
 	return query + ";", append(svs, wvs...), nil
 }
 func (s User) Update() userUpdateSQL {
-	return NewUserSQL().Update().WhereID(s.Id)
+	return NewUserSQL().Update().WhereID(s.ID)
 }
 
 func (q userUpdateSQL) Exec(db sqlla.DB) ([]User, error) {
@@ -592,7 +653,7 @@ func (q userSQL) Insert() userInsertSQL {
 	}
 }
 
-func (q userInsertSQL) ValueID(v UserId) userInsertSQL {
+func (q userInsertSQL) ValueID(v UserID) userInsertSQL {
 	q.setMap["`id`"] = v
 	return q
 }
@@ -609,6 +670,11 @@ func (q userInsertSQL) ValueAge(v sql.NullInt64) userInsertSQL {
 
 func (q userInsertSQL) ValueRate(v float64) userInsertSQL {
 	q.setMap["`rate`"] = v
+	return q
+}
+
+func (q userInsertSQL) ValueTeamID(v TeamID) userInsertSQL {
+	q.setMap["`team_id`"] = v
 	return q
 }
 
@@ -687,7 +753,7 @@ func (q userSQL) Delete() userDeleteSQL {
 	}
 }
 
-func (q userDeleteSQL) ID(v UserId, exprs ...sqlla.Operator) userDeleteSQL {
+func (q userDeleteSQL) ID(v UserID, exprs ...sqlla.Operator) userDeleteSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
 		op = sqlla.OpEqual
@@ -699,7 +765,7 @@ func (q userDeleteSQL) ID(v UserId, exprs ...sqlla.Operator) userDeleteSQL {
 	return q
 }
 
-func (q userDeleteSQL) IDIn(vs ...UserId) userDeleteSQL {
+func (q userDeleteSQL) IDIn(vs ...UserID) userDeleteSQL {
 	_vs := make([]uint64, 0, len(vs))
 	for _, v := range vs {
 		_vs = append(_vs, uint64(v))
@@ -759,6 +825,28 @@ func (q userDeleteSQL) Rate(v float64, exprs ...sqlla.Operator) userDeleteSQL {
 
 func (q userDeleteSQL) RateIn(vs ...float64) userDeleteSQL {
 	where := sqlla.ExprMultiFloat64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`rate`"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userDeleteSQL) TeamID(v TeamID, exprs ...sqlla.Operator) userDeleteSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+	where := sqlla.ExprInt64{Value: int64(v), Op: op, Column: "`team_id`"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userDeleteSQL) TeamIDIn(vs ...TeamID) userDeleteSQL {
+	_vs := make([]int64, 0, len(vs))
+	for _, v := range vs {
+		_vs = append(_vs, int64(v))
+	}
+	where := sqlla.ExprMultiInt64{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`team_id`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -829,7 +917,7 @@ func (q userDeleteSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result
 	return db.ExecContext(ctx, query, args...)
 }
 func (s User) Delete(db sqlla.DB) (sql.Result, error) {
-	query, args, err := NewUserSQL().Delete().ID(s.Id).ToSql()
+	query, args, err := NewUserSQL().Delete().ID(s.ID).ToSql()
 	if err != nil {
 		return nil, err
 	}
@@ -837,7 +925,7 @@ func (s User) Delete(db sqlla.DB) (sql.Result, error) {
 }
 
 func (s User) DeleteContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
-	query, args, err := NewUserSQL().Delete().ID(s.Id).ToSql()
+	query, args, err := NewUserSQL().Delete().ID(s.ID).ToSql()
 	if err != nil {
 		return nil, err
 	}
