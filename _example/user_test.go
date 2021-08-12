@@ -14,7 +14,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var columns = "`id`, `name`, `age`, `rate`, `created_at`, `updated_at`"
+var columns = "`id`, `name`, `age`, `rate`, `icon_image`, `created_at`, `updated_at`"
 
 func TestSelect(t *testing.T) {
 	q := NewUserSQL().Select().Name("hoge")
@@ -282,9 +282,10 @@ func TestCRUD__WithSqlite3(t *testing.T) {
 	var name string
 	var age sql.NullInt64
 	var rate float64
+	var iconImage []byte
 	var createdAt time.Time
 	var updatedAt mysql.NullTime
-	err = row.Scan(&id, &name, &age, &rate, &createdAt, &updatedAt)
+	err = row.Scan(&id, &name, &age, &rate, &iconImage, &createdAt, &updatedAt)
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
@@ -304,9 +305,10 @@ func TestCRUD__WithSqlite3(t *testing.T) {
 	var rescanName string
 	var rescanAge sql.NullInt64
 	var rescanRate float64
+	var rescanIconImage []byte
 	var rescanCreatedAt time.Time
 	var rescanUpdatedAt mysql.NullTime
-	err = row.Scan(&rescanID, &rescanName, &rescanAge, &rescanRate, &rescanCreatedAt, &rescanUpdatedAt)
+	err = row.Scan(&rescanID, &rescanName, &rescanAge, &rescanRate, &rescanIconImage, &rescanCreatedAt, &rescanUpdatedAt)
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
@@ -373,6 +375,9 @@ func TestORM__WithSqlite3(t *testing.T) {
 	}
 
 	rows, err := NewUserSQL().Select().All(db)
+	if err != nil {
+		t.Error("cannot select row error:", err)
+	}
 	if len(rows) != 2 {
 		t.Error("missing rows error:", len(rows))
 	}
@@ -413,5 +418,42 @@ func TestORM__WithSqlite3(t *testing.T) {
 	_, err = targetRow.Select().Single(db)
 	if err != sql.ErrNoRows {
 		t.Error("not deleted rows")
+	}
+}
+
+func TestORM__WithSqlite3__Binary(t *testing.T) {
+	db := setupDB(t)
+	binary := []byte("binary")
+
+	insertedRow, err := NewUserSQL().Insert().
+		ValueName("hogehoge").
+		ValueIconImage(binary).
+		Exec(db)
+	if err != nil {
+		t.Error("cannot insert row error:", err)
+	}
+	if !reflect.DeepEqual(insertedRow.IconImage, binary) {
+		t.Error("unexpected IconImage:", insertedRow.IconImage)
+	}
+
+	singleRow, err := NewUserSQL().Select().ID(insertedRow.Id).Single(db)
+	if err != nil {
+		t.Error("cannot select row error:", err)
+	}
+	if !reflect.DeepEqual(singleRow.IconImage, binary) {
+		t.Error("unexpected IconImage:", singleRow.IconImage)
+	}
+
+	updatedBinary := []byte("updated")
+	results, err := singleRow.Update().SetIconImage(updatedBinary).Exec(db)
+	if err != nil {
+		t.Error("cannnot update row error", err)
+	}
+	if len(results) != 1 {
+		t.Error("unexpected rows results:", len(results))
+	}
+	result := results[0]
+	if !reflect.DeepEqual(result.IconImage, updatedBinary) {
+		t.Errorf("result.IconImage is not replaced to \"updated\": %s", result.IconImage)
 	}
 }
