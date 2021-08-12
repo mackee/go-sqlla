@@ -79,6 +79,10 @@ var supportedNonPrimitiveTypes = map[string]struct{}{
 	"sql.NullBool":    {},
 }
 
+var alternativeBaseTypeNames = map[string]string{
+	"[]byte": "Bytes",
+}
+
 func toTable(tablePkg *types.Package, annotationComment string, gd *ast.GenDecl, ti *types.Info) (*Table, error) {
 	table := new(Table)
 	table.Package = tablePkg
@@ -132,6 +136,9 @@ func toTable(tablePkg *types.Package, annotationComment string, gd *ast.GenDecl,
 			}
 		} else {
 			typeName = t.String()
+		}
+		if alt, ok := alternativeBaseTypeNames[baseTypeName]; ok {
+			baseTypeName = alt
 		}
 		column := Column{
 			Field:        field,

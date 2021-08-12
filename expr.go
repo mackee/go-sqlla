@@ -577,3 +577,36 @@ func (e ExprMultiInt8) ToSql() (string, []interface{}, error) {
 	}
 	return e.Column + " " + ops, vs, nil
 }
+
+type ExprBytes struct {
+	Column string
+	Value  []byte
+	Op     Operator
+}
+
+func (e ExprBytes) ToSql() (string, []interface{}, error) {
+	v := sql.RawBytes(e.Value)
+	ops, err := e.Op.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	return e.Column + " " + ops + " ?", []interface{}{v}, nil
+}
+
+type ExprMultiBytes struct {
+	Column string
+	Values [][]byte
+	Op     Operator
+}
+
+func (e ExprMultiBytes) ToSql() (string, []interface{}, error) {
+	ops, err := e.Op.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	vs := make([]interface{}, 0, len(e.Values))
+	for _, v := range e.Values {
+		vs = append(vs, interface{}(sql.RawBytes(v)))
+	}
+	return e.Column + " " + ops, vs, nil
+}
