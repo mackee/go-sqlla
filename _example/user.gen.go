@@ -23,7 +23,7 @@ func NewUserSQL() userSQL {
 }
 
 var userAllColumns = []string{
-	"`id`", "`name`", "`age`", "`rate`", "`created_at`", "`updated_at`",
+	"`id`", "`name`", "`age`", "`rate`", "`icon_image`", "`created_at`", "`updated_at`",
 }
 
 type userSelectSQL struct {
@@ -195,6 +195,35 @@ func (q userSelectSQL) OrderByRate(order sqlla.Order) userSelectSQL {
 	return q
 }
 
+func (q userSelectSQL) IconImage(v []byte, exprs ...sqlla.Operator) userSelectSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+	where := sqlla.ExprBytes{Value: v, Op: op, Column: "`icon_image`"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userSelectSQL) IconImageIn(vs ...[]byte) userSelectSQL {
+	where := sqlla.ExprMultiBytes{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`icon_image`"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userSelectSQL) OrderByIconImage(order sqlla.Order) userSelectSQL {
+	q.order = " ORDER BY `icon_image`"
+	if order == sqlla.Asc {
+		q.order += " ASC"
+	} else {
+		q.order += " DESC"
+	}
+
+	return q
+}
+
 func (q userSelectSQL) CreatedAt(v time.Time, exprs ...sqlla.Operator) userSelectSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
@@ -357,6 +386,7 @@ func (q userSelectSQL) Scan(s sqlla.Scanner) (User, error) {
 		&row.Name,
 		&row.Age,
 		&row.Rate,
+		&row.IconImage,
 		&row.CreatedAt,
 		&row.UpdatedAt,
 	)
@@ -468,6 +498,29 @@ func (q userUpdateSQL) WhereRate(v float64, exprs ...sqlla.Operator) userUpdateS
 
 func (q userUpdateSQL) WhereRateIn(vs ...float64) userUpdateSQL {
 	where := sqlla.ExprMultiFloat64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`rate`"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userUpdateSQL) SetIconImage(v []byte) userUpdateSQL {
+	q.setMap["`icon_image`"] = v
+	return q
+}
+
+func (q userUpdateSQL) WhereIconImage(v []byte, exprs ...sqlla.Operator) userUpdateSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+	where := sqlla.ExprBytes{Value: v, Op: op, Column: "`icon_image`"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userUpdateSQL) WhereIconImageIn(vs ...[]byte) userUpdateSQL {
+	where := sqlla.ExprMultiBytes{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`icon_image`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -609,6 +662,11 @@ func (q userInsertSQL) ValueAge(v sql.NullInt64) userInsertSQL {
 
 func (q userInsertSQL) ValueRate(v float64) userInsertSQL {
 	q.setMap["`rate`"] = v
+	return q
+}
+
+func (q userInsertSQL) ValueIconImage(v []byte) userInsertSQL {
+	q.setMap["`icon_image`"] = v
 	return q
 }
 
@@ -759,6 +817,24 @@ func (q userDeleteSQL) Rate(v float64, exprs ...sqlla.Operator) userDeleteSQL {
 
 func (q userDeleteSQL) RateIn(vs ...float64) userDeleteSQL {
 	where := sqlla.ExprMultiFloat64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`rate`"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userDeleteSQL) IconImage(v []byte, exprs ...sqlla.Operator) userDeleteSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+	where := sqlla.ExprBytes{Value: v, Op: op, Column: "`icon_image`"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userDeleteSQL) IconImageIn(vs ...[]byte) userDeleteSQL {
+	where := sqlla.ExprMultiBytes{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`icon_image`"}
 	q.where = append(q.where, where)
 	return q
 }

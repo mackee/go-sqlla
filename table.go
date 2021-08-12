@@ -56,6 +56,7 @@ type Column struct {
 	TypeName     string
 	PkgName      string
 	BaseTypeName string
+	AltTypeName  string
 	TableName    string
 	IsPk         bool
 }
