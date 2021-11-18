@@ -209,6 +209,10 @@ func TestInsertOnDuplicateKeyUpdate(t *testing.T) {
 		ValueID(1).
 		ValueName("hogehoge").
 		OnDuplicateKeyUpdate().
+		ValueOnUpdateAge(sql.NullInt64{
+			Valid: true,
+			Int64: 17,
+		}).
 		SameOnUpdateUpdatedAt()
 	query, args, err := q.ToSql()
 	if err != nil {
@@ -216,11 +220,12 @@ func TestInsertOnDuplicateKeyUpdate(t *testing.T) {
 	}
 	expr := regexp.MustCompile(`^INSERT INTO user \(.*\) VALUES\(\?,\?,\?\) `)
 	gotSuffix := expr.ReplaceAllString(query, "")
-	expectedSuffix := "ON DUPLICATE KEY UPDATE `updated_at` = VALUES(`updated_at`);"
-	if gotSuffix != expectedSuffix {
+	expectedSuffix1 := "ON DUPLICATE KEY UPDATE `age` = ?, `updated_at` = VALUES(`updated_at`);"
+	expectedSuffix2 := "ON DUPLICATE KEY UPDATE `updated_at` = VALUES(`updated_at`), `age` = ?;"
+	if gotSuffix != expectedSuffix1 && gotSuffix != expectedSuffix2 {
 		t.Error("unexpected suffix:", gotSuffix)
 	}
-	if len(args) != 3 {
+	if len(args) != 4 {
 		t.Error("args is too many:", len(args))
 	}
 }
