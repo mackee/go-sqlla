@@ -713,6 +713,15 @@ func (q userItemInsertOnDuplicateKeyUpdateSQL) SameOnUpdateUsedAt() userItemInse
 }
 
 func (q userItemInsertOnDuplicateKeyUpdateSQL) ToSql() (string, []interface{}, error) {
+	var err error
+	var s interface{} = UserItem{}
+	if t, ok := s.(userItemDefaultInsertOnDuplicateKeyUpdateHooker); ok {
+		q, err = t.DefaultInsertOnDuplicateKeyUpdateHook(q)
+		if err != nil {
+			return "", []interface{}{}, err
+		}
+	}
+
 	query, vs, err := q.insertSQL.toSql()
 	if err != nil {
 		return "", []interface{}{}, err
@@ -762,6 +771,10 @@ func (q userItemInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (UserIt
 
 type userItemDefaultInsertHooker interface {
 	DefaultInsertHook(userItemInsertSQL) (userItemInsertSQL, error)
+}
+
+type userItemDefaultInsertOnDuplicateKeyUpdateHooker interface {
+	DefaultInsertOnDuplicateKeyUpdateHook(userItemInsertOnDuplicateKeyUpdateSQL) (userItemInsertOnDuplicateKeyUpdateSQL, error)
 }
 
 type userItemDeleteSQL struct {

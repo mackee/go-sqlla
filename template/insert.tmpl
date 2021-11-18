@@ -59,6 +59,15 @@ func (q {{ $camelName }}InsertSQL) OnDuplicateKeyUpdate() {{ $camelName }}Insert
 {{ range .Columns }}{{ template "InsertOnDuplicateKeyUpdateColumn" . }}{{ end }}
 
 func (q {{ $camelName }}InsertOnDuplicateKeyUpdateSQL) ToSql() (string, []interface{}, error) {
+	var err error
+	var s interface{} = {{ .StructName }}{}
+	if t, ok := s.({{ $camelName }}DefaultInsertOnDuplicateKeyUpdateHooker); ok {
+		q, err = t.DefaultInsertOnDuplicateKeyUpdateHook(q)
+		if err != nil {
+			return "", []interface{}{}, err
+		}
+	}
+
 	query, vs, err := q.insertSQL.toSql()
 	if err != nil {
 			return "", []interface{}{}, err
@@ -132,5 +141,9 @@ func (q {{ $camelName }}InsertSQL) ExecContext(ctx context.Context, db sqlla.DB)
 
 type {{ $camelName }}DefaultInsertHooker interface {
 	DefaultInsertHook({{ $camelName }}InsertSQL) ({{ $camelName }}InsertSQL, error)
+}
+
+type {{ $camelName }}DefaultInsertOnDuplicateKeyUpdateHooker interface {
+	DefaultInsertOnDuplicateKeyUpdateHook({{ $camelName }}InsertOnDuplicateKeyUpdateSQL) ({{ $camelName }}InsertOnDuplicateKeyUpdateSQL, error)
 }
 {{ end }}
