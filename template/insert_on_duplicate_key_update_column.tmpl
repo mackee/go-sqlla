@@ -1,0 +1,13 @@
+{{ define "InsertOnDuplicateKeyUpdateColumn" }}{{ $smallTableName := .TableName | toCamel | Untitle }}
+
+func (q {{ $smallTableName }}InsertOnDuplicateKeyUpdateSQL) ValueOnUpdate{{ .Name | toCamel | Title }} (v {{ .TypeName }}) {{ $smallTableName }}InsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`{{ .Name }}`"] = v
+	return q
+}
+
+func (q {{ $smallTableName }}InsertOnDuplicateKeyUpdateSQL) SameOnUpdate{{ .Name | toCamel | Title }} () {{ $smallTableName }}InsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`{{ .Name }}`"] = sqlla.SetMapRawValue("VALUES(`{{ .Name }}`)")
+	return q
+}
+
+{{ end }}

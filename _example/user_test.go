@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -200,6 +201,27 @@ func TestInsert(t *testing.T) {
 		}
 	default:
 		t.Error("unexpected query:", query)
+	}
+}
+
+func TestInsertOnDuplicateKeyUpdate(t *testing.T) {
+	q := NewUserSQL().Insert().
+		ValueID(1).
+		ValueName("hogehoge").
+		OnDuplicateKeyUpdate().
+		SameOnUpdateUpdatedAt()
+	query, args, err := q.ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	expr := regexp.MustCompile(`^INSERT INTO user \(.*\) VALUES\(\?,\?,\?\) `)
+	gotSuffix := expr.ReplaceAllString(query, "")
+	expectedSuffix := "ON DUPLICATE KEY UPDATE `updated_at` = VALUES(`updated_at`);"
+	if gotSuffix != expectedSuffix {
+		t.Error("unexpected suffix:", gotSuffix)
+	}
+	if len(args) != 3 {
+		t.Error("args is too many:", len(args))
 	}
 }
 

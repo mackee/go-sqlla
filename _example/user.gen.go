@@ -681,6 +681,14 @@ func (q userInsertSQL) ValueUpdatedAt(v mysql.NullTime) userInsertSQL {
 }
 
 func (q userInsertSQL) ToSql() (string, []interface{}, error) {
+	query, vs, err := q.toSql()
+	if err != nil {
+		return "", []interface{}{}, err
+	}
+	return query + ";", vs, nil
+}
+
+func (q userInsertSQL) toSql() (string, []interface{}, error) {
 	var err error
 	var s interface{} = User{}
 	if t, ok := s.(userDefaultInsertHooker); ok {
@@ -695,6 +703,104 @@ func (q userInsertSQL) ToSql() (string, []interface{}, error) {
 	}
 
 	query := "INSERT INTO user " + qs
+
+	return query, vs, nil
+}
+
+type userInsertOnDuplicateKeyUpdateSQL struct {
+	insertSQL               userInsertSQL
+	onDuplicateKeyUpdateMap sqlla.SetMap
+}
+
+func (q userInsertSQL) OnDuplicateKeyUpdate() userInsertOnDuplicateKeyUpdateSQL {
+	return userInsertOnDuplicateKeyUpdateSQL{
+		insertSQL:               q,
+		onDuplicateKeyUpdateMap: sqlla.SetMap{},
+	}
+}
+
+func (q userInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateID(v UserId) userInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`id`"] = v
+	return q
+}
+
+func (q userInsertOnDuplicateKeyUpdateSQL) SameOnUpdateID() userInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`id`"] = sqlla.SetMapRawValue("VALUES(`id`)")
+	return q
+}
+
+func (q userInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateName(v string) userInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`name`"] = v
+	return q
+}
+
+func (q userInsertOnDuplicateKeyUpdateSQL) SameOnUpdateName() userInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`name`"] = sqlla.SetMapRawValue("VALUES(`name`)")
+	return q
+}
+
+func (q userInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateAge(v sql.NullInt64) userInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`age`"] = v
+	return q
+}
+
+func (q userInsertOnDuplicateKeyUpdateSQL) SameOnUpdateAge() userInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`age`"] = sqlla.SetMapRawValue("VALUES(`age`)")
+	return q
+}
+
+func (q userInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateRate(v float64) userInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`rate`"] = v
+	return q
+}
+
+func (q userInsertOnDuplicateKeyUpdateSQL) SameOnUpdateRate() userInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`rate`"] = sqlla.SetMapRawValue("VALUES(`rate`)")
+	return q
+}
+
+func (q userInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateIconImage(v []byte) userInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`icon_image`"] = v
+	return q
+}
+
+func (q userInsertOnDuplicateKeyUpdateSQL) SameOnUpdateIconImage() userInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`icon_image`"] = sqlla.SetMapRawValue("VALUES(`icon_image`)")
+	return q
+}
+
+func (q userInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateCreatedAt(v time.Time) userInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`created_at`"] = v
+	return q
+}
+
+func (q userInsertOnDuplicateKeyUpdateSQL) SameOnUpdateCreatedAt() userInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`created_at`"] = sqlla.SetMapRawValue("VALUES(`created_at`)")
+	return q
+}
+
+func (q userInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateUpdatedAt(v mysql.NullTime) userInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`updated_at`"] = v
+	return q
+}
+
+func (q userInsertOnDuplicateKeyUpdateSQL) SameOnUpdateUpdatedAt() userInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`updated_at`"] = sqlla.SetMapRawValue("VALUES(`updated_at`)")
+	return q
+}
+
+func (q userInsertOnDuplicateKeyUpdateSQL) ToSql() (string, []interface{}, error) {
+	query, vs, err := q.insertSQL.toSql()
+	if err != nil {
+		return "", []interface{}{}, err
+	}
+
+	os, ovs, err := q.onDuplicateKeyUpdateMap.ToUpdateSql()
+	if err != nil {
+		return "", []interface{}{}, err
+	}
+	query += " ON DUPLICATE KEY UPDATE" + os
+	vs = append(vs, ovs...)
 
 	return query + ";", vs, nil
 }
