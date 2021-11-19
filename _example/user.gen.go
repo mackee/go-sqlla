@@ -914,10 +914,14 @@ type userBulkInsertSQL struct {
 	insertSQLs []userInsertSQL
 }
 
-func NewUserBulkInsertSQL(insertSQLs ...userInsertSQL) userBulkInsertSQL {
-	return userBulkInsertSQL{
-		insertSQLs: insertSQLs,
+func (q userSQL) BulkInsert() *userBulkInsertSQL {
+	return &userBulkInsertSQL{
+		insertSQLs: []userInsertSQL{},
 	}
+}
+
+func (q *userBulkInsertSQL) Append(iqs ...userInsertSQL) {
+	q.insertSQLs = append(q.insertSQLs, iqs...)
 }
 
 func (q userBulkInsertSQL) userInsertSQLToSql() (string, []interface{}, error) {

@@ -182,10 +182,14 @@ type {{ $camelName }}BulkInsertSQL struct {
 	insertSQLs []{{ $camelName }}InsertSQL
 }
 
-func New{{ (.Name | toCamel) }}BulkInsertSQL(insertSQLs ...{{ $camelName }}InsertSQL) {{ $camelName }}BulkInsertSQL {
-	return {{ $camelName }}BulkInsertSQL{
-		insertSQLs: insertSQLs,
+func (q {{ $camelName }}SQL) BulkInsert() *{{ $camelName }}BulkInsertSQL {
+	return &{{ $camelName }}BulkInsertSQL{
+		insertSQLs: []{{ $camelName }}InsertSQL{},
 	}
+}
+
+func (q *{{ $camelName }}BulkInsertSQL) Append(iqs ...{{ $camelName }}InsertSQL) {
+	q.insertSQLs = append(q.insertSQLs, iqs...)
 }
 
 func (q {{ $camelName }}BulkInsertSQL) {{ $camelName }}InsertSQLToSql() (string, []interface{}, error) {

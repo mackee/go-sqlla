@@ -231,14 +231,14 @@ func TestInsertOnDuplicateKeyUpdate(t *testing.T) {
 }
 
 func TestBulkInsert(t *testing.T) {
-	items := make([]userItemInsertSQL, 0, 10)
+	items := NewUserItemSQL().BulkInsert()
 	for i := 1; i <= 10; i++ {
 		q := NewUserItemSQL().Insert().
 			ValueUserID(42).
 			ValueItemID(strconv.Itoa(i))
-		items = append(items, q)
+		items.Append(q)
 	}
-	query, vs, err := NewUserItemBulkInsertSQL(items...).ToSql()
+	query, vs, err := items.ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
