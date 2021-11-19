@@ -842,9 +842,9 @@ func (q *userItemBulkInsertSQL) Append(iqs ...userItemInsertSQL) {
 	q.insertSQLs = append(q.insertSQLs, iqs...)
 }
 
-func (q userItemBulkInsertSQL) userItemInsertSQLToSql() (string, []interface{}, error) {
+func (q *userItemBulkInsertSQL) userItemInsertSQLToSql() (string, []interface{}, error) {
 	if len(q.insertSQLs) == 0 {
-		return "", []interface{}{}, fmt.Errorf("sqlla: This userItemBulkInsertSQL does not have InsertSQL")
+		return "", []interface{}{}, fmt.Errorf("sqlla: This userItemBulkInsertSQL's InsertSQL was empty")
 	}
 	iqs := make([]userItemInsertSQL, len(q.insertSQLs))
 	copy(iqs, q.insertSQLs)
@@ -874,7 +874,7 @@ func (q userItemBulkInsertSQL) userItemInsertSQLToSql() (string, []interface{}, 
 	return "INSERT INTO `user_item` " + query, vs, nil
 }
 
-func (q userItemBulkInsertSQL) ToSql() (string, []interface{}, error) {
+func (q *userItemBulkInsertSQL) ToSql() (string, []interface{}, error) {
 	query, vs, err := q.userItemInsertSQLToSql()
 	if err != nil {
 		return "", []interface{}{}, err
@@ -882,27 +882,20 @@ func (q userItemBulkInsertSQL) ToSql() (string, []interface{}, error) {
 	return query + ";", vs, nil
 }
 
-func (q userItemBulkInsertSQL) OnDuplicateKeyUpdate() userItemInsertOnDuplicateKeyUpdateSQL {
+func (q *userItemBulkInsertSQL) OnDuplicateKeyUpdate() userItemInsertOnDuplicateKeyUpdateSQL {
 	return userItemInsertOnDuplicateKeyUpdateSQL{
 		insertSQL:               q,
 		onDuplicateKeyUpdateMap: sqlla.SetMap{},
 	}
 }
 
-func (q userItemBulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (UserItem, error) {
+func (q *userItemBulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
 	query, args, err := q.ToSql()
 	if err != nil {
-		return UserItem{}, err
+		return nil, err
 	}
 	result, err := db.ExecContext(ctx, query, args...)
-	if err != nil {
-		return UserItem{}, err
-	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return UserItem{}, err
-	}
-	return NewUserItemSQL().Select().PkColumn(id).SingleContext(ctx, db)
+	return result, err
 }
 
 type userItemDeleteSQL struct {

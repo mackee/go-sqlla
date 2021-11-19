@@ -192,9 +192,9 @@ func (q *{{ $camelName }}BulkInsertSQL) Append(iqs ...{{ $camelName }}InsertSQL)
 	q.insertSQLs = append(q.insertSQLs, iqs...)
 }
 
-func (q {{ $camelName }}BulkInsertSQL) {{ $camelName }}InsertSQLToSql() (string, []interface{}, error) {
+func (q *{{ $camelName }}BulkInsertSQL) {{ $camelName }}InsertSQLToSql() (string, []interface{}, error) {
 	if len(q.insertSQLs) == 0 {
-		return "", []interface{}{}, fmt.Errorf("sqlla: This {{ $camelName }}BulkInsertSQL does not have InsertSQL")
+		return "", []interface{}{}, fmt.Errorf("sqlla: This {{ $camelName }}BulkInsertSQL{{ "'s" }} InsertSQL was empty")
 	}
 	iqs := make([]{{ $camelName }}InsertSQL, len(q.insertSQLs))
 	copy(iqs, q.insertSQLs)
@@ -224,7 +224,7 @@ func (q {{ $camelName }}BulkInsertSQL) {{ $camelName }}InsertSQLToSql() (string,
 	return "INSERT INTO `{{ .Name }}` " + query, vs, nil
 }
 
-func (q {{ $camelName }}BulkInsertSQL) ToSql() (string, []interface{}, error) {
+func (q *{{ $camelName }}BulkInsertSQL) ToSql() (string, []interface{}, error) {
 	query, vs, err := q.{{ $camelName }}InsertSQLToSql()
 	if err != nil {
 			return "", []interface{}{}, err
@@ -232,39 +232,20 @@ func (q {{ $camelName }}BulkInsertSQL) ToSql() (string, []interface{}, error) {
 	return query + ";", vs, nil
 }
 
-func (q {{ $camelName }}BulkInsertSQL) OnDuplicateKeyUpdate() {{ $camelName }}InsertOnDuplicateKeyUpdateSQL {
+func (q *{{ $camelName }}BulkInsertSQL) OnDuplicateKeyUpdate() {{ $camelName }}InsertOnDuplicateKeyUpdateSQL {
 	return {{ $camelName }}InsertOnDuplicateKeyUpdateSQL{
 		insertSQL: q,
 		onDuplicateKeyUpdateMap: sqlla.SetMap{},
 	}
 }
 
-{{ if .HasPk -}}
-func (q {{ $camelName }}BulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) ({{ .StructName }}, error) {
-{{- else -}}
-func (q {{ $camelName }}BulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
-{{- end }}
+func (q *{{ $camelName }}BulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
 	query, args, err := q.ToSql()
 	if err != nil {
-		{{ if .HasPk -}}
-		return {{ .StructName }}{}, err
-		{{- else }}
 		return nil, err
-		{{- end }}
 	}
 	result, err := db.ExecContext(ctx, query, args...)
-	{{ if .HasPk -}}
-	if err != nil {
-		return {{ .StructName }}{}, err
-	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return {{ .StructName }}{}, err
-	}
-	return {{ $constructor }}().Select().PkColumn(id).SingleContext(ctx, db)
-	{{- else -}}
 	return result, err
-	{{- end }}
 }
 
 {{ end }}

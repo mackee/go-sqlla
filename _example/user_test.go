@@ -253,8 +253,10 @@ func TestBulkInsert(t *testing.T) {
 
 func TestBulkInsertWithOnDuplicateKeyUpdate(t *testing.T) {
 	items := NewUserItemSQL().BulkInsert()
-	items.Append(NewUserItemSQL().Insert().ValueUserID(42).ValueItemID("1").ValueIsUsed(true))
-	items.Append(NewUserItemSQL().Insert().ValueUserID(42).ValueItemID("2").ValueIsUsed(true))
+	items.Append(
+		NewUserItemSQL().Insert().ValueUserID(42).ValueItemID("1").ValueIsUsed(true),
+		NewUserItemSQL().Insert().ValueUserID(42).ValueItemID("2").ValueIsUsed(true),
+	)
 
 	now := mysql.NullTime{
 		Valid: true,

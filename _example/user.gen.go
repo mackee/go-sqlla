@@ -924,9 +924,9 @@ func (q *userBulkInsertSQL) Append(iqs ...userInsertSQL) {
 	q.insertSQLs = append(q.insertSQLs, iqs...)
 }
 
-func (q userBulkInsertSQL) userInsertSQLToSql() (string, []interface{}, error) {
+func (q *userBulkInsertSQL) userInsertSQLToSql() (string, []interface{}, error) {
 	if len(q.insertSQLs) == 0 {
-		return "", []interface{}{}, fmt.Errorf("sqlla: This userBulkInsertSQL does not have InsertSQL")
+		return "", []interface{}{}, fmt.Errorf("sqlla: This userBulkInsertSQL's InsertSQL was empty")
 	}
 	iqs := make([]userInsertSQL, len(q.insertSQLs))
 	copy(iqs, q.insertSQLs)
@@ -956,7 +956,7 @@ func (q userBulkInsertSQL) userInsertSQLToSql() (string, []interface{}, error) {
 	return "INSERT INTO `user` " + query, vs, nil
 }
 
-func (q userBulkInsertSQL) ToSql() (string, []interface{}, error) {
+func (q *userBulkInsertSQL) ToSql() (string, []interface{}, error) {
 	query, vs, err := q.userInsertSQLToSql()
 	if err != nil {
 		return "", []interface{}{}, err
@@ -964,27 +964,20 @@ func (q userBulkInsertSQL) ToSql() (string, []interface{}, error) {
 	return query + ";", vs, nil
 }
 
-func (q userBulkInsertSQL) OnDuplicateKeyUpdate() userInsertOnDuplicateKeyUpdateSQL {
+func (q *userBulkInsertSQL) OnDuplicateKeyUpdate() userInsertOnDuplicateKeyUpdateSQL {
 	return userInsertOnDuplicateKeyUpdateSQL{
 		insertSQL:               q,
 		onDuplicateKeyUpdateMap: sqlla.SetMap{},
 	}
 }
 
-func (q userBulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (User, error) {
+func (q *userBulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
 	query, args, err := q.ToSql()
 	if err != nil {
-		return User{}, err
+		return nil, err
 	}
 	result, err := db.ExecContext(ctx, query, args...)
-	if err != nil {
-		return User{}, err
-	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return User{}, err
-	}
-	return NewUserSQL().Select().PkColumn(id).SingleContext(ctx, db)
+	return result, err
 }
 
 type userDeleteSQL struct {
