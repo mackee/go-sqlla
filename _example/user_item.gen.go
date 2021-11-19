@@ -614,6 +614,14 @@ func (q userItemInsertSQL) ValueUsedAt(v mysql.NullTime) userItemInsertSQL {
 }
 
 func (q userItemInsertSQL) ToSql() (string, []interface{}, error) {
+	query, vs, err := q.toSql()
+	if err != nil {
+		return "", []interface{}{}, err
+	}
+	return query + ";", vs, nil
+}
+
+func (q userItemInsertSQL) toSql() (string, []interface{}, error) {
 	var err error
 	var s interface{} = UserItem{}
 	if t, ok := s.(userItemDefaultInsertHooker); ok {
@@ -629,7 +637,14 @@ func (q userItemInsertSQL) ToSql() (string, []interface{}, error) {
 
 	query := "INSERT INTO user_item " + qs
 
-	return query + ";", vs, nil
+	return query, vs, nil
+}
+
+func (q userItemInsertSQL) OnDuplicateKeyUpdate() userItemInsertOnDuplicateKeyUpdateSQL {
+	return userItemInsertOnDuplicateKeyUpdateSQL{
+		insertSQL:               q,
+		onDuplicateKeyUpdateMap: sqlla.SetMap{},
+	}
 }
 
 func (q userItemInsertSQL) Exec(db sqlla.DB) (UserItem, error) {
@@ -666,6 +681,146 @@ func (q userItemInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (UserIt
 
 type userItemDefaultInsertHooker interface {
 	DefaultInsertHook(userItemInsertSQL) (userItemInsertSQL, error)
+}
+
+type userItemInsertOnDuplicateKeyUpdateSQL struct {
+	insertSQL               userItemInsertSQL
+	onDuplicateKeyUpdateMap sqlla.SetMap
+}
+
+func (q userItemInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateID(v uint64) userItemInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`id`"] = v
+	return q
+}
+
+func (q userItemInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateID(v sqlla.SetMapRawValue) userItemInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`id`"] = v
+	return q
+}
+
+func (q userItemInsertOnDuplicateKeyUpdateSQL) SameOnUpdateID() userItemInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`id`"] = sqlla.SetMapRawValue("VALUES(`id`)")
+	return q
+}
+
+func (q userItemInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateUserID(v uint64) userItemInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`user_id`"] = v
+	return q
+}
+
+func (q userItemInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateUserID(v sqlla.SetMapRawValue) userItemInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`user_id`"] = v
+	return q
+}
+
+func (q userItemInsertOnDuplicateKeyUpdateSQL) SameOnUpdateUserID() userItemInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`user_id`"] = sqlla.SetMapRawValue("VALUES(`user_id`)")
+	return q
+}
+
+func (q userItemInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateItemID(v string) userItemInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`item_id`"] = v
+	return q
+}
+
+func (q userItemInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateItemID(v sqlla.SetMapRawValue) userItemInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`item_id`"] = v
+	return q
+}
+
+func (q userItemInsertOnDuplicateKeyUpdateSQL) SameOnUpdateItemID() userItemInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`item_id`"] = sqlla.SetMapRawValue("VALUES(`item_id`)")
+	return q
+}
+
+func (q userItemInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateIsUsed(v bool) userItemInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`is_used`"] = v
+	return q
+}
+
+func (q userItemInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateIsUsed(v sqlla.SetMapRawValue) userItemInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`is_used`"] = v
+	return q
+}
+
+func (q userItemInsertOnDuplicateKeyUpdateSQL) SameOnUpdateIsUsed() userItemInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`is_used`"] = sqlla.SetMapRawValue("VALUES(`is_used`)")
+	return q
+}
+
+func (q userItemInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateHasExtension(v sql.NullBool) userItemInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`has_extension`"] = v
+	return q
+}
+
+func (q userItemInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateHasExtension(v sqlla.SetMapRawValue) userItemInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`has_extension`"] = v
+	return q
+}
+
+func (q userItemInsertOnDuplicateKeyUpdateSQL) SameOnUpdateHasExtension() userItemInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`has_extension`"] = sqlla.SetMapRawValue("VALUES(`has_extension`)")
+	return q
+}
+
+func (q userItemInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateUsedAt(v mysql.NullTime) userItemInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`used_at`"] = v
+	return q
+}
+
+func (q userItemInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateUsedAt(v sqlla.SetMapRawValue) userItemInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`used_at`"] = v
+	return q
+}
+
+func (q userItemInsertOnDuplicateKeyUpdateSQL) SameOnUpdateUsedAt() userItemInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`used_at`"] = sqlla.SetMapRawValue("VALUES(`used_at`)")
+	return q
+}
+
+func (q userItemInsertOnDuplicateKeyUpdateSQL) ToSql() (string, []interface{}, error) {
+	var err error
+	var s interface{} = UserItem{}
+	if t, ok := s.(userItemDefaultInsertOnDuplicateKeyUpdateHooker); ok {
+		q, err = t.DefaultInsertOnDuplicateKeyUpdateHook(q)
+		if err != nil {
+			return "", []interface{}{}, err
+		}
+	}
+
+	query, vs, err := q.insertSQL.toSql()
+	if err != nil {
+		return "", []interface{}{}, err
+	}
+
+	os, ovs, err := q.onDuplicateKeyUpdateMap.ToUpdateSql()
+	if err != nil {
+		return "", []interface{}{}, err
+	}
+	query += " ON DUPLICATE KEY UPDATE" + os
+	vs = append(vs, ovs...)
+
+	return query + ";", vs, nil
+}
+
+func (q userItemInsertOnDuplicateKeyUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) (UserItem, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return UserItem{}, err
+	}
+	result, err := db.ExecContext(ctx, query, args...)
+	if err != nil {
+		return UserItem{}, err
+	}
+	id, err := result.LastInsertId()
+	if err != nil {
+		return UserItem{}, err
+	}
+	return NewUserItemSQL().Select().PkColumn(id).SingleContext(ctx, db)
+}
+
+type userItemDefaultInsertOnDuplicateKeyUpdateHooker interface {
+	DefaultInsertOnDuplicateKeyUpdateHook(userItemInsertOnDuplicateKeyUpdateSQL) (userItemInsertOnDuplicateKeyUpdateSQL, error)
 }
 
 type userItemDeleteSQL struct {

@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -203,6 +204,31 @@ func TestInsert(t *testing.T) {
 	}
 }
 
+func TestInsertOnDuplicateKeyUpdate(t *testing.T) {
+	q := NewUserSQL().Insert().
+		ValueID(1).
+		ValueName("hogehoge").
+		OnDuplicateKeyUpdate().
+		ValueOnUpdateAge(sql.NullInt64{
+			Valid: true,
+			Int64: 17,
+		})
+	query, args, err := q.ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	expr := regexp.MustCompile(`^INSERT INTO user \(.*\) VALUES\(\?,\?,\?,\?\) `)
+	gotSuffix := expr.ReplaceAllString(query, "")
+	expectedSuffix1 := "ON DUPLICATE KEY UPDATE `age` = ?, `updated_at` = VALUES(`updated_at`);"
+	expectedSuffix2 := "ON DUPLICATE KEY UPDATE `updated_at` = VALUES(`updated_at`), `age` = ?;"
+	if gotSuffix != expectedSuffix1 && gotSuffix != expectedSuffix2 {
+		t.Error("unexpected suffix:", gotSuffix)
+	}
+	if len(args) != 5 {
+		t.Error("args is too many:", len(args))
+	}
+}
+
 func TestDelete(t *testing.T) {
 	q := NewUserSQL().Delete().Name("hogehoge")
 	query, args, err := q.ToSql()
@@ -264,7 +290,7 @@ func setupDB(t *testing.T) *sql.DB {
 func TestCRUD__WithSqlite3(t *testing.T) {
 	db := setupDB(t)
 
-	query, args, err := NewUserSQL().Insert().ValueName("hogehoge").ToSql()
+	query, args, err := NewUserSQL().Insert().ValueName("hogehoge").ValueIconImage([]byte{}).ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
@@ -347,7 +373,7 @@ func TestCRUD__WithSqlite3(t *testing.T) {
 func TestORM__WithSqlite3(t *testing.T) {
 	db := setupDB(t)
 
-	insertedRow, err := NewUserSQL().Insert().ValueName("hogehoge").Exec(db)
+	insertedRow, err := NewUserSQL().Insert().ValueName("hogehoge").ValueIconImage([]byte{}).Exec(db)
 	if err != nil {
 		t.Error("cannot insert row error:", err)
 	}
@@ -369,7 +395,7 @@ func TestORM__WithSqlite3(t *testing.T) {
 		t.Error("unexpected name:", singleRow.Name)
 	}
 
-	_, err = NewUserSQL().Insert().ValueName("fugafuga").Exec(db)
+	_, err = NewUserSQL().Insert().ValueName("fugafuga").ValueIconImage([]byte{}).Exec(db)
 	if err != nil {
 		t.Error("cannot insert row error:", err)
 	}

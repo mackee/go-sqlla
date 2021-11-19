@@ -19,7 +19,7 @@ type User struct {
 	Name      string         `db:"name"`
 	Age       sql.NullInt64  `db:"age"`
 	Rate      float64        `db:"rate,default=0"`
-	IconImage []byte         `db:"icon_image,default=\"\""`
+	IconImage []byte         `db:"icon_image"`
 	CreatedAt time.Time      `db:"created_at"`
 	UpdatedAt mysql.NullTime `db:"updated_at"`
 }

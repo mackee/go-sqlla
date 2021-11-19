@@ -7,7 +7,7 @@ CREATE TABLE "user" (
     "name" TEXT NOT NULL,
     "age" INTEGER NULL,
     "rate" REAL NOT NULL DEFAULT 0,
-    "icon_image" BLOB NOT NULL DEFAULT "",
+    "icon_image" BLOB NOT NULL,
     "created_at" DATETIME NOT NULL,
     "updated_at" DATETIME NULL,
     UNIQUE ("name")

@@ -25,6 +25,8 @@ func (wh Where) ToSql() (string, []interface{}, error) {
 	return wheres, vs, nil
 }
 
+type SetMapRawValue string
+
 type SetMap map[string]interface{}
 
 func (sm SetMap) ToUpdateSql() (string, []interface{}, error) {
@@ -35,8 +37,12 @@ func (sm SetMap) ToUpdateSql() (string, []interface{}, error) {
 		if columnCount != 0 {
 			setColumns += ","
 		}
-		setColumns += " " + k + " = ?"
-		vs = append(vs, v)
+		if rv, ok := v.(SetMapRawValue); ok {
+			setColumns += " " + k + " = " + string(rv)
+		} else {
+			setColumns += " " + k + " = ?"
+			vs = append(vs, v)
+		}
 		columnCount++
 	}
 
