@@ -12,9 +12,6 @@ func (u User) DefaultInsertHook(q userInsertSQL) (userInsertSQL, error) {
 }
 
 func (u User) DefaultInsertOnDuplicateKeyUpdateHook(q userInsertOnDuplicateKeyUpdateSQL) (userInsertOnDuplicateKeyUpdateSQL, error) {
-	now := time.Now()
-	q.insertSQL = q.insertSQL.ValueUpdatedAt(mysql.NullTime{Time: now, Valid: true})
-
 	return q.SameOnUpdateUpdatedAt(), nil
 }
 

@@ -67,7 +67,7 @@ func WriteCode(w io.Writer, table *Table) error {
 	}
 	bs, err := format.Source(buf.Bytes())
 	if err != nil {
-		return errors.Wrapf(err, "fail to format")
+		return errors.Wrapf(err, "fail to format: table=%s", table.Name)
 	}
 	_, err = w.Write(bs)
 	return err

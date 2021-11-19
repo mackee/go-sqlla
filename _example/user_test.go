@@ -190,24 +190,24 @@ func TestInsert(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	switch query {
-	case "INSERT INTO user (`name`,`created_at`) VALUES(?,?);":
-		if !reflect.DeepEqual(args[0], "hogehoge") {
-			t.Error("unexpected args:", args)
-		}
-	case "INSERT INTO user (`created_at`,`name`) VALUES(?,?);":
-		if !reflect.DeepEqual(args[1], "hogehoge") {
-			t.Error("unexpected args:", args)
-		}
-	default:
+	expected := "INSERT INTO user (`created_at`,`name`) VALUES(?,?);"
+	if query != expected {
 		t.Error("unexpected query:", query)
+	}
+	if !reflect.DeepEqual(args[1], "hogehoge") {
+		t.Error("unexpected args:", args)
 	}
 }
 
 func TestInsertOnDuplicateKeyUpdate(t *testing.T) {
+	now := time.Now()
 	q := NewUserSQL().Insert().
 		ValueID(1).
 		ValueName("hogehoge").
+		ValueUpdatedAt(mysql.NullTime{
+			Valid: true,
+			Time:  now,
+		}).
 		OnDuplicateKeyUpdate().
 		ValueOnUpdateAge(sql.NullInt64{
 			Valid: true,

@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-sql-driver/mysql"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/mackee/go-sqlla/v2"
 	"github.com/ory/dockertest/v3"
@@ -84,12 +85,14 @@ func TestMain(m *testing.M) {
 
 func TestInsertOnDuplicateKeyUpdate__WithMySQL(t *testing.T) {
 	ctx := context.Background()
+	now1 := time.Now()
 
 	q1 := NewUserSQL().Insert().
 		ValueName("hogehoge").
 		ValueRate(3.14).
 		ValueIconImage([]byte{}).
-		ValueAge(sql.NullInt64{Valid: true, Int64: 17})
+		ValueAge(sql.NullInt64{Valid: true, Int64: 17}).
+		ValueUpdatedAt(mysql.NullTime{Valid: true, Time: now1})
 	query, args, _ := q1.ToSql()
 	t.Logf("query=%s, args=%+v", query, args)
 	r1, err := q1.ExecContext(ctx, db)
@@ -97,12 +100,13 @@ func TestInsertOnDuplicateKeyUpdate__WithMySQL(t *testing.T) {
 		t.Fatal("unexpected error:", err)
 	}
 
-	time.Sleep(1 * time.Second)
+	now2 := now1.Add(1 * time.Second)
 
 	q2 := NewUserSQL().Insert().
 		ValueName("hogehoge").
 		ValueAge(sql.NullInt64{Valid: true, Int64: 17}).
 		ValueIconImage([]byte{}).
+		ValueUpdatedAt(mysql.NullTime{Valid: true, Time: now2}).
 		OnDuplicateKeyUpdate().
 		RawValueOnUpdateAge(sqlla.SetMapRawValue("`age` + 1"))
 	r2, err := q2.ExecContext(ctx, db)

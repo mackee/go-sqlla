@@ -16,14 +16,14 @@ func (q {{ $camelName }}SQL) Insert() {{ $camelName }}InsertSQL {
 
 {{ range .Columns }}{{ template "InsertColumn" . }}{{ end }}
 func (q {{ $camelName }}InsertSQL) ToSql() (string, []interface{}, error) {
-	query, vs, err := q.toSql()
+	query, vs, err := q.{{ $camelName }}InsertSQLToSql()
 	if err != nil {
 			return "", []interface{}{}, err
 	}
 	return query + ";", vs, nil
 }
 
-func (q {{ $camelName }}InsertSQL) toSql() (string, []interface{}, error) {
+func (q {{ $camelName }}InsertSQL) {{ $camelName }}InsertSQLToSql() (string, []interface{}, error) {
 	var err error
 	var s interface{} = {{ .StructName }}{}
 	if t, ok := s.({{ $camelName }}DefaultInsertHooker); ok {
@@ -110,8 +110,12 @@ type {{ $camelName }}DefaultInsertHooker interface {
 	DefaultInsertHook({{ $camelName }}InsertSQL) ({{ $camelName }}InsertSQL, error)
 }
 
+type {{ $camelName }}InsertSQLToSqler interface {
+	{{ $camelName }}InsertSQLToSql() (string, []interface{}, error)
+}
+
 type {{ $camelName }}InsertOnDuplicateKeyUpdateSQL struct {
-	insertSQL {{ $camelName }}InsertSQL
+	insertSQL {{ $camelName }}InsertSQLToSqler
 	onDuplicateKeyUpdateMap sqlla.SetMap
 }
 
@@ -127,7 +131,7 @@ func (q {{ $camelName }}InsertOnDuplicateKeyUpdateSQL) ToSql() (string, []interf
 		}
 	}
 
-	query, vs, err := q.insertSQL.toSql()
+	query, vs, err := q.insertSQL.{{ $camelName }}InsertSQLToSql()
 	if err != nil {
 			return "", []interface{}{}, err
 	}
@@ -173,4 +177,90 @@ func (q {{ $camelName }}InsertOnDuplicateKeyUpdateSQL) ExecContext(ctx context.C
 type {{ $camelName }}DefaultInsertOnDuplicateKeyUpdateHooker interface {
 	DefaultInsertOnDuplicateKeyUpdateHook({{ $camelName }}InsertOnDuplicateKeyUpdateSQL) ({{ $camelName }}InsertOnDuplicateKeyUpdateSQL, error)
 }
+
+type {{ $camelName }}BulkInsertSQL struct {
+	insertSQLs []{{ $camelName }}InsertSQL
+}
+
+func New{{ (.Name | toCamel) }}BulkInsertSQL(insertSQLs ...{{ $camelName }}InsertSQL) {{ $camelName }}BulkInsertSQL {
+	return {{ $camelName }}BulkInsertSQL{
+		insertSQLs: insertSQLs,
+	}
+}
+
+func (q {{ $camelName }}BulkInsertSQL) {{ $camelName }}InsertSQLToSql() (string, []interface{}, error) {
+	if len(q.insertSQLs) == 0 {
+		return "", []interface{}{}, fmt.Errorf("sqlla: This {{ $camelName }}BulkInsertSQL does not have InsertSQL")
+	}
+	iqs := make([]{{ $camelName }}InsertSQL, len(q.insertSQLs))
+	copy(iqs, q.insertSQLs)
+
+	var s interface{} = {{ .StructName }}{}
+	if t, ok := s.({{ $camelName }}DefaultInsertHooker); ok {
+		for i, iq := range iqs {
+			var err error
+			iq, err = t.DefaultInsertHook(iq)
+			if err != nil {
+				return "", []interface{}{}, err
+			}
+			iqs[i] = iq
+		}
+	}
+
+	sms := make(sqlla.SetMaps, 0, len(q.insertSQLs))
+	for _, iq := range q.insertSQLs {
+		sms = append(sms, iq.setMap)
+	}
+
+	query, vs, err := sms.ToInsertSql()
+	if err != nil {
+	return "", []interface{}{}, err
+	}
+
+	return "INSERT INTO " + query, vs, nil
+}
+
+func (q {{ $camelName }}BulkInsertSQL) ToSql() (string, []interface{}, error) {
+	query, vs, err := q.{{ $camelName }}InsertSQLToSql()
+	if err != nil {
+			return "", []interface{}{}, err
+	}
+	return query + ";", vs, nil
+}
+
+func (q {{ $camelName }}BulkInsertSQL) OnDuplicateKeyUpdate() {{ $camelName }}InsertOnDuplicateKeyUpdateSQL {
+	return {{ $camelName }}InsertOnDuplicateKeyUpdateSQL{
+		insertSQL: q,
+		onDuplicateKeyUpdateMap: sqlla.SetMap{},
+	}
+}
+
+{{ if .HasPk -}}
+func (q {{ $camelName }}BulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) ({{ .StructName }}, error) {
+{{- else -}}
+func (q {{ $camelName }}BulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+{{- end }}
+	query, args, err := q.ToSql()
+	if err != nil {
+		{{ if .HasPk -}}
+		return {{ .StructName }}{}, err
+		{{- else }}
+		return nil, err
+		{{- end }}
+	}
+	result, err := db.ExecContext(ctx, query, args...)
+	{{ if .HasPk -}}
+	if err != nil {
+		return {{ .StructName }}{}, err
+	}
+	id, err := result.LastInsertId()
+	if err != nil {
+		return {{ .StructName }}{}, err
+	}
+	return {{ $constructor }}().Select().PkColumn(id).SingleContext(ctx, db)
+	{{- else -}}
+	return result, err
+	{{- end }}
+}
+
 {{ end }}
