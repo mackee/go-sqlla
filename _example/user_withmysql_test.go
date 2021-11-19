@@ -123,5 +123,4 @@ func TestInsertOnDuplicateKeyUpdate__WithMySQL(t *testing.T) {
 	if r2.UpdatedAt.Time.Unix() <= r1.UpdatedAt.Time.Unix() {
 		t.Fatal("updated_at does not updated:", r1.UpdatedAt.Time.Unix(), r2.UpdatedAt.Time.Unix())
 	}
-
 }

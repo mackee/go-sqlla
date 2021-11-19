@@ -6,6 +6,7 @@ import (
 	"os"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -226,6 +227,27 @@ func TestInsertOnDuplicateKeyUpdate(t *testing.T) {
 	}
 	if len(args) != 5 {
 		t.Error("args is too many:", len(args))
+	}
+}
+
+func TestBulkInsert(t *testing.T) {
+	items := make([]userItemInsertSQL, 0, 10)
+	for i := 1; i <= 10; i++ {
+		q := NewUserItemSQL().Insert().
+			ValueUserID(42).
+			ValueItemID(strconv.Itoa(i))
+		items = append(items, q)
+	}
+	query, vs, err := NewUserItemBulkInsertSQL(items...).ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	expected := "INSERT INTO `user_item` (`item_id`,`user_id`) VALUES (?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?);"
+	if query != expected {
+		t.Error("query is not match:", query)
+	}
+	if !reflect.DeepEqual(vs, []interface{}{"1", uint64(42), "2", uint64(42), "3", uint64(42), "4", uint64(42), "5", uint64(42), "6", uint64(42), "7", uint64(42), "8", uint64(42), "9", uint64(42), "10", uint64(42)}) {
+		t.Errorf("vs is not valid: %+v", vs)
 	}
 }
 

@@ -867,7 +867,7 @@ func (q userItemBulkInsertSQL) userItemInsertSQLToSql() (string, []interface{}, 
 		return "", []interface{}{}, err
 	}
 
-	return "INSERT INTO " + query, vs, nil
+	return "INSERT INTO `user_item` " + query, vs, nil
 }
 
 func (q userItemBulkInsertSQL) ToSql() (string, []interface{}, error) {

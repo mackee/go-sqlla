@@ -142,5 +142,5 @@ func (s SetMaps) ToInsertSql() (string, []interface{}, error) {
 			return "", nil, err
 		}
 	}
-	return columns + " VALUES" + b.String(), vs, nil
+	return columns + " VALUES " + b.String(), vs, nil
 }

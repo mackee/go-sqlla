@@ -217,7 +217,7 @@ func (q {{ $camelName }}BulkInsertSQL) {{ $camelName }}InsertSQLToSql() (string,
 	return "", []interface{}{}, err
 	}
 
-	return "INSERT INTO " + query, vs, nil
+	return "INSERT INTO `{{ .Name }}` " + query, vs, nil
 }
 
 func (q {{ $camelName }}BulkInsertSQL) ToSql() (string, []interface{}, error) {
