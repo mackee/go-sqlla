@@ -251,6 +251,35 @@ func TestBulkInsert(t *testing.T) {
 	}
 }
 
+func TestBulkInsertWithOnDuplicateKeyUpdate(t *testing.T) {
+	items := NewUserItemSQL().BulkInsert()
+	items.Append(NewUserItemSQL().Insert().ValueUserID(42).ValueItemID("1").ValueIsUsed(true))
+	items.Append(NewUserItemSQL().Insert().ValueUserID(42).ValueItemID("2").ValueIsUsed(true))
+
+	now := mysql.NullTime{
+		Valid: true,
+		Time:  time.Now(),
+	}
+	query, vs, err := items.
+		OnDuplicateKeyUpdate().
+		SameOnUpdateIsUsed().
+		ValueOnUpdateUsedAt(now).
+		ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	bulkInsertQuery := "INSERT INTO `user_item` (`is_used`,`item_id`,`user_id`) VALUES (?,?,?),(?,?,?) "
+	expected1 := bulkInsertQuery + "ON DUPLICATE KEY UPDATE `is_used` = VALUES(`is_used`), `used_at` = ?;"
+	expected2 := bulkInsertQuery + "ON DUPLICATE KEY UPDATE `used_at` = ?, `is_used` = VALUES(`is_used`);"
+	if query != expected1 && query != expected2 {
+		t.Error("query is not match:", query)
+	}
+	if !reflect.DeepEqual(vs, []interface{}{true, "1", uint64(42), true, "2", uint64(42), now}) {
+		t.Errorf("vs is not valid: %+v", vs)
+	}
+
+}
+
 func TestDelete(t *testing.T) {
 	q := NewUserSQL().Delete().Name("hogehoge")
 	query, args, err := q.ToSql()
