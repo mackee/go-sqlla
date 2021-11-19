@@ -290,7 +290,7 @@ func setupDB(t *testing.T) *sql.DB {
 func TestCRUD__WithSqlite3(t *testing.T) {
 	db := setupDB(t)
 
-	query, args, err := NewUserSQL().Insert().ValueName("hogehoge").ToSql()
+	query, args, err := NewUserSQL().Insert().ValueName("hogehoge").ValueIconImage([]byte{}).ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
@@ -373,7 +373,7 @@ func TestCRUD__WithSqlite3(t *testing.T) {
 func TestORM__WithSqlite3(t *testing.T) {
 	db := setupDB(t)
 
-	insertedRow, err := NewUserSQL().Insert().ValueName("hogehoge").Exec(db)
+	insertedRow, err := NewUserSQL().Insert().ValueName("hogehoge").ValueIconImage([]byte{}).Exec(db)
 	if err != nil {
 		t.Error("cannot insert row error:", err)
 	}
@@ -395,7 +395,7 @@ func TestORM__WithSqlite3(t *testing.T) {
 		t.Error("unexpected name:", singleRow.Name)
 	}
 
-	_, err = NewUserSQL().Insert().ValueName("fugafuga").Exec(db)
+	_, err = NewUserSQL().Insert().ValueName("fugafuga").ValueIconImage([]byte{}).Exec(db)
 	if err != nil {
 		t.Error("cannot insert row error:", err)
 	}

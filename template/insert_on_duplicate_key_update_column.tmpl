@@ -5,6 +5,11 @@ func (q {{ $smallTableName }}InsertOnDuplicateKeyUpdateSQL) ValueOnUpdate{{ .Nam
 	return q
 }
 
+func (q {{ $smallTableName }}InsertOnDuplicateKeyUpdateSQL) RawValueOnUpdate{{ .Name | toCamel | Title }} (v sqlla.SetMapRawValue) {{ $smallTableName }}InsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`{{ .Name }}`"] = v
+	return q
+}
+
 func (q {{ $smallTableName }}InsertOnDuplicateKeyUpdateSQL) SameOnUpdate{{ .Name | toCamel | Title }} () {{ $smallTableName }}InsertOnDuplicateKeyUpdateSQL {
 	q.onDuplicateKeyUpdateMap["`{{ .Name }}`"] = sqlla.SetMapRawValue("VALUES(`{{ .Name }}`)")
 	return q

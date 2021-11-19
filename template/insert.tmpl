@@ -43,44 +43,11 @@ func (q {{ $camelName }}InsertSQL) toSql() (string, []interface{}, error) {
 }
 
 
-type {{ $camelName }}InsertOnDuplicateKeyUpdateSQL struct {
-	insertSQL {{ $camelName }}InsertSQL
-	onDuplicateKeyUpdateMap sqlla.SetMap
-}
-
-
 func (q {{ $camelName }}InsertSQL) OnDuplicateKeyUpdate() {{ $camelName }}InsertOnDuplicateKeyUpdateSQL {
 	return {{ $camelName }}InsertOnDuplicateKeyUpdateSQL{
 		insertSQL: q,
 		onDuplicateKeyUpdateMap: sqlla.SetMap{},
 	}
-}
-
-{{ range .Columns }}{{ template "InsertOnDuplicateKeyUpdateColumn" . }}{{ end }}
-
-func (q {{ $camelName }}InsertOnDuplicateKeyUpdateSQL) ToSql() (string, []interface{}, error) {
-	var err error
-	var s interface{} = {{ .StructName }}{}
-	if t, ok := s.({{ $camelName }}DefaultInsertOnDuplicateKeyUpdateHooker); ok {
-		q, err = t.DefaultInsertOnDuplicateKeyUpdateHook(q)
-		if err != nil {
-			return "", []interface{}{}, err
-		}
-	}
-
-	query, vs, err := q.insertSQL.toSql()
-	if err != nil {
-			return "", []interface{}{}, err
-	}
-
-	os, ovs, err := q.onDuplicateKeyUpdateMap.ToUpdateSql()
-	if err != nil {
-		return "", []interface{}{}, err
-	}
-	query += " ON DUPLICATE KEY UPDATE" + os
-	vs = append(vs, ovs...)
-
-	return query + ";", vs, nil
 }
 
 {{ if .HasPk -}}
@@ -141,6 +108,66 @@ func (q {{ $camelName }}InsertSQL) ExecContext(ctx context.Context, db sqlla.DB)
 
 type {{ $camelName }}DefaultInsertHooker interface {
 	DefaultInsertHook({{ $camelName }}InsertSQL) ({{ $camelName }}InsertSQL, error)
+}
+
+type {{ $camelName }}InsertOnDuplicateKeyUpdateSQL struct {
+	insertSQL {{ $camelName }}InsertSQL
+	onDuplicateKeyUpdateMap sqlla.SetMap
+}
+
+{{ range .Columns }}{{ template "InsertOnDuplicateKeyUpdateColumn" . }}{{ end }}
+
+func (q {{ $camelName }}InsertOnDuplicateKeyUpdateSQL) ToSql() (string, []interface{}, error) {
+	var err error
+	var s interface{} = {{ .StructName }}{}
+	if t, ok := s.({{ $camelName }}DefaultInsertOnDuplicateKeyUpdateHooker); ok {
+		q, err = t.DefaultInsertOnDuplicateKeyUpdateHook(q)
+		if err != nil {
+			return "", []interface{}{}, err
+		}
+	}
+
+	query, vs, err := q.insertSQL.toSql()
+	if err != nil {
+			return "", []interface{}{}, err
+	}
+
+	os, ovs, err := q.onDuplicateKeyUpdateMap.ToUpdateSql()
+	if err != nil {
+		return "", []interface{}{}, err
+	}
+	query += " ON DUPLICATE KEY UPDATE" + os
+	vs = append(vs, ovs...)
+
+	return query + ";", vs, nil
+}
+
+{{ if .HasPk -}}
+func (q {{ $camelName }}InsertOnDuplicateKeyUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ({{ .StructName }}, error) {
+{{- else -}}
+func (q {{ $camelName }}InsertOnDuplicateKeyUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+{{- end }}
+	query, args, err := q.ToSql()
+	if err != nil {
+		{{ if .HasPk -}}
+		return {{ .StructName }}{}, err
+		{{- else }}
+		return nil, err
+		{{- end }}
+	}
+	result, err := db.ExecContext(ctx, query, args...)
+	{{ if .HasPk -}}
+	if err != nil {
+		return {{ .StructName }}{}, err
+	}
+	id, err := result.LastInsertId()
+	if err != nil {
+		return {{ .StructName }}{}, err
+	}
+	return {{ $constructor }}().Select().PkColumn(id).SingleContext(ctx, db)
+	{{- else -}}
+	return result, err
+	{{- end }}
 }
 
 type {{ $camelName }}DefaultInsertOnDuplicateKeyUpdateHooker interface {
