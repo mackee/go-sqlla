@@ -747,6 +747,15 @@ func (q userInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (User, erro
 	return NewUserSQL().Select().PkColumn(id).SingleContext(ctx, db)
 }
 
+func (q userInsertSQL) ExecContextWithoutSelect(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	result, err := db.ExecContext(ctx, query, args...)
+	return result, err
+}
+
 type userDefaultInsertHooker interface {
 	DefaultInsertHook(userInsertSQL) (userInsertSQL, error)
 }
@@ -904,6 +913,15 @@ func (q userInsertOnDuplicateKeyUpdateSQL) ExecContext(ctx context.Context, db s
 		return User{}, err
 	}
 	return NewUserSQL().Select().PkColumn(id).SingleContext(ctx, db)
+}
+
+func (q userInsertOnDuplicateKeyUpdateSQL) ExecContextWithoutSelect(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	result, err := db.ExecContext(ctx, query, args...)
+	return result, err
 }
 
 type userDefaultInsertOnDuplicateKeyUpdateHooker interface {

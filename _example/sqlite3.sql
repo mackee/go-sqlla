@@ -14,6 +14,16 @@ CREATE TABLE "user" (
 ) ;
 
 
+DROP TABLE IF EXISTS "user_external";
+
+CREATE TABLE "user_external" (
+    "id" INTEGER NOT NULL PRIMARY KEY,
+    "user_id" INTEGER NOT NULL,
+    "created_at" DATETIME NOT NULL,
+    "updated_at" DATETIME NOT NULL
+) ;
+
+
 DROP TABLE IF EXISTS "user_item";
 
 CREATE TABLE "user_item" (
