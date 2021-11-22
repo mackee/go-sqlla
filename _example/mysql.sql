@@ -14,6 +14,16 @@ CREATE TABLE `user` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
+DROP TABLE IF EXISTS `user_external`;
+
+CREATE TABLE `user_external` (
+    `id` BIGINT unsigned NOT NULL PRIMARY KEY,
+    `user_id` BIGINT unsigned NOT NULL,
+    `created_at` DATETIME NOT NULL,
+    `updated_at` DATETIME NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
 DROP TABLE IF EXISTS `user_item`;
 
 CREATE TABLE `user_item` (

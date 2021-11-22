@@ -106,6 +106,17 @@ func (q {{ $camelName }}InsertSQL) ExecContext(ctx context.Context, db sqlla.DB)
 	{{- end }}
 }
 
+{{ if .HasPk -}}
+func (q {{ $camelName }}InsertSQL) ExecContextWithoutSelect(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	result, err := db.ExecContext(ctx, query, args...)
+	return result, err
+}
+{{- end }}
+
 type {{ $camelName }}DefaultInsertHooker interface {
 	DefaultInsertHook({{ $camelName }}InsertSQL) ({{ $camelName }}InsertSQL, error)
 }
@@ -173,6 +184,17 @@ func (q {{ $camelName }}InsertOnDuplicateKeyUpdateSQL) ExecContext(ctx context.C
 	return result, err
 	{{- end }}
 }
+
+{{ if .HasPk -}}
+func (q {{ $camelName }}InsertOnDuplicateKeyUpdateSQL) ExecContextWithoutSelect(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	result, err := db.ExecContext(ctx, query, args...)
+	return result, err
+}
+{{- end }}
 
 type {{ $camelName }}DefaultInsertOnDuplicateKeyUpdateHooker interface {
 	DefaultInsertOnDuplicateKeyUpdateHook({{ $camelName }}InsertOnDuplicateKeyUpdateSQL) ({{ $camelName }}InsertOnDuplicateKeyUpdateSQL, error)

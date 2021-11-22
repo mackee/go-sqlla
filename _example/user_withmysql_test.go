@@ -84,6 +84,21 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
+func TestInsertWithoutSelect__WithMySQL(t *testing.T) {
+	ctx := context.Background()
+	now := time.Now()
+
+	q1 := NewUserExternalSQL().Insert().
+		ValueID(42).
+		ValueUserID(42).
+		ValueCreatedAt(now).
+		ValueUpdatedAt(now)
+	_, err := q1.ExecContextWithoutSelect(ctx, db)
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+}
+
 func TestInsertOnDuplicateKeyUpdate__WithMySQL(t *testing.T) {
 	ctx := context.Background()
 	now1 := time.Now()
