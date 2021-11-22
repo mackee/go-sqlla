@@ -9,10 +9,12 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/go-sql-driver/mysql"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/mackee/go-sqlla/v2"
 	"github.com/ory/dockertest/v3"
@@ -84,12 +86,14 @@ func TestMain(m *testing.M) {
 
 func TestInsertOnDuplicateKeyUpdate__WithMySQL(t *testing.T) {
 	ctx := context.Background()
+	now1 := time.Now()
 
 	q1 := NewUserSQL().Insert().
 		ValueName("hogehoge").
 		ValueRate(3.14).
 		ValueIconImage([]byte{}).
-		ValueAge(sql.NullInt64{Valid: true, Int64: 17})
+		ValueAge(sql.NullInt64{Valid: true, Int64: 17}).
+		ValueUpdatedAt(mysql.NullTime{Valid: true, Time: now1})
 	query, args, _ := q1.ToSql()
 	t.Logf("query=%s, args=%+v", query, args)
 	r1, err := q1.ExecContext(ctx, db)
@@ -97,12 +101,13 @@ func TestInsertOnDuplicateKeyUpdate__WithMySQL(t *testing.T) {
 		t.Fatal("unexpected error:", err)
 	}
 
-	time.Sleep(1 * time.Second)
+	now2 := now1.Add(1 * time.Second)
 
 	q2 := NewUserSQL().Insert().
 		ValueName("hogehoge").
 		ValueAge(sql.NullInt64{Valid: true, Int64: 17}).
 		ValueIconImage([]byte{}).
+		ValueUpdatedAt(mysql.NullTime{Valid: true, Time: now2}).
 		OnDuplicateKeyUpdate().
 		RawValueOnUpdateAge(sqlla.SetMapRawValue("`age` + 1"))
 	r2, err := q2.ExecContext(ctx, db)
@@ -118,6 +123,111 @@ func TestInsertOnDuplicateKeyUpdate__WithMySQL(t *testing.T) {
 	}
 	if r2.UpdatedAt.Time.Unix() <= r1.UpdatedAt.Time.Unix() {
 		t.Fatal("updated_at does not updated:", r1.UpdatedAt.Time.Unix(), r2.UpdatedAt.Time.Unix())
+	}
+}
+
+func TestBulkInsert__WithMySQL(t *testing.T) {
+	ctx := context.Background()
+
+	if _, err := NewUserItemSQL().Delete().ExecContext(ctx, db); err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+
+	items := NewUserItemSQL().BulkInsert()
+	items.Append(
+		NewUserItemSQL().Insert().ValueUserID(42).ValueItemID("1").ValueIsUsed(true),
+		NewUserItemSQL().Insert().ValueUserID(42).ValueItemID("2").ValueIsUsed(true),
+	)
+
+	if _, err := items.ExecContext(ctx, db); err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+
+	uis, err := NewUserItemSQL().Select().AllContext(ctx, db)
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+	for i, ui := range uis {
+		if ui.UserId != 42 {
+			t.Error("UserId is not match:", ui.UserId)
+		}
+		if ui.ItemId != strconv.Itoa(i+1) {
+			t.Errorf("ItemId is not match: index=%d, got=%s", i, ui.ItemId)
+		}
+		if !ui.IsUsed {
+			t.Error("IsUsed is false")
+		}
+	}
+}
+
+func TestBulkInsertOnDuplicateKeyUpdate__WithMySQL(t *testing.T) {
+	ctx := context.Background()
+
+	if _, err := NewUserItemSQL().Delete().ExecContext(ctx, db); err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+
+	items := NewUserItemSQL().BulkInsert()
+	items.Append(
+		NewUserItemSQL().Insert().ValueUserID(42).ValueItemID("1").ValueIsUsed(false),
+		NewUserItemSQL().Insert().ValueUserID(42).ValueItemID("2").ValueIsUsed(false),
+	)
+
+	if _, err := items.ExecContext(ctx, db); err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+
+	uis, err := NewUserItemSQL().Select().AllContext(ctx, db)
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+	uitems := NewUserItemSQL().BulkInsert()
+	for _, ui := range uis {
+		uitems.Append(
+			NewUserItemSQL().Insert().
+				ValueID(ui.Id).
+				ValueUserID(42).
+				ValueItemID(ui.ItemId).
+				ValueIsUsed(true),
+		)
+	}
+	uitems.Append(
+		NewUserItemSQL().Insert().
+			ValueID(uis[len(uis)-1].Id + 1).
+			ValueUserID(42).
+			ValueItemID("3").
+			ValueIsUsed(true),
+	)
+	now := time.Now()
+	dup := uitems.OnDuplicateKeyUpdate().
+		SameOnUpdateIsUsed().
+		ValueOnUpdateUsedAt(mysql.NullTime{
+			Valid: true,
+			Time:  now,
+		})
+
+	if _, err := dup.ExecContext(ctx, db); err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+
+	uuis, err := NewUserItemSQL().Select().OrderByID(sqlla.Asc).AllContext(ctx, db)
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+	for i, ui := range uuis {
+		if !ui.IsUsed {
+			t.Errorf("IsUsed is false: index=%d", i)
+		}
+		switch i {
+		case 0, 1:
+			if !ui.UsedAt.Valid {
+				t.Errorf("UsedAt is not valid: index=%d", i)
+			}
+		case 2:
+			if ui.UsedAt.Valid {
+				t.Errorf("UsedAt is valid: index=%d", i)
+			}
+		}
 	}
 
 }

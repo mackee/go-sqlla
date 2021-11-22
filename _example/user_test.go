@@ -6,6 +6,7 @@ import (
 	"os"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -190,24 +191,24 @@ func TestInsert(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	switch query {
-	case "INSERT INTO user (`name`,`created_at`) VALUES(?,?);":
-		if !reflect.DeepEqual(args[0], "hogehoge") {
-			t.Error("unexpected args:", args)
-		}
-	case "INSERT INTO user (`created_at`,`name`) VALUES(?,?);":
-		if !reflect.DeepEqual(args[1], "hogehoge") {
-			t.Error("unexpected args:", args)
-		}
-	default:
+	expected := "INSERT INTO user (`created_at`,`name`) VALUES(?,?);"
+	if query != expected {
 		t.Error("unexpected query:", query)
+	}
+	if !reflect.DeepEqual(args[1], "hogehoge") {
+		t.Error("unexpected args:", args)
 	}
 }
 
 func TestInsertOnDuplicateKeyUpdate(t *testing.T) {
+	now := time.Now()
 	q := NewUserSQL().Insert().
 		ValueID(1).
 		ValueName("hogehoge").
+		ValueUpdatedAt(mysql.NullTime{
+			Valid: true,
+			Time:  now,
+		}).
 		OnDuplicateKeyUpdate().
 		ValueOnUpdateAge(sql.NullInt64{
 			Valid: true,
@@ -227,6 +228,58 @@ func TestInsertOnDuplicateKeyUpdate(t *testing.T) {
 	if len(args) != 5 {
 		t.Error("args is too many:", len(args))
 	}
+}
+
+func TestBulkInsert(t *testing.T) {
+	items := NewUserItemSQL().BulkInsert()
+	for i := 1; i <= 10; i++ {
+		q := NewUserItemSQL().Insert().
+			ValueUserID(42).
+			ValueItemID(strconv.Itoa(i))
+		items.Append(q)
+	}
+	query, vs, err := items.ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	expected := "INSERT INTO `user_item` (`item_id`,`user_id`) VALUES (?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?);"
+	if query != expected {
+		t.Error("query is not match:", query)
+	}
+	if !reflect.DeepEqual(vs, []interface{}{"1", uint64(42), "2", uint64(42), "3", uint64(42), "4", uint64(42), "5", uint64(42), "6", uint64(42), "7", uint64(42), "8", uint64(42), "9", uint64(42), "10", uint64(42)}) {
+		t.Errorf("vs is not valid: %+v", vs)
+	}
+}
+
+func TestBulkInsertWithOnDuplicateKeyUpdate(t *testing.T) {
+	items := NewUserItemSQL().BulkInsert()
+	items.Append(
+		NewUserItemSQL().Insert().ValueUserID(42).ValueItemID("1").ValueIsUsed(true),
+		NewUserItemSQL().Insert().ValueUserID(42).ValueItemID("2").ValueIsUsed(true),
+	)
+
+	now := mysql.NullTime{
+		Valid: true,
+		Time:  time.Now(),
+	}
+	query, vs, err := items.
+		OnDuplicateKeyUpdate().
+		SameOnUpdateIsUsed().
+		ValueOnUpdateUsedAt(now).
+		ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	bulkInsertQuery := "INSERT INTO `user_item` (`is_used`,`item_id`,`user_id`) VALUES (?,?,?),(?,?,?) "
+	expected1 := bulkInsertQuery + "ON DUPLICATE KEY UPDATE `is_used` = VALUES(`is_used`), `used_at` = ?;"
+	expected2 := bulkInsertQuery + "ON DUPLICATE KEY UPDATE `used_at` = ?, `is_used` = VALUES(`is_used`);"
+	if query != expected1 && query != expected2 {
+		t.Error("query is not match:", query)
+	}
+	if !reflect.DeepEqual(vs, []interface{}{true, "1", uint64(42), true, "2", uint64(42), now}) {
+		t.Errorf("vs is not valid: %+v", vs)
+	}
+
 }
 
 func TestDelete(t *testing.T) {
