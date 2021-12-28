@@ -22,6 +22,8 @@ install: _bin/sqlla
 	install _bin/sqlla $(GOPATH)/bin
 
 get-deps:
+	go mod download
+	cd _example && go mod download
 	mkdir -p _gobin
 	go install github.com/Songmu/goxz/cmd/goxz@latest
 	go install github.com/tcnksm/ghr@latest
