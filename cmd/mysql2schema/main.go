@@ -242,7 +242,7 @@ func sqlTypeToSchemaType(c Column) (string, error) {
 		return "string", nil
 	case strings.HasPrefix(c.Type, "datetime"):
 		if c.IsNull {
-			return "mysql.NullTime", nil
+			return "sql.NullTime", nil
 		}
 		return "time.Time", nil
 	default:

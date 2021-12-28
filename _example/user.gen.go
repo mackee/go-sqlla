@@ -261,13 +261,13 @@ func (q userSelectSQL) UpdatedAt(v mysql.NullTime, exprs ...sqlla.Operator) user
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprNullTime{Value: v, Op: op, Column: "`updated_at`"}
+	where := sqlla.ExprMysqlNullTime{Value: v, Op: op, Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) UpdatedAtIn(vs ...mysql.NullTime) userSelectSQL {
-	where := sqlla.ExprMultiNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
+	where := sqlla.ExprMultiMysqlNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -561,13 +561,13 @@ func (q userUpdateSQL) WhereUpdatedAt(v mysql.NullTime, exprs ...sqlla.Operator)
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprNullTime{Value: v, Op: op, Column: "`updated_at`"}
+	where := sqlla.ExprMysqlNullTime{Value: v, Op: op, Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userUpdateSQL) WhereUpdatedAtIn(vs ...mysql.NullTime) userUpdateSQL {
-	where := sqlla.ExprMultiNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
+	where := sqlla.ExprMultiMysqlNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -1127,13 +1127,13 @@ func (q userDeleteSQL) UpdatedAt(v mysql.NullTime, exprs ...sqlla.Operator) user
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprNullTime{Value: v, Op: op, Column: "`updated_at`"}
+	where := sqlla.ExprMysqlNullTime{Value: v, Op: op, Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userDeleteSQL) UpdatedAtIn(vs ...mysql.NullTime) userDeleteSQL {
-	where := sqlla.ExprMultiNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
+	where := sqlla.ExprMultiMysqlNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
