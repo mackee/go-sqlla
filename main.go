@@ -73,6 +73,7 @@ func Run(from, ext string) {
 var supportedNonPrimitiveTypes = map[string]struct{}{
 	"time.Time":       {},
 	"mysql.NullTime":  {},
+	"sql.NullTime":    {},
 	"sql.NullInt64":   {},
 	"sql.NullString":  {},
 	"sql.NullFloat64": {},
@@ -80,7 +81,8 @@ var supportedNonPrimitiveTypes = map[string]struct{}{
 }
 
 var altTypeNames = map[string]string{
-	"[]byte": "Bytes",
+	"[]byte":         "Bytes",
+	"mysql.NullTime": "MysqlNullTime",
 }
 
 func toTable(tablePkg *types.Package, annotationComment string, gd *ast.GenDecl, ti *types.Info) (*Table, error) {

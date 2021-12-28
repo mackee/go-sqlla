@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"database/sql"
-	"github.com/go-sql-driver/mysql"
 
 	"github.com/mackee/go-sqlla/v2"
 )
@@ -220,7 +219,7 @@ func (q userItemSelectSQL) OrderByHasExtension(order sqlla.Order) userItemSelect
 	return q
 }
 
-func (q userItemSelectSQL) UsedAt(v mysql.NullTime, exprs ...sqlla.Operator) userItemSelectSQL {
+func (q userItemSelectSQL) UsedAt(v sql.NullTime, exprs ...sqlla.Operator) userItemSelectSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
 		op = sqlla.OpEqual
@@ -232,7 +231,7 @@ func (q userItemSelectSQL) UsedAt(v mysql.NullTime, exprs ...sqlla.Operator) use
 	return q
 }
 
-func (q userItemSelectSQL) UsedAtIn(vs ...mysql.NullTime) userItemSelectSQL {
+func (q userItemSelectSQL) UsedAtIn(vs ...sql.NullTime) userItemSelectSQL {
 	where := sqlla.ExprMultiNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`used_at`"}
 	q.where = append(q.where, where)
 	return q
@@ -487,12 +486,12 @@ func (q userItemUpdateSQL) WhereHasExtensionIn(vs ...sql.NullBool) userItemUpdat
 	return q
 }
 
-func (q userItemUpdateSQL) SetUsedAt(v mysql.NullTime) userItemUpdateSQL {
+func (q userItemUpdateSQL) SetUsedAt(v sql.NullTime) userItemUpdateSQL {
 	q.setMap["`used_at`"] = v
 	return q
 }
 
-func (q userItemUpdateSQL) WhereUsedAt(v mysql.NullTime, exprs ...sqlla.Operator) userItemUpdateSQL {
+func (q userItemUpdateSQL) WhereUsedAt(v sql.NullTime, exprs ...sqlla.Operator) userItemUpdateSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
 		op = sqlla.OpEqual
@@ -504,7 +503,7 @@ func (q userItemUpdateSQL) WhereUsedAt(v mysql.NullTime, exprs ...sqlla.Operator
 	return q
 }
 
-func (q userItemUpdateSQL) WhereUsedAtIn(vs ...mysql.NullTime) userItemUpdateSQL {
+func (q userItemUpdateSQL) WhereUsedAtIn(vs ...sql.NullTime) userItemUpdateSQL {
 	where := sqlla.ExprMultiNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`used_at`"}
 	q.where = append(q.where, where)
 	return q
@@ -609,7 +608,7 @@ func (q userItemInsertSQL) ValueHasExtension(v sql.NullBool) userItemInsertSQL {
 	return q
 }
 
-func (q userItemInsertSQL) ValueUsedAt(v mysql.NullTime) userItemInsertSQL {
+func (q userItemInsertSQL) ValueUsedAt(v sql.NullTime) userItemInsertSQL {
 	q.setMap["`used_at`"] = v
 	return q
 }
@@ -777,7 +776,7 @@ func (q userItemInsertOnDuplicateKeyUpdateSQL) SameOnUpdateHasExtension() userIt
 	return q
 }
 
-func (q userItemInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateUsedAt(v mysql.NullTime) userItemInsertOnDuplicateKeyUpdateSQL {
+func (q userItemInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateUsedAt(v sql.NullTime) userItemInsertOnDuplicateKeyUpdateSQL {
 	q.onDuplicateKeyUpdateMap["`used_at`"] = v
 	return q
 }
@@ -1016,7 +1015,7 @@ func (q userItemDeleteSQL) HasExtensionIn(vs ...sql.NullBool) userItemDeleteSQL 
 	return q
 }
 
-func (q userItemDeleteSQL) UsedAt(v mysql.NullTime, exprs ...sqlla.Operator) userItemDeleteSQL {
+func (q userItemDeleteSQL) UsedAt(v sql.NullTime, exprs ...sqlla.Operator) userItemDeleteSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
 		op = sqlla.OpEqual
@@ -1028,7 +1027,7 @@ func (q userItemDeleteSQL) UsedAt(v mysql.NullTime, exprs ...sqlla.Operator) use
 	return q
 }
 
-func (q userItemDeleteSQL) UsedAtIn(vs ...mysql.NullTime) userItemDeleteSQL {
+func (q userItemDeleteSQL) UsedAtIn(vs ...sql.NullTime) userItemDeleteSQL {
 	where := sqlla.ExprMultiNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`used_at`"}
 	q.where = append(q.where, where)
 	return q

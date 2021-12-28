@@ -108,11 +108,11 @@ func TestSelect__Or(t *testing.T) {
 
 func TestSelect__OrNull(t *testing.T) {
 	now := time.Now()
-	nt := mysql.NullTime{Time: now, Valid: true}
+	nt := sql.NullTime{Time: now, Valid: true}
 	q := NewUserItemSQL().Select().
 		IDIn(uint64(1), uint64(2)).
 		Or(
-			NewUserItemSQL().Select().UsedAt(mysql.NullTime{}, sqlla.OpIs),
+			NewUserItemSQL().Select().UsedAt(sql.NullTime{}, sqlla.OpIs),
 			NewUserItemSQL().Select().UsedAt(nt, sqlla.OpLess),
 		)
 	query, args, err := q.ToSql()
@@ -258,7 +258,7 @@ func TestBulkInsertWithOnDuplicateKeyUpdate(t *testing.T) {
 		NewUserItemSQL().Insert().ValueUserID(42).ValueItemID("2").ValueIsUsed(true),
 	)
 
-	now := mysql.NullTime{
+	now := sql.NullTime{
 		Valid: true,
 		Time:  time.Now(),
 	}
