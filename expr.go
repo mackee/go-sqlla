@@ -156,7 +156,11 @@ func (e ExprNullInt64) ToSql() (string, []interface{}, error) {
 	var err error
 	vs := []interface{}{}
 	if !e.Value.Valid {
-		ops, err = OpIsNull.ToSql()
+		if e.Op == OpNot {
+			ops, err = OpIsNotNull.ToSql()
+		} else {
+			ops, err = OpIsNull.ToSql()
+		}
 	} else {
 		ops, err = e.Op.ToSql()
 		placeholder = " ?"
@@ -198,7 +202,11 @@ func (e ExprNullString) ToSql() (string, []interface{}, error) {
 	var err error
 	vs := []interface{}{}
 	if !e.Value.Valid {
-		ops, err = OpIsNull.ToSql()
+		if e.Op == OpNot {
+			ops, err = OpIsNotNull.ToSql()
+		} else {
+			ops, err = OpIsNull.ToSql()
+		}
 	} else {
 		ops, err = e.Op.ToSql()
 		placeholder = " ?"
@@ -304,7 +312,11 @@ func (e ExprNullTime) ToSql() (string, []interface{}, error) {
 	var err error
 	vs := []interface{}{}
 	if !e.Value.Valid {
-		ops, err = OpIsNull.ToSql()
+		if e.Op == OpNot {
+			ops, err = OpIsNotNull.ToSql()
+		} else {
+			ops, err = OpIsNull.ToSql()
+		}
 	} else {
 		ops, err = e.Op.ToSql()
 		placeholder = " ?"
@@ -346,7 +358,11 @@ func (e ExprMysqlNullTime) ToSql() (string, []interface{}, error) {
 	var err error
 	vs := []interface{}{}
 	if !e.Value.Valid {
-		ops, err = OpIsNull.ToSql()
+		if e.Op == OpNot {
+			ops, err = OpIsNotNull.ToSql()
+		} else {
+			ops, err = OpIsNull.ToSql()
+		}
 	} else {
 		ops, err = e.Op.ToSql()
 		placeholder = " ?"
@@ -388,7 +404,11 @@ func (e ExprNullFloat64) ToSql() (string, []interface{}, error) {
 	var err error
 	vs := []interface{}{}
 	if !e.Value.Valid {
-		ops, err = OpIsNull.ToSql()
+		if e.Op == OpNot {
+			ops, err = OpIsNotNull.ToSql()
+		} else {
+			ops, err = OpIsNull.ToSql()
+		}
 	} else {
 		ops, err = e.Op.ToSql()
 		placeholder = " ?"
@@ -462,7 +482,11 @@ func (e ExprNullBool) ToSql() (string, []interface{}, error) {
 	var err error
 	vs := []interface{}{}
 	if !e.Value.Valid {
-		ops, err = OpIsNull.ToSql()
+		if e.Op == OpNot {
+			ops, err = OpIsNotNull.ToSql()
+		} else {
+			ops, err = OpIsNull.ToSql()
+		}
 	} else {
 		ops, err = e.Op.ToSql()
 		placeholder = " ?"

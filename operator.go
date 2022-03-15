@@ -13,6 +13,7 @@ var (
 	OpNot          Operator = "<>"
 	OpIs           Operator = "IS"
 	OpIsNull       Operator = "IS NULL"
+	OpIsNotNull    Operator = "IS NOT NULL"
 )
 
 type Operator string

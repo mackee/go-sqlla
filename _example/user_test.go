@@ -74,6 +74,20 @@ func TestSelect__NullInt64(t *testing.T) {
 	}
 }
 
+func TestSelect__NullInt64__IsNotNull(t *testing.T) {
+	q := NewUserSQL().Select().Age(sql.NullInt64{}, sqlla.OpNot)
+	query, args, err := q.ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	if query != "SELECT "+columns+" FROM user WHERE `age` IS NOT NULL;" {
+		t.Error("unexpected query:", query)
+	}
+	if !reflect.DeepEqual(args, []interface{}{}) {
+		t.Error("unexpected args:", args)
+	}
+}
+
 func TestSelect__ForUpdate(t *testing.T) {
 	q := NewUserSQL().Select().ID(UserId(1)).ForUpdate()
 	query, args, err := q.ToSql()
