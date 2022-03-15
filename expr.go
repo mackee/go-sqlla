@@ -157,9 +157,9 @@ func (e ExprNullInt64) ToSql() (string, []interface{}, error) {
 	vs := []interface{}{}
 	if !e.Value.Valid {
 		if e.Op == OpNot {
-			ops, err = OpIsNotNull.ToSql()
+			ops, err = opIsNotNull.ToSql()
 		} else {
-			ops, err = OpIsNull.ToSql()
+			ops, err = opIsNull.ToSql()
 		}
 	} else {
 		ops, err = e.Op.ToSql()
@@ -203,9 +203,9 @@ func (e ExprNullString) ToSql() (string, []interface{}, error) {
 	vs := []interface{}{}
 	if !e.Value.Valid {
 		if e.Op == OpNot {
-			ops, err = OpIsNotNull.ToSql()
+			ops, err = opIsNotNull.ToSql()
 		} else {
-			ops, err = OpIsNull.ToSql()
+			ops, err = opIsNull.ToSql()
 		}
 	} else {
 		ops, err = e.Op.ToSql()
@@ -313,9 +313,9 @@ func (e ExprNullTime) ToSql() (string, []interface{}, error) {
 	vs := []interface{}{}
 	if !e.Value.Valid {
 		if e.Op == OpNot {
-			ops, err = OpIsNotNull.ToSql()
+			ops, err = opIsNotNull.ToSql()
 		} else {
-			ops, err = OpIsNull.ToSql()
+			ops, err = opIsNull.ToSql()
 		}
 	} else {
 		ops, err = e.Op.ToSql()
@@ -359,9 +359,9 @@ func (e ExprMysqlNullTime) ToSql() (string, []interface{}, error) {
 	vs := []interface{}{}
 	if !e.Value.Valid {
 		if e.Op == OpNot {
-			ops, err = OpIsNotNull.ToSql()
+			ops, err = opIsNotNull.ToSql()
 		} else {
-			ops, err = OpIsNull.ToSql()
+			ops, err = opIsNull.ToSql()
 		}
 	} else {
 		ops, err = e.Op.ToSql()
@@ -405,9 +405,9 @@ func (e ExprNullFloat64) ToSql() (string, []interface{}, error) {
 	vs := []interface{}{}
 	if !e.Value.Valid {
 		if e.Op == OpNot {
-			ops, err = OpIsNotNull.ToSql()
+			ops, err = opIsNotNull.ToSql()
 		} else {
-			ops, err = OpIsNull.ToSql()
+			ops, err = opIsNull.ToSql()
 		}
 	} else {
 		ops, err = e.Op.ToSql()
@@ -483,9 +483,9 @@ func (e ExprNullBool) ToSql() (string, []interface{}, error) {
 	vs := []interface{}{}
 	if !e.Value.Valid {
 		if e.Op == OpNot {
-			ops, err = OpIsNotNull.ToSql()
+			ops, err = opIsNotNull.ToSql()
 		} else {
-			ops, err = OpIsNull.ToSql()
+			ops, err = opIsNull.ToSql()
 		}
 	} else {
 		ops, err = e.Op.ToSql()
