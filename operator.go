@@ -12,7 +12,8 @@ var (
 	OpLessEqual    Operator = "<="
 	OpNot          Operator = "<>"
 	OpIs           Operator = "IS"
-	OpIsNull       Operator = "IS NULL"
+	opIsNull       Operator = "IS NULL"
+	opIsNotNull    Operator = "IS NOT NULL"
 )
 
 type Operator string
