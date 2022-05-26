@@ -201,6 +201,22 @@ func TestSelect__GroupByDottedColumn(t *testing.T) {
 	}
 }
 
+func TestSelect__LikeOperator(t *testing.T) {
+	query, args, err := NewUserSQL().Select().
+		Name("%foobar%", sqlla.OpLike).
+		ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	expectedQuery := "SELECT " + columns + " FROM user WHERE `name` LIKE ?;"
+	if query != expectedQuery {
+		t.Error("unexpected query:", query, expectedQuery)
+	}
+	if !reflect.DeepEqual(args, []interface{}{string("%foobar%")}) {
+		t.Error("unexpected args:", args)
+	}
+}
+
 func TestUpdate(t *testing.T) {
 	q := NewUserSQL().Update().SetName("barbar").WhereID(UserId(1))
 	query, args, err := q.ToSql()

@@ -14,6 +14,7 @@ var (
 	OpIs           Operator = "IS"
 	opIsNull       Operator = "IS NULL"
 	opIsNotNull    Operator = "IS NOT NULL"
+	OpLike         Operator = "LIKE"
 )
 
 type Operator string
