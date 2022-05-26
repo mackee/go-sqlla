@@ -11,6 +11,14 @@ type {{ $camelName }}SelectSQL struct {
 	order       string
 	limit       *uint64
 	offset      *uint64
+	tableAlias  string
+	joinClauses []string
+
+	additionalWhereClause string
+	additionalWhereClauseArgs []interface{}
+
+	groupByColumns []string
+
 	isForUpdate bool
 }
 
@@ -18,6 +26,11 @@ func (q {{ $camelName }}SQL) Select() {{ $camelName }}SelectSQL {
 	return {{ $camelName }}SelectSQL{
 		q,
 		{{ $camelName }}AllColumns,
+		"",
+		nil,
+		nil,
+		"",
+		nil,
 		"",
 		nil,
 		nil,
@@ -44,8 +57,55 @@ func (q {{ $camelName }}SelectSQL) Offset(o uint64) {{ $camelName }}SelectSQL {
 	return q
 }
 
-func (q {{ $camelName}}SelectSQL) ForUpdate() {{ $camelName }}SelectSQL {
+func (q {{ $camelName }}SelectSQL) ForUpdate() {{ $camelName }}SelectSQL {
 	q.isForUpdate = true
+	return q
+}
+
+func (q {{ $camelName }}SelectSQL) TableAlias(alias string) {{ $camelName }}SelectSQL {
+	q.tableAlias = "`" + alias + "`"
+	return q
+}
+
+func (q {{ $camelName }}SelectSQL) SetColumns(columns ...string) {{ $camelName }}SelectSQL {
+	q.Columns = make([]string, 0, len(columns))
+	for _, column := range columns {
+		if strings.ContainsAny(column, "(.`") {
+			q.Columns = append(q.Columns, column)
+		} else {
+			q.Columns = append(q.Columns, "`" + column + "`")
+		}
+	}
+	return q
+}
+
+func (q {{ $camelName }}SelectSQL) JoinClause(clause string) {{ $camelName }}SelectSQL {
+	q.joinClauses = append(q.joinClauses, clause)
+	return q
+}
+
+func (q {{ $camelName }}SelectSQL) AdditionalWhereClause(clause string, args ...interface{}) {{ $camelName }}SelectSQL {
+	q.additionalWhereClause = clause
+	q.additionalWhereClauseArgs = args
+	return q
+}
+
+func (q {{ $camelName }}SelectSQL) appendColumnPrefix(column string) string {
+	if q.tableAlias == "" || strings.ContainsAny(column, "(.") {
+		return column
+	}
+	return q.tableAlias + "." + column
+}
+
+func (q {{ $camelName }}SelectSQL) GroupBy(columns ...string) {{ $camelName }}SelectSQL {
+	q.groupByColumns = make([]string, 0, len(columns))
+	for _, column := range columns {
+		if strings.ContainsAny(column, "(.`") {
+			q.groupByColumns = append(q.groupByColumns, column)
+		} else {
+			q.groupByColumns = append(q.groupByColumns, "`" + column + "`")
+		}
+	}
 	return q
 }
 
@@ -57,9 +117,36 @@ func (q {{ $camelName }}SelectSQL) ToSql() (string, []interface{}, error) {
 		return "", nil, err
 	}
 
-	query := "SELECT " + columns + " FROM {{ .Name }}"
+	tableName := "{{ .Name }}"
+	if q.tableAlias != "" {
+		tableName = tableName + " AS " + q.tableAlias
+		pcs := make([]string, 0, len(q.Columns))
+		for _, column := range q.Columns {
+			pcs = append(pcs, q.appendColumnPrefix(column))
+		}
+		columns = strings.Join(pcs, ", ")
+	}
+	query := "SELECT " + columns + " FROM " + tableName
+	if len(q.joinClauses) > 0 {
+		jc := strings.Join(q.joinClauses, " ")
+		query += " " + jc
+	}
 	if wheres != "" {
 		query += " WHERE" + wheres
+	}
+	if q.additionalWhereClause != "" {
+		query += " " + q.additionalWhereClause
+		if len(q.additionalWhereClauseArgs) > 0 {
+			vs = append(vs, q.additionalWhereClauseArgs...)
+		}
+	}
+	if len(q.groupByColumns) > 0 {
+		query += " GROUP BY "
+		gbcs := make([]string, 0, len(q.groupByColumns))
+		for _, column := range q.groupByColumns {
+			gbcs = append(gbcs, q.appendColumnPrefix(column))
+		}
+		query += strings.Join(gbcs, ", ")
 	}
 	query += q.order
 	if q.limit != nil {

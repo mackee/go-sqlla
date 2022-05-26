@@ -33,6 +33,14 @@ type userSelectSQL struct {
 	order       string
 	limit       *uint64
 	offset      *uint64
+	tableAlias  string
+	joinClauses []string
+
+	additionalWhereClause     string
+	additionalWhereClauseArgs []interface{}
+
+	groupByColumns []string
+
 	isForUpdate bool
 }
 
@@ -40,6 +48,11 @@ func (q userSQL) Select() userSelectSQL {
 	return userSelectSQL{
 		q,
 		userAllColumns,
+		"",
+		nil,
+		nil,
+		"",
+		nil,
 		"",
 		nil,
 		nil,
@@ -71,6 +84,53 @@ func (q userSelectSQL) ForUpdate() userSelectSQL {
 	return q
 }
 
+func (q userSelectSQL) TableAlias(alias string) userSelectSQL {
+	q.tableAlias = "`" + alias + "`"
+	return q
+}
+
+func (q userSelectSQL) SetColumns(columns ...string) userSelectSQL {
+	q.Columns = make([]string, 0, len(columns))
+	for _, column := range columns {
+		if strings.ContainsAny(column, "(.`") {
+			q.Columns = append(q.Columns, column)
+		} else {
+			q.Columns = append(q.Columns, "`"+column+"`")
+		}
+	}
+	return q
+}
+
+func (q userSelectSQL) JoinClause(clause string) userSelectSQL {
+	q.joinClauses = append(q.joinClauses, clause)
+	return q
+}
+
+func (q userSelectSQL) AdditionalWhereClause(clause string, args ...interface{}) userSelectSQL {
+	q.additionalWhereClause = clause
+	q.additionalWhereClauseArgs = args
+	return q
+}
+
+func (q userSelectSQL) appendColumnPrefix(column string) string {
+	if q.tableAlias == "" || strings.ContainsAny(column, "(.") {
+		return column
+	}
+	return q.tableAlias + "." + column
+}
+
+func (q userSelectSQL) GroupBy(columns ...string) userSelectSQL {
+	q.groupByColumns = make([]string, 0, len(columns))
+	for _, column := range columns {
+		if strings.ContainsAny(column, "(.`") {
+			q.groupByColumns = append(q.groupByColumns, column)
+		} else {
+			q.groupByColumns = append(q.groupByColumns, "`"+column+"`")
+		}
+	}
+	return q
+}
+
 func (q userSelectSQL) ID(v UserId, exprs ...sqlla.Operator) userSelectSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
@@ -78,7 +138,7 @@ func (q userSelectSQL) ID(v UserId, exprs ...sqlla.Operator) userSelectSQL {
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprUint64{Value: uint64(v), Op: op, Column: "`id`"}
+	where := sqlla.ExprUint64{Value: uint64(v), Op: op, Column: q.appendColumnPrefix("`id`")}
 	q.where = append(q.where, where)
 	return q
 }
@@ -88,7 +148,7 @@ func (q userSelectSQL) IDIn(vs ...UserId) userSelectSQL {
 	for _, v := range vs {
 		_vs = append(_vs, uint64(v))
 	}
-	where := sqlla.ExprMultiUint64{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`id`"}
+	where := sqlla.ExprMultiUint64{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`id`")}
 	q.where = append(q.where, where)
 	return q
 }
@@ -99,7 +159,7 @@ func (q userSelectSQL) PkColumn(pk int64, exprs ...sqlla.Operator) userSelectSQL
 }
 
 func (q userSelectSQL) OrderByID(order sqlla.Order) userSelectSQL {
-	q.order = " ORDER BY `id`"
+	q.order = " ORDER BY " + q.appendColumnPrefix("`id`")
 	if order == sqlla.Asc {
 		q.order += " ASC"
 	} else {
@@ -116,19 +176,19 @@ func (q userSelectSQL) Name(v string, exprs ...sqlla.Operator) userSelectSQL {
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprString{Value: v, Op: op, Column: "`name`"}
+	where := sqlla.ExprString{Value: v, Op: op, Column: q.appendColumnPrefix("`name`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) NameIn(vs ...string) userSelectSQL {
-	where := sqlla.ExprMultiString{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`name`"}
+	where := sqlla.ExprMultiString{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`name`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) OrderByName(order sqlla.Order) userSelectSQL {
-	q.order = " ORDER BY `name`"
+	q.order = " ORDER BY " + q.appendColumnPrefix("`name`")
 	if order == sqlla.Asc {
 		q.order += " ASC"
 	} else {
@@ -145,19 +205,19 @@ func (q userSelectSQL) Age(v sql.NullInt64, exprs ...sqlla.Operator) userSelectS
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprNullInt64{Value: v, Op: op, Column: "`age`"}
+	where := sqlla.ExprNullInt64{Value: v, Op: op, Column: q.appendColumnPrefix("`age`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) AgeIn(vs ...sql.NullInt64) userSelectSQL {
-	where := sqlla.ExprMultiNullInt64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`age`"}
+	where := sqlla.ExprMultiNullInt64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`age`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) OrderByAge(order sqlla.Order) userSelectSQL {
-	q.order = " ORDER BY `age`"
+	q.order = " ORDER BY " + q.appendColumnPrefix("`age`")
 	if order == sqlla.Asc {
 		q.order += " ASC"
 	} else {
@@ -174,19 +234,19 @@ func (q userSelectSQL) Rate(v float64, exprs ...sqlla.Operator) userSelectSQL {
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprFloat64{Value: v, Op: op, Column: "`rate`"}
+	where := sqlla.ExprFloat64{Value: v, Op: op, Column: q.appendColumnPrefix("`rate`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) RateIn(vs ...float64) userSelectSQL {
-	where := sqlla.ExprMultiFloat64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`rate`"}
+	where := sqlla.ExprMultiFloat64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`rate`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) OrderByRate(order sqlla.Order) userSelectSQL {
-	q.order = " ORDER BY `rate`"
+	q.order = " ORDER BY " + q.appendColumnPrefix("`rate`")
 	if order == sqlla.Asc {
 		q.order += " ASC"
 	} else {
@@ -203,19 +263,19 @@ func (q userSelectSQL) IconImage(v []byte, exprs ...sqlla.Operator) userSelectSQ
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprBytes{Value: v, Op: op, Column: "`icon_image`"}
+	where := sqlla.ExprBytes{Value: v, Op: op, Column: q.appendColumnPrefix("`icon_image`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) IconImageIn(vs ...[]byte) userSelectSQL {
-	where := sqlla.ExprMultiBytes{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`icon_image`"}
+	where := sqlla.ExprMultiBytes{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`icon_image`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) OrderByIconImage(order sqlla.Order) userSelectSQL {
-	q.order = " ORDER BY `icon_image`"
+	q.order = " ORDER BY " + q.appendColumnPrefix("`icon_image`")
 	if order == sqlla.Asc {
 		q.order += " ASC"
 	} else {
@@ -232,19 +292,19 @@ func (q userSelectSQL) CreatedAt(v time.Time, exprs ...sqlla.Operator) userSelec
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprTime{Value: v, Op: op, Column: "`created_at`"}
+	where := sqlla.ExprTime{Value: v, Op: op, Column: q.appendColumnPrefix("`created_at`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) CreatedAtIn(vs ...time.Time) userSelectSQL {
-	where := sqlla.ExprMultiTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`created_at`"}
+	where := sqlla.ExprMultiTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`created_at`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) OrderByCreatedAt(order sqlla.Order) userSelectSQL {
-	q.order = " ORDER BY `created_at`"
+	q.order = " ORDER BY " + q.appendColumnPrefix("`created_at`")
 	if order == sqlla.Asc {
 		q.order += " ASC"
 	} else {
@@ -261,19 +321,19 @@ func (q userSelectSQL) UpdatedAt(v mysql.NullTime, exprs ...sqlla.Operator) user
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprMysqlNullTime{Value: v, Op: op, Column: "`updated_at`"}
+	where := sqlla.ExprMysqlNullTime{Value: v, Op: op, Column: q.appendColumnPrefix("`updated_at`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) UpdatedAtIn(vs ...mysql.NullTime) userSelectSQL {
-	where := sqlla.ExprMultiMysqlNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
+	where := sqlla.ExprMultiMysqlNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`updated_at`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) OrderByUpdatedAt(order sqlla.Order) userSelectSQL {
-	q.order = " ORDER BY `updated_at`"
+	q.order = " ORDER BY " + q.appendColumnPrefix("`updated_at`")
 	if order == sqlla.Asc {
 		q.order += " ASC"
 	} else {
@@ -290,9 +350,36 @@ func (q userSelectSQL) ToSql() (string, []interface{}, error) {
 		return "", nil, err
 	}
 
-	query := "SELECT " + columns + " FROM user"
+	tableName := "user"
+	if q.tableAlias != "" {
+		tableName = tableName + " AS " + q.tableAlias
+		pcs := make([]string, 0, len(q.Columns))
+		for _, column := range q.Columns {
+			pcs = append(pcs, q.appendColumnPrefix(column))
+		}
+		columns = strings.Join(pcs, ", ")
+	}
+	query := "SELECT " + columns + " FROM " + tableName
+	if len(q.joinClauses) > 0 {
+		jc := strings.Join(q.joinClauses, " ")
+		query += " " + jc
+	}
 	if wheres != "" {
 		query += " WHERE" + wheres
+	}
+	if q.additionalWhereClause != "" {
+		query += " " + q.additionalWhereClause
+		if len(q.additionalWhereClauseArgs) > 0 {
+			vs = append(vs, q.additionalWhereClauseArgs...)
+		}
+	}
+	if len(q.groupByColumns) > 0 {
+		query += " GROUP BY "
+		gbcs := make([]string, 0, len(q.groupByColumns))
+		for _, column := range q.groupByColumns {
+			gbcs = append(gbcs, q.appendColumnPrefix(column))
+		}
+		query += strings.Join(gbcs, ", ")
 	}
 	query += q.order
 	if q.limit != nil {

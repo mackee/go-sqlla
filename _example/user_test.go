@@ -142,6 +142,81 @@ func TestSelect__OrNull(t *testing.T) {
 	}
 }
 
+func TestSelect__JoinClausesAndTableAlias(t *testing.T) {
+	query, args, err := NewUserSQL().Select().
+		SetColumns(append(userAllColumns, "ui.item_id", "ui.is_used")...).
+		TableAlias("u").
+		JoinClause("INNER JOIN user_item AS ui ON u.id = ui.user_id").
+		Name("hogehoge").
+		AdditionalWhereClause("AND ui.item_id IN (?,?,?)", 1, 2, 3).
+		OrderByID(sqlla.Desc).
+		ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	expectedQuery := "SELECT `u`.`id`, `u`.`name`, `u`.`age`, `u`.`rate`, `u`.`icon_image`, `u`.`created_at`, `u`.`updated_at`, ui.item_id, ui.is_used FROM user AS `u` INNER JOIN user_item AS ui ON u.id = ui.user_id WHERE `u`.`name` = ? AND ui.item_id IN (?,?,?) ORDER BY `u`.`id` DESC;"
+	if query != expectedQuery {
+		t.Error("unexpected query:", query, expectedQuery)
+	}
+	if !reflect.DeepEqual(args, []interface{}{"hogehoge", int(1), int(2), int(3)}) {
+		t.Error("unexpected args:", args)
+	}
+}
+
+func TestSelect__SetColumn(t *testing.T) {
+	query, args, err := NewUserSQL().Select().
+		SetColumns("rate", "COUNT(u.id)").
+		TableAlias("u").
+		OrderByRate(sqlla.Desc).
+		GroupBy("rate").
+		ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	expectedQuery := "SELECT `u`.`rate`, COUNT(u.id) FROM user AS `u` GROUP BY `u`.`rate` ORDER BY `u`.`rate` DESC;"
+	if query != expectedQuery {
+		t.Error("unexpected query:", query, expectedQuery)
+	}
+	if len(args) != 0 {
+		t.Error("unexpected args:", args)
+	}
+}
+
+func TestSelect__GroupByDottedColumn(t *testing.T) {
+	query, args, err := NewUserSQL().Select().
+		SetColumns("rate", "COUNT(u.id)").
+		TableAlias("u").
+		OrderByRate(sqlla.Desc).
+		GroupBy("u.rate").
+		ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	expectedQuery := "SELECT `u`.`rate`, COUNT(u.id) FROM user AS `u` GROUP BY u.rate ORDER BY `u`.`rate` DESC;"
+	if query != expectedQuery {
+		t.Error("unexpected query:", query, expectedQuery)
+	}
+	if len(args) != 0 {
+		t.Error("unexpected args:", args)
+	}
+}
+
+func TestSelect__LikeOperator(t *testing.T) {
+	query, args, err := NewUserSQL().Select().
+		Name("%foobar%", sqlla.OpLike).
+		ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	expectedQuery := "SELECT " + columns + " FROM user WHERE `name` LIKE ?;"
+	if query != expectedQuery {
+		t.Error("unexpected query:", query, expectedQuery)
+	}
+	if !reflect.DeepEqual(args, []interface{}{string("%foobar%")}) {
+		t.Error("unexpected args:", args)
+	}
+}
+
 func TestUpdate(t *testing.T) {
 	q := NewUserSQL().Update().SetName("barbar").WhereID(UserId(1))
 	query, args, err := q.ToSql()
