@@ -37,6 +37,8 @@ type userItemSelectSQL struct {
 	additionalWhereClause     string
 	additionalWhereClauseArgs []interface{}
 
+	groupByColumns []string
+
 	isForUpdate bool
 }
 
@@ -50,6 +52,7 @@ func (q userItemSQL) Select() userItemSelectSQL {
 		"",
 		nil,
 		"",
+		nil,
 		nil,
 		false,
 	}
@@ -85,7 +88,14 @@ func (q userItemSelectSQL) TableAlias(alias string) userItemSelectSQL {
 }
 
 func (q userItemSelectSQL) SetColumns(columns ...string) userItemSelectSQL {
-	q.Columns = columns
+	q.Columns = make([]string, 0, len(columns))
+	for _, column := range columns {
+		if strings.ContainsRune(column, '(') {
+			q.Columns = append(q.Columns, column)
+		} else {
+			q.Columns = append(q.Columns, "`"+column+"`")
+		}
+	}
 	return q
 }
 
@@ -101,10 +111,22 @@ func (q userItemSelectSQL) AdditionalWhereClause(clause string, args ...interfac
 }
 
 func (q userItemSelectSQL) appendColumnPrefix(column string) string {
-	if q.tableAlias != "" {
-		return q.tableAlias + "." + column
+	if q.tableAlias == "" || strings.ContainsRune(column, '(') {
+		return column
 	}
-	return column
+	return q.tableAlias + "." + column
+}
+
+func (q userItemSelectSQL) GroupBy(columns ...string) userItemSelectSQL {
+	q.groupByColumns = make([]string, 0, len(columns))
+	for _, column := range columns {
+		if strings.ContainsRune(column, '(') {
+			q.groupByColumns = append(q.groupByColumns, column)
+		} else {
+			q.groupByColumns = append(q.groupByColumns, "`"+column+"`")
+		}
+	}
+	return q
 }
 
 func (q userItemSelectSQL) ID(v uint64, exprs ...sqlla.Operator) userItemSelectSQL {
@@ -296,13 +318,11 @@ func (q userItemSelectSQL) ToSql() (string, []interface{}, error) {
 	tableName := "user_item"
 	if q.tableAlias != "" {
 		tableName = tableName + " AS " + q.tableAlias
-		columns = ""
-		for i, column := range q.Columns {
-			columns += q.tableAlias + "." + column
-			if i < len(q.Columns)-1 {
-				columns += ", "
-			}
+		pcs := make([]string, 0, len(q.Columns))
+		for _, column := range q.Columns {
+			pcs = append(pcs, q.appendColumnPrefix(column))
 		}
+		columns = strings.Join(pcs, ", ")
 	}
 	query := "SELECT " + columns + " FROM " + tableName
 	if len(q.joinClauses) > 0 {
@@ -317,6 +337,14 @@ func (q userItemSelectSQL) ToSql() (string, []interface{}, error) {
 		if len(q.additionalWhereClauseArgs) > 0 {
 			vs = append(vs, q.additionalWhereClauseArgs...)
 		}
+	}
+	if len(q.groupByColumns) > 0 {
+		query += " GROUP BY "
+		gbcs := make([]string, 0, len(q.groupByColumns))
+		for _, column := range q.groupByColumns {
+			gbcs = append(gbcs, q.appendColumnPrefix(column))
+		}
+		query += strings.Join(gbcs, ", ")
 	}
 	query += q.order
 	if q.limit != nil {

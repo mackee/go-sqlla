@@ -162,6 +162,25 @@ func TestSelect__JoinClausesAndTableAlias(t *testing.T) {
 	}
 }
 
+func TestSelect__SetColumn(t *testing.T) {
+	query, args, err := NewUserSQL().Select().
+		SetColumns("rate", "COUNT(u.id)").
+		TableAlias("u").
+		OrderByRate(sqlla.Desc).
+		GroupBy("rate").
+		ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	expectedQuery := "SELECT `u`.`rate`, COUNT(u.id) FROM user AS `u` GROUP BY `u`.`rate` ORDER BY `u`.`rate` DESC;"
+	if query != expectedQuery {
+		t.Error("unexpected query:", query, expectedQuery)
+	}
+	if len(args) != 0 {
+		t.Error("unexpected args:", args)
+	}
+}
+
 func TestUpdate(t *testing.T) {
 	q := NewUserSQL().Update().SetName("barbar").WhereID(UserId(1))
 	query, args, err := q.ToSql()
