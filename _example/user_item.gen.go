@@ -90,7 +90,7 @@ func (q userItemSelectSQL) TableAlias(alias string) userItemSelectSQL {
 func (q userItemSelectSQL) SetColumns(columns ...string) userItemSelectSQL {
 	q.Columns = make([]string, 0, len(columns))
 	for _, column := range columns {
-		if strings.ContainsRune(column, '(') {
+		if strings.ContainsAny(column, "(.`") {
 			q.Columns = append(q.Columns, column)
 		} else {
 			q.Columns = append(q.Columns, "`"+column+"`")
@@ -111,7 +111,7 @@ func (q userItemSelectSQL) AdditionalWhereClause(clause string, args ...interfac
 }
 
 func (q userItemSelectSQL) appendColumnPrefix(column string) string {
-	if q.tableAlias == "" || strings.ContainsRune(column, '(') {
+	if q.tableAlias == "" || strings.ContainsAny(column, "(.") {
 		return column
 	}
 	return q.tableAlias + "." + column
@@ -120,7 +120,7 @@ func (q userItemSelectSQL) appendColumnPrefix(column string) string {
 func (q userItemSelectSQL) GroupBy(columns ...string) userItemSelectSQL {
 	q.groupByColumns = make([]string, 0, len(columns))
 	for _, column := range columns {
-		if strings.ContainsRune(column, '(') {
+		if strings.ContainsAny(column, "(.`") {
 			q.groupByColumns = append(q.groupByColumns, column)
 		} else {
 			q.groupByColumns = append(q.groupByColumns, "`"+column+"`")

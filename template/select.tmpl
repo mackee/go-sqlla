@@ -70,7 +70,7 @@ func (q {{ $camelName }}SelectSQL) TableAlias(alias string) {{ $camelName }}Sele
 func (q {{ $camelName }}SelectSQL) SetColumns(columns ...string) {{ $camelName }}SelectSQL {
 	q.Columns = make([]string, 0, len(columns))
 	for _, column := range columns {
-		if strings.ContainsRune(column, '(') {
+		if strings.ContainsAny(column, "(.`") {
 			q.Columns = append(q.Columns, column)
 		} else {
 			q.Columns = append(q.Columns, "`" + column + "`")
@@ -91,7 +91,7 @@ func (q {{ $camelName }}SelectSQL) AdditionalWhereClause(clause string, args ...
 }
 
 func (q {{ $camelName }}SelectSQL) appendColumnPrefix(column string) string {
-	if q.tableAlias == "" || strings.ContainsRune(column, '(') {
+	if q.tableAlias == "" || strings.ContainsAny(column, "(.") {
 		return column
 	}
 	return q.tableAlias + "." + column
@@ -100,7 +100,7 @@ func (q {{ $camelName }}SelectSQL) appendColumnPrefix(column string) string {
 func (q {{ $camelName }}SelectSQL) GroupBy(columns ...string) {{ $camelName }}SelectSQL {
 	q.groupByColumns = make([]string, 0, len(columns))
 	for _, column := range columns {
-		if strings.ContainsRune(column, '(') {
+		if strings.ContainsAny(column, "(.`") {
 			q.groupByColumns = append(q.groupByColumns, column)
 		} else {
 			q.groupByColumns = append(q.groupByColumns, "`" + column + "`")
