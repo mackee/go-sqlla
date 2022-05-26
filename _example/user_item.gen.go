@@ -31,6 +31,12 @@ type userItemSelectSQL struct {
 	order       string
 	limit       *uint64
 	offset      *uint64
+	tableAlias  string
+	joinClauses []string
+
+	additionalWhereClause     string
+	additionalWhereClauseArgs []interface{}
+
 	isForUpdate bool
 }
 
@@ -40,6 +46,10 @@ func (q userItemSQL) Select() userItemSelectSQL {
 		userItemAllColumns,
 		"",
 		nil,
+		nil,
+		"",
+		nil,
+		"",
 		nil,
 		false,
 	}
@@ -69,6 +79,34 @@ func (q userItemSelectSQL) ForUpdate() userItemSelectSQL {
 	return q
 }
 
+func (q userItemSelectSQL) TableAlias(alias string) userItemSelectSQL {
+	q.tableAlias = "`" + alias + "`"
+	return q
+}
+
+func (q userItemSelectSQL) SetColumns(columns ...string) userItemSelectSQL {
+	q.Columns = columns
+	return q
+}
+
+func (q userItemSelectSQL) JoinClause(clause string) userItemSelectSQL {
+	q.joinClauses = append(q.joinClauses, clause)
+	return q
+}
+
+func (q userItemSelectSQL) AdditionalWhereClause(clause string, args ...interface{}) userItemSelectSQL {
+	q.additionalWhereClause = clause
+	q.additionalWhereClauseArgs = args
+	return q
+}
+
+func (q userItemSelectSQL) appendColumnPrefix(column string) string {
+	if q.tableAlias != "" {
+		return q.tableAlias + "." + column
+	}
+	return column
+}
+
 func (q userItemSelectSQL) ID(v uint64, exprs ...sqlla.Operator) userItemSelectSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
@@ -76,13 +114,13 @@ func (q userItemSelectSQL) ID(v uint64, exprs ...sqlla.Operator) userItemSelectS
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`id`"}
+	where := sqlla.ExprUint64{Value: v, Op: op, Column: q.appendColumnPrefix("`id`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemSelectSQL) IDIn(vs ...uint64) userItemSelectSQL {
-	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`id`"}
+	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`id`")}
 	q.where = append(q.where, where)
 	return q
 }
@@ -93,7 +131,7 @@ func (q userItemSelectSQL) PkColumn(pk int64, exprs ...sqlla.Operator) userItemS
 }
 
 func (q userItemSelectSQL) OrderByID(order sqlla.Order) userItemSelectSQL {
-	q.order = " ORDER BY `id`"
+	q.order = " ORDER BY " + q.appendColumnPrefix("`id`")
 	if order == sqlla.Asc {
 		q.order += " ASC"
 	} else {
@@ -110,19 +148,19 @@ func (q userItemSelectSQL) UserID(v uint64, exprs ...sqlla.Operator) userItemSel
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`user_id`"}
+	where := sqlla.ExprUint64{Value: v, Op: op, Column: q.appendColumnPrefix("`user_id`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemSelectSQL) UserIDIn(vs ...uint64) userItemSelectSQL {
-	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`user_id`"}
+	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`user_id`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemSelectSQL) OrderByUserID(order sqlla.Order) userItemSelectSQL {
-	q.order = " ORDER BY `user_id`"
+	q.order = " ORDER BY " + q.appendColumnPrefix("`user_id`")
 	if order == sqlla.Asc {
 		q.order += " ASC"
 	} else {
@@ -139,19 +177,19 @@ func (q userItemSelectSQL) ItemID(v string, exprs ...sqlla.Operator) userItemSel
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprString{Value: v, Op: op, Column: "`item_id`"}
+	where := sqlla.ExprString{Value: v, Op: op, Column: q.appendColumnPrefix("`item_id`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemSelectSQL) ItemIDIn(vs ...string) userItemSelectSQL {
-	where := sqlla.ExprMultiString{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`item_id`"}
+	where := sqlla.ExprMultiString{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`item_id`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemSelectSQL) OrderByItemID(order sqlla.Order) userItemSelectSQL {
-	q.order = " ORDER BY `item_id`"
+	q.order = " ORDER BY " + q.appendColumnPrefix("`item_id`")
 	if order == sqlla.Asc {
 		q.order += " ASC"
 	} else {
@@ -168,19 +206,19 @@ func (q userItemSelectSQL) IsUsed(v bool, exprs ...sqlla.Operator) userItemSelec
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprBool{Value: v, Op: op, Column: "`is_used`"}
+	where := sqlla.ExprBool{Value: v, Op: op, Column: q.appendColumnPrefix("`is_used`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemSelectSQL) IsUsedIn(vs ...bool) userItemSelectSQL {
-	where := sqlla.ExprMultiBool{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`is_used`"}
+	where := sqlla.ExprMultiBool{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`is_used`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemSelectSQL) OrderByIsUsed(order sqlla.Order) userItemSelectSQL {
-	q.order = " ORDER BY `is_used`"
+	q.order = " ORDER BY " + q.appendColumnPrefix("`is_used`")
 	if order == sqlla.Asc {
 		q.order += " ASC"
 	} else {
@@ -197,19 +235,19 @@ func (q userItemSelectSQL) HasExtension(v sql.NullBool, exprs ...sqlla.Operator)
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprNullBool{Value: v, Op: op, Column: "`has_extension`"}
+	where := sqlla.ExprNullBool{Value: v, Op: op, Column: q.appendColumnPrefix("`has_extension`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemSelectSQL) HasExtensionIn(vs ...sql.NullBool) userItemSelectSQL {
-	where := sqlla.ExprMultiNullBool{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`has_extension`"}
+	where := sqlla.ExprMultiNullBool{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`has_extension`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemSelectSQL) OrderByHasExtension(order sqlla.Order) userItemSelectSQL {
-	q.order = " ORDER BY `has_extension`"
+	q.order = " ORDER BY " + q.appendColumnPrefix("`has_extension`")
 	if order == sqlla.Asc {
 		q.order += " ASC"
 	} else {
@@ -226,19 +264,19 @@ func (q userItemSelectSQL) UsedAt(v sql.NullTime, exprs ...sqlla.Operator) userI
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprNullTime{Value: v, Op: op, Column: "`used_at`"}
+	where := sqlla.ExprNullTime{Value: v, Op: op, Column: q.appendColumnPrefix("`used_at`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemSelectSQL) UsedAtIn(vs ...sql.NullTime) userItemSelectSQL {
-	where := sqlla.ExprMultiNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`used_at`"}
+	where := sqlla.ExprMultiNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`used_at`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemSelectSQL) OrderByUsedAt(order sqlla.Order) userItemSelectSQL {
-	q.order = " ORDER BY `used_at`"
+	q.order = " ORDER BY " + q.appendColumnPrefix("`used_at`")
 	if order == sqlla.Asc {
 		q.order += " ASC"
 	} else {
@@ -255,9 +293,30 @@ func (q userItemSelectSQL) ToSql() (string, []interface{}, error) {
 		return "", nil, err
 	}
 
-	query := "SELECT " + columns + " FROM user_item"
+	tableName := "user_item"
+	if q.tableAlias != "" {
+		tableName = tableName + " AS " + q.tableAlias
+		columns = ""
+		for i, column := range q.Columns {
+			columns += q.tableAlias + "." + column
+			if i < len(q.Columns)-1 {
+				columns += ", "
+			}
+		}
+	}
+	query := "SELECT " + columns + " FROM " + tableName
+	if len(q.joinClauses) > 0 {
+		jc := strings.Join(q.joinClauses, " ")
+		query += " " + jc
+	}
 	if wheres != "" {
 		query += " WHERE" + wheres
+	}
+	if q.additionalWhereClause != "" {
+		query += " " + q.additionalWhereClause
+		if len(q.additionalWhereClauseArgs) > 0 {
+			vs = append(vs, q.additionalWhereClauseArgs...)
+		}
 	}
 	query += q.order
 	if q.limit != nil {

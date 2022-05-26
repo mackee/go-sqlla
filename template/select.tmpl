@@ -11,6 +11,12 @@ type {{ $camelName }}SelectSQL struct {
 	order       string
 	limit       *uint64
 	offset      *uint64
+	tableAlias  string
+	joinClauses []string
+
+	additionalWhereClause string
+	additionalWhereClauseArgs []interface{}
+
 	isForUpdate bool
 }
 
@@ -20,6 +26,10 @@ func (q {{ $camelName }}SQL) Select() {{ $camelName }}SelectSQL {
 		{{ $camelName }}AllColumns,
 		"",
 		nil,
+		nil,
+		"",
+		nil,
+		"",
 		nil,
 		false,
 	}
@@ -44,9 +54,37 @@ func (q {{ $camelName }}SelectSQL) Offset(o uint64) {{ $camelName }}SelectSQL {
 	return q
 }
 
-func (q {{ $camelName}}SelectSQL) ForUpdate() {{ $camelName }}SelectSQL {
+func (q {{ $camelName }}SelectSQL) ForUpdate() {{ $camelName }}SelectSQL {
 	q.isForUpdate = true
 	return q
+}
+
+func (q {{ $camelName }}SelectSQL) TableAlias(alias string) {{ $camelName }}SelectSQL {
+	q.tableAlias = "`" + alias + "`"
+	return q
+}
+
+func (q {{ $camelName }}SelectSQL) SetColumns(columns ...string) {{ $camelName }}SelectSQL {
+	q.Columns = columns
+	return q
+}
+
+func (q {{ $camelName }}SelectSQL) JoinClause(clause string) {{ $camelName }}SelectSQL {
+	q.joinClauses = append(q.joinClauses, clause)
+	return q
+}
+
+func (q {{ $camelName }}SelectSQL) AdditionalWhereClause(clause string, args ...interface{}) {{ $camelName }}SelectSQL {
+	q.additionalWhereClause = clause
+	q.additionalWhereClauseArgs = args
+	return q
+}
+
+func (q {{ $camelName }}SelectSQL) appendColumnPrefix(column string) string {
+	if q.tableAlias != "" {
+		return q.tableAlias + "." + column
+	}
+	return column
 }
 
 {{ range .Columns }}{{ template "SelectColumn" . }}{{ end }}
@@ -57,9 +95,30 @@ func (q {{ $camelName }}SelectSQL) ToSql() (string, []interface{}, error) {
 		return "", nil, err
 	}
 
-	query := "SELECT " + columns + " FROM {{ .Name }}"
+	tableName := "{{ .Name }}"
+	if q.tableAlias != "" {
+		tableName = tableName + " AS " + q.tableAlias
+		columns = ""
+		for i, column := range q.Columns {
+			columns += q.tableAlias + "." + column
+			if i < len(q.Columns) - 1 {
+				columns += ", "
+			}
+		}
+	}
+	query := "SELECT " + columns + " FROM " + tableName
+	if len(q.joinClauses) > 0 {
+		jc := strings.Join(q.joinClauses, " ")
+		query += " " + jc
+	}
 	if wheres != "" {
 		query += " WHERE" + wheres
+	}
+	if q.additionalWhereClause != "" {
+		query += " " + q.additionalWhereClause
+		if len(q.additionalWhereClauseArgs) > 0 {
+			vs = append(vs, q.additionalWhereClauseArgs...)
+		}
 	}
 	query += q.order
 	if q.limit != nil {

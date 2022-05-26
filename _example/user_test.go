@@ -142,6 +142,26 @@ func TestSelect__OrNull(t *testing.T) {
 	}
 }
 
+func TestSelect__JoinClausesAndTableAlias(t *testing.T) {
+	query, args, err := NewUserSQL().Select().
+		TableAlias("u").
+		JoinClause("INNER JOIN user_item AS ui ON u.id = ui.user_id").
+		Name("hogehoge").
+		AdditionalWhereClause("AND ui.item_id IN (?,?,?)", 1, 2, 3).
+		OrderByID(sqlla.Desc).
+		ToSql()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	expectedQuery := "SELECT `u`.`id`, `u`.`name`, `u`.`age`, `u`.`rate`, `u`.`icon_image`, `u`.`created_at`, `u`.`updated_at` FROM user AS `u` INNER JOIN user_item AS ui ON u.id = ui.user_id WHERE `u`.`name` = ? AND ui.item_id IN (?,?,?) ORDER BY `u`.`id` DESC;"
+	if query != expectedQuery {
+		t.Error("unexpected query:", query, expectedQuery)
+	}
+	if !reflect.DeepEqual(args, []interface{}{"hogehoge", int(1), int(2), int(3)}) {
+		t.Error("unexpected args:", args)
+	}
+}
+
 func TestUpdate(t *testing.T) {
 	q := NewUserSQL().Update().SetName("barbar").WhereID(UserId(1))
 	query, args, err := q.ToSql()

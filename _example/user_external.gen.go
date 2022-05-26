@@ -32,6 +32,12 @@ type userExternalSelectSQL struct {
 	order       string
 	limit       *uint64
 	offset      *uint64
+	tableAlias  string
+	joinClauses []string
+
+	additionalWhereClause     string
+	additionalWhereClauseArgs []interface{}
+
 	isForUpdate bool
 }
 
@@ -41,6 +47,10 @@ func (q userExternalSQL) Select() userExternalSelectSQL {
 		userExternalAllColumns,
 		"",
 		nil,
+		nil,
+		"",
+		nil,
+		"",
 		nil,
 		false,
 	}
@@ -70,6 +80,34 @@ func (q userExternalSelectSQL) ForUpdate() userExternalSelectSQL {
 	return q
 }
 
+func (q userExternalSelectSQL) TableAlias(alias string) userExternalSelectSQL {
+	q.tableAlias = "`" + alias + "`"
+	return q
+}
+
+func (q userExternalSelectSQL) SetColumns(columns ...string) userExternalSelectSQL {
+	q.Columns = columns
+	return q
+}
+
+func (q userExternalSelectSQL) JoinClause(clause string) userExternalSelectSQL {
+	q.joinClauses = append(q.joinClauses, clause)
+	return q
+}
+
+func (q userExternalSelectSQL) AdditionalWhereClause(clause string, args ...interface{}) userExternalSelectSQL {
+	q.additionalWhereClause = clause
+	q.additionalWhereClauseArgs = args
+	return q
+}
+
+func (q userExternalSelectSQL) appendColumnPrefix(column string) string {
+	if q.tableAlias != "" {
+		return q.tableAlias + "." + column
+	}
+	return column
+}
+
 func (q userExternalSelectSQL) ID(v uint64, exprs ...sqlla.Operator) userExternalSelectSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
@@ -77,13 +115,13 @@ func (q userExternalSelectSQL) ID(v uint64, exprs ...sqlla.Operator) userExterna
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`id`"}
+	where := sqlla.ExprUint64{Value: v, Op: op, Column: q.appendColumnPrefix("`id`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalSelectSQL) IDIn(vs ...uint64) userExternalSelectSQL {
-	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`id`"}
+	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`id`")}
 	q.where = append(q.where, where)
 	return q
 }
@@ -94,7 +132,7 @@ func (q userExternalSelectSQL) PkColumn(pk int64, exprs ...sqlla.Operator) userE
 }
 
 func (q userExternalSelectSQL) OrderByID(order sqlla.Order) userExternalSelectSQL {
-	q.order = " ORDER BY `id`"
+	q.order = " ORDER BY " + q.appendColumnPrefix("`id`")
 	if order == sqlla.Asc {
 		q.order += " ASC"
 	} else {
@@ -111,19 +149,19 @@ func (q userExternalSelectSQL) UserID(v uint64, exprs ...sqlla.Operator) userExt
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`user_id`"}
+	where := sqlla.ExprUint64{Value: v, Op: op, Column: q.appendColumnPrefix("`user_id`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalSelectSQL) UserIDIn(vs ...uint64) userExternalSelectSQL {
-	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`user_id`"}
+	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`user_id`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalSelectSQL) OrderByUserID(order sqlla.Order) userExternalSelectSQL {
-	q.order = " ORDER BY `user_id`"
+	q.order = " ORDER BY " + q.appendColumnPrefix("`user_id`")
 	if order == sqlla.Asc {
 		q.order += " ASC"
 	} else {
@@ -140,19 +178,19 @@ func (q userExternalSelectSQL) CreatedAt(v time.Time, exprs ...sqlla.Operator) u
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprTime{Value: v, Op: op, Column: "`created_at`"}
+	where := sqlla.ExprTime{Value: v, Op: op, Column: q.appendColumnPrefix("`created_at`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalSelectSQL) CreatedAtIn(vs ...time.Time) userExternalSelectSQL {
-	where := sqlla.ExprMultiTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`created_at`"}
+	where := sqlla.ExprMultiTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`created_at`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalSelectSQL) OrderByCreatedAt(order sqlla.Order) userExternalSelectSQL {
-	q.order = " ORDER BY `created_at`"
+	q.order = " ORDER BY " + q.appendColumnPrefix("`created_at`")
 	if order == sqlla.Asc {
 		q.order += " ASC"
 	} else {
@@ -169,19 +207,19 @@ func (q userExternalSelectSQL) UpdatedAt(v time.Time, exprs ...sqlla.Operator) u
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprTime{Value: v, Op: op, Column: "`updated_at`"}
+	where := sqlla.ExprTime{Value: v, Op: op, Column: q.appendColumnPrefix("`updated_at`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalSelectSQL) UpdatedAtIn(vs ...time.Time) userExternalSelectSQL {
-	where := sqlla.ExprMultiTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
+	where := sqlla.ExprMultiTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`updated_at`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalSelectSQL) OrderByUpdatedAt(order sqlla.Order) userExternalSelectSQL {
-	q.order = " ORDER BY `updated_at`"
+	q.order = " ORDER BY " + q.appendColumnPrefix("`updated_at`")
 	if order == sqlla.Asc {
 		q.order += " ASC"
 	} else {
@@ -198,9 +236,30 @@ func (q userExternalSelectSQL) ToSql() (string, []interface{}, error) {
 		return "", nil, err
 	}
 
-	query := "SELECT " + columns + " FROM user_external"
+	tableName := "user_external"
+	if q.tableAlias != "" {
+		tableName = tableName + " AS " + q.tableAlias
+		columns = ""
+		for i, column := range q.Columns {
+			columns += q.tableAlias + "." + column
+			if i < len(q.Columns)-1 {
+				columns += ", "
+			}
+		}
+	}
+	query := "SELECT " + columns + " FROM " + tableName
+	if len(q.joinClauses) > 0 {
+		jc := strings.Join(q.joinClauses, " ")
+		query += " " + jc
+	}
 	if wheres != "" {
 		query += " WHERE" + wheres
+	}
+	if q.additionalWhereClause != "" {
+		query += " " + q.additionalWhereClause
+		if len(q.additionalWhereClauseArgs) > 0 {
+			vs = append(vs, q.additionalWhereClauseArgs...)
+		}
 	}
 	query += q.order
 	if q.limit != nil {
