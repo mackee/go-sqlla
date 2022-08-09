@@ -1,4 +1,4 @@
-// +build withmysql
+//go:build withmysql
 
 package example
 

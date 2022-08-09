@@ -19,6 +19,7 @@ DROP TABLE IF EXISTS "user_external";
 CREATE TABLE "user_external" (
     "id" INTEGER NOT NULL PRIMARY KEY,
     "user_id" INTEGER NOT NULL,
+    "icon_image" BLOB NULL,
     "created_at" DATETIME NOT NULL,
     "updated_at" DATETIME NOT NULL
 ) ;

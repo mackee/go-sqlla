@@ -23,7 +23,7 @@ func NewUserExternalSQL() userExternalSQL {
 }
 
 var userExternalAllColumns = []string{
-	"`id`", "`user_id`", "`created_at`", "`updated_at`",
+	"`id`", "`user_id`", "`icon_image`", "`created_at`", "`updated_at`",
 }
 
 type userExternalSelectSQL struct {
@@ -184,6 +184,35 @@ func (q userExternalSelectSQL) UserIDIn(vs ...uint64) userExternalSelectSQL {
 
 func (q userExternalSelectSQL) OrderByUserID(order sqlla.Order) userExternalSelectSQL {
 	q.order = " ORDER BY " + q.appendColumnPrefix("`user_id`")
+	if order == sqlla.Asc {
+		q.order += " ASC"
+	} else {
+		q.order += " DESC"
+	}
+
+	return q
+}
+
+func (q userExternalSelectSQL) IconImage(v []byte, exprs ...sqlla.Operator) userExternalSelectSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+	where := sqlla.ExprBytes{Value: v, Op: op, Column: q.appendColumnPrefix("`icon_image`")}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userExternalSelectSQL) IconImageIn(vs ...[]byte) userExternalSelectSQL {
+	where := sqlla.ExprMultiBytes{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`icon_image`")}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userExternalSelectSQL) OrderByIconImage(order sqlla.Order) userExternalSelectSQL {
+	q.order = " ORDER BY " + q.appendColumnPrefix("`icon_image`")
 	if order == sqlla.Asc {
 		q.order += " ASC"
 	} else {
@@ -380,6 +409,7 @@ func (q userExternalSelectSQL) Scan(s sqlla.Scanner) (UserExternal, error) {
 	err := s.Scan(
 		&row.Id,
 		&row.UserId,
+		&row.IconImage,
 		&row.CreatedAt,
 		&row.UpdatedAt,
 	)
@@ -441,6 +471,29 @@ func (q userExternalUpdateSQL) WhereUserID(v uint64, exprs ...sqlla.Operator) us
 
 func (q userExternalUpdateSQL) WhereUserIDIn(vs ...uint64) userExternalUpdateSQL {
 	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`user_id`"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userExternalUpdateSQL) SetIconImage(v []byte) userExternalUpdateSQL {
+	q.setMap["`icon_image`"] = v
+	return q
+}
+
+func (q userExternalUpdateSQL) WhereIconImage(v []byte, exprs ...sqlla.Operator) userExternalUpdateSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+	where := sqlla.ExprBytes{Value: v, Op: op, Column: "`icon_image`"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userExternalUpdateSQL) WhereIconImageIn(vs ...[]byte) userExternalUpdateSQL {
+	where := sqlla.ExprMultiBytes{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`icon_image`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -575,6 +628,11 @@ func (q userExternalInsertSQL) ValueUserID(v uint64) userExternalInsertSQL {
 	return q
 }
 
+func (q userExternalInsertSQL) ValueIconImage(v []byte) userExternalInsertSQL {
+	q.setMap["`icon_image`"] = v
+	return q
+}
+
 func (q userExternalInsertSQL) ValueCreatedAt(v time.Time) userExternalInsertSQL {
 	q.setMap["`created_at`"] = v
 	return q
@@ -700,6 +758,21 @@ func (q userExternalInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateUserID(v sqll
 
 func (q userExternalInsertOnDuplicateKeyUpdateSQL) SameOnUpdateUserID() userExternalInsertOnDuplicateKeyUpdateSQL {
 	q.onDuplicateKeyUpdateMap["`user_id`"] = sqlla.SetMapRawValue("VALUES(`user_id`)")
+	return q
+}
+
+func (q userExternalInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateIconImage(v []byte) userExternalInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`icon_image`"] = v
+	return q
+}
+
+func (q userExternalInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateIconImage(v sqlla.SetMapRawValue) userExternalInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`icon_image`"] = v
+	return q
+}
+
+func (q userExternalInsertOnDuplicateKeyUpdateSQL) SameOnUpdateIconImage() userExternalInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`icon_image`"] = sqlla.SetMapRawValue("VALUES(`icon_image`)")
 	return q
 }
 
@@ -899,6 +972,24 @@ func (q userExternalDeleteSQL) UserID(v uint64, exprs ...sqlla.Operator) userExt
 
 func (q userExternalDeleteSQL) UserIDIn(vs ...uint64) userExternalDeleteSQL {
 	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`user_id`"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userExternalDeleteSQL) IconImage(v []byte, exprs ...sqlla.Operator) userExternalDeleteSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+	where := sqlla.ExprBytes{Value: v, Op: op, Column: "`icon_image`"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q userExternalDeleteSQL) IconImageIn(vs ...[]byte) userExternalDeleteSQL {
+	where := sqlla.ExprMultiBytes{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`icon_image`"}
 	q.where = append(q.where, where)
 	return q
 }
