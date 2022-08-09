@@ -1,4 +1,4 @@
-// +build withmysql
+//go:build withmysql
 
 package example
 
@@ -216,7 +216,7 @@ func TestBulkInsertOnDuplicateKeyUpdate__WithMySQL(t *testing.T) {
 	now := time.Now()
 	dup := uitems.OnDuplicateKeyUpdate().
 		SameOnUpdateIsUsed().
-		ValueOnUpdateUsedAt(mysql.NullTime{
+		ValueOnUpdateUsedAt(sql.NullTime{
 			Valid: true,
 			Time:  now,
 		})

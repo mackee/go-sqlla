@@ -1,6 +1,7 @@
 package example
 
 import (
+	"context"
 	"database/sql"
 	"io/ioutil"
 	"os"
@@ -614,6 +615,44 @@ func TestORM__WithSqlite3__Binary(t *testing.T) {
 
 	updatedBinary := []byte("updated")
 	results, err := singleRow.Update().SetIconImage(updatedBinary).Exec(db)
+	if err != nil {
+		t.Error("cannnot update row error", err)
+	}
+	if len(results) != 1 {
+		t.Error("unexpected rows results:", len(results))
+	}
+	result := results[0]
+	if !reflect.DeepEqual(result.IconImage, updatedBinary) {
+		t.Errorf("result.IconImage is not replaced to \"updated\": %s", result.IconImage)
+	}
+}
+
+func TestORM__WithSqlite3__NullBinary(t *testing.T) {
+	ctx := context.Background()
+	now := time.Now()
+	db := setupDB(t)
+
+	_, err := NewUserExternalSQL().Insert().
+		ValueID(42).
+		ValueUserID(4242).
+		ValueIconImage(nil).
+		ValueCreatedAt(now).
+		ValueUpdatedAt(now).
+		ExecContextWithoutSelect(ctx, db)
+	if err != nil {
+		t.Error("cannot insert row error:", err)
+	}
+
+	singleRow, err := NewUserExternalSQL().Select().ID(42).SingleContext(ctx, db)
+	if err != nil {
+		t.Error("cannot select row error:", err)
+	}
+	if singleRow.IconImage != nil {
+		t.Error("unexpected IconImage:", singleRow.IconImage)
+	}
+
+	updatedBinary := []byte("updated")
+	results, err := singleRow.Update().SetIconImage(updatedBinary).ExecContext(ctx, db)
 	if err != nil {
 		t.Error("cannnot update row error", err)
 	}
