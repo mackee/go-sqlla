@@ -13,7 +13,7 @@ import (
 
 type UserId uint64
 
-//+table: user
+// +table: user
 type User struct {
 	Id        UserId         `db:"id,primarykey,autoincrement"`
 	Name      string         `db:"name"`

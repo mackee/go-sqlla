@@ -157,10 +157,10 @@ func toTable(tablePkg *types.Package, annotationComment string, gd *ast.GenDecl,
 }
 
 func trimAnnotation(comment string) string {
-	if trimmed := strings.TrimPrefix(comment, "//+table:"); trimmed != comment {
+	if trimmed := strings.TrimPrefix(comment, "//+table: "); trimmed != comment {
 		return trimmed
 	}
-	if trimmed := strings.TrimPrefix(comment, "// +table:"); trimmed != comment {
+	if trimmed := strings.TrimPrefix(comment, "// +table: "); trimmed != comment {
 		return trimmed
 	}
 	if trimmed := strings.TrimPrefix(comment, "//sqlla:table "); trimmed != comment {
