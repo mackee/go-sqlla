@@ -4,7 +4,7 @@ import "time"
 
 //go:generate go run ../cmd/sqlla/main.go
 
-//+table: user_external
+// +table: user_external
 type UserExternal struct {
 	Id        uint64    `db:"id,primarykey"`
 	UserId    uint64    `db:"user_id"`

@@ -44,7 +44,7 @@ func Run(from, ext string) {
 				var hasAnnotation bool
 				var annotationComment string
 				for _, comment := range genDecl.Doc.List {
-					if strings.HasPrefix(comment.Text, "//+table:") {
+					if trimmed := trimAnnotation(comment.Text); trimmed != comment.Text {
 						hasAnnotation = true
 						annotationComment = comment.Text
 						break
@@ -90,7 +90,7 @@ func toTable(tablePkg *types.Package, annotationComment string, gd *ast.GenDecl,
 	table.Package = tablePkg
 	table.PackageName = tablePkg.Name()
 
-	tableName := strings.TrimPrefix(annotationComment, "//+table: ")
+	tableName := trimAnnotation(annotationComment)
 	table.Name = tableName
 
 	spec := gd.Specs[0]
@@ -154,4 +154,14 @@ func toTable(tablePkg *types.Package, annotationComment string, gd *ast.GenDecl,
 	}
 
 	return table, nil
+}
+
+func trimAnnotation(comment string) string {
+	prefixes := []string{"//+table: ", "// +table: ", "//sqlla:table "}
+	for _, prefix := range prefixes {
+		if trimmed := strings.TrimPrefix(comment, prefix); trimmed != comment {
+			return trimmed
+		}
+	}
+	return comment
 }

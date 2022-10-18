@@ -175,7 +175,7 @@ func outputSchema(db *sql.DB, table string, out io.Writer) error {
 	}
 
 	outBuf := new(bytes.Buffer)
-	outBuf.WriteString("//+table: " + table + "\n")
+	outBuf.WriteString("// +table: " + table + "\n")
 	outBuf.WriteString("type ")
 	outBuf.WriteString(snaker.SnakeToCamel(table))
 	outBuf.WriteString(" struct {\n")
