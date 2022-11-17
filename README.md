@@ -1,8 +1,6 @@
 # go-sqlla
 Type safe, reflect free, generative SQL Builder
 
-**THIS IS AN ALPHA QUALITY RELEASE. API MAY CHANGE WITHOUT NOTICE.**
-
 ## INSTALL
 
 ```
