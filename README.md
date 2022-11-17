@@ -1,12 +1,10 @@
 # go-sqlla
 Type safe, reflect free, generative SQL Builder
 
-**THIS IS AN ALPHA QUALITY RELEASE. API MAY CHANGE WITHOUT NOTICE.**
-
 ## INSTALL
 
 ```
-$ go get github.com/mackee/go-sqlla/v2/cmd/sqlla@latest
+$ go install github.com/mackee/go-sqlla/v2/cmd/sqlla@latest
 ```
 
 ## SYNOPSIS
