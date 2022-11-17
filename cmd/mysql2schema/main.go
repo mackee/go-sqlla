@@ -235,7 +235,7 @@ func sqlTypeToSchemaType(c Column) (string, error) {
 			return "uint8", nil
 		}
 		return "int8", nil
-	case strings.HasPrefix(c.Type, "varchar"), strings.HasPrefix(c.Type, "text"), strings.HasPrefix(c.Type, "json"):
+	case strings.HasPrefix(c.Type, "char"), strings.HasPrefix(c.Type, "varchar"), strings.HasPrefix(c.Type, "text"), strings.HasPrefix(c.Type, "json"):
 		if c.IsNull {
 			return "sql.NullString", nil
 		}
