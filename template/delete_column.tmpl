@@ -1,5 +1,5 @@
 {{ define "DeleteColumn" }}{{ $smallTableName := .TableName | toCamel | Untitle }}
-func (q {{ $smallTableName }}DeleteSQL) {{ .Name | toCamel | Title }}(v {{ .TypeName }}, exprs ...sqlla.Operator) {{ $smallTableName }}DeleteSQL {
+func (q {{ $smallTableName }}DeleteSQL) {{ .MethodName }}(v {{ .TypeName }}, exprs ...sqlla.Operator) {{ $smallTableName }}DeleteSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
 		op = sqlla.OpEqual
@@ -19,7 +19,7 @@ func (q {{ $smallTableName }}DeleteSQL) {{ .Name | toCamel | Title }}(v {{ .Type
 }
 
 
-func (q {{ $smallTableName }}DeleteSQL) {{ .Name | toCamel | Title }}In(vs ...{{ .TypeName }}) {{ $smallTableName }}DeleteSQL {
+func (q {{ $smallTableName }}DeleteSQL) {{ .MethodName }}In(vs ...{{ .TypeName }}) {{ $smallTableName }}DeleteSQL {
 {{- if ne .BaseTypeName .TypeName }}
 	_vs := make([]{{ .BaseTypeName }}, 0, len(vs))
 	for _, v := range vs {

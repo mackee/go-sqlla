@@ -36,3 +36,13 @@ CREATE TABLE "user_item" (
     "used_at" DATETIME NULL
 ) ;
 
+
+DROP TABLE IF EXISTS "user_sns";
+
+CREATE TABLE "user_sns" (
+    "id" INTEGER NOT NULL PRIMARY KEY,
+    "sns_type" TEXT NOT NULL,
+    "created_at" DATETIME NOT NULL,
+    "updated_at" DATETIME NOT NULL
+) ;
+

@@ -1,5 +1,5 @@
 {{ define "SelectColumn" }}{{ $smallTableName := .TableName | toCamel | Untitle }}
-func (q {{ $smallTableName }}SelectSQL) {{ .Name | toCamel | Title }}(v {{ .TypeName }}, exprs ...sqlla.Operator) {{ $smallTableName }}SelectSQL {
+func (q {{ $smallTableName }}SelectSQL) {{ .MethodName }}(v {{ .TypeName }}, exprs ...sqlla.Operator) {{ $smallTableName }}SelectSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
 		op = sqlla.OpEqual
@@ -18,7 +18,7 @@ func (q {{ $smallTableName }}SelectSQL) {{ .Name | toCamel | Title }}(v {{ .Type
 	return q
 }
 
-func (q {{ $smallTableName }}SelectSQL) {{ .Name | toCamel | Title }}In(vs ...{{ .TypeName }}) {{ $smallTableName }}SelectSQL {
+func (q {{ $smallTableName }}SelectSQL) {{ .MethodName }}In(vs ...{{ .TypeName }}) {{ $smallTableName }}SelectSQL {
 {{- if ne .BaseTypeName .TypeName }}
 	_vs := make([]{{ .BaseTypeName }}, 0, len(vs))
 	for _, v := range vs {
@@ -37,11 +37,11 @@ func (q {{ $smallTableName }}SelectSQL) {{ .Name | toCamel | Title }}In(vs ...{{
 {{ if .IsPk -}}
 func (q {{ $smallTableName }}SelectSQL) PkColumn(pk int64, exprs ...sqlla.Operator) {{ $smallTableName }}SelectSQL {
 	v := {{ .TypeName }}(pk)
-	return q.{{ .Name | toCamel | Title }}(v, exprs...)
+	return q.{{ .MethodName }}(v, exprs...)
 }
 {{- end }}
 
-func (q {{ $smallTableName }}SelectSQL) OrderBy{{ .Name | toCamel }}(order sqlla.Order) {{ $smallTableName }}SelectSQL {
+func (q {{ $smallTableName }}SelectSQL) OrderBy{{ .MethodName }}(order sqlla.Order) {{ $smallTableName }}SelectSQL {
 	q.order = " ORDER BY " + q.appendColumnPrefix("`{{ .Name }}`")
 	if order == sqlla.Asc {
 		q.order += " ASC"

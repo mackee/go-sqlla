@@ -47,7 +47,6 @@ func Run(from, ext string) {
 					if trimmed := trimAnnotation(comment.Text); trimmed != comment.Text {
 						hasAnnotation = true
 						annotationComment = comment.Text
-						break
 					}
 				}
 				if !hasAnnotation {
@@ -57,7 +56,7 @@ func Run(from, ext string) {
 				if err != nil {
 					panic(err)
 				}
-				filename := filepath.Join(dir, table.Name+ext)
+				filename := filepath.Join(dir, table.TableName+ext)
 				f, err := os.Create(filename)
 				if err != nil {
 					panic(err)
@@ -90,20 +89,24 @@ func toTable(tablePkg *types.Package, annotationComment string, gd *ast.GenDecl,
 	table.Package = tablePkg
 	table.PackageName = tablePkg.Name()
 
-	tableName := trimAnnotation(annotationComment)
-	table.Name = tableName
+	table.TableName = trimAnnotation(annotationComment)
 
 	spec := gd.Specs[0]
 	ts, ok := spec.(*ast.TypeSpec)
 	if !ok {
-		return nil, fmt.Errorf("toTable: not type spec: table=%s", tableName)
+		return nil, fmt.Errorf("toTable: not type spec: table=%s", table.TableName)
 	}
 	structType, ok := ts.Type.(*ast.StructType)
 	if !ok {
-		return nil, fmt.Errorf("toTable: not struct type: table=%s", tableName)
+		return nil, fmt.Errorf("toTable: not struct type: table=%s", table.TableName)
 	}
-
 	table.StructName = ts.Name.Name
+
+	if isV2Annotation(annotationComment) {
+		table.Name = table.StructName
+	} else {
+		table.Name = table.TableName
+	}
 
 	for _, field := range structType.Fields.List {
 		tagText := field.Tag.Value[1 : len(field.Tag.Value)-1]
@@ -164,4 +167,8 @@ func trimAnnotation(comment string) string {
 		}
 	}
 	return comment
+}
+
+func isV2Annotation(comment string) bool {
+	return strings.HasPrefix(comment, "//sqlla:table ")
 }
