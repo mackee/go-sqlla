@@ -117,7 +117,7 @@ func (q {{ $camelName }}SelectSQL) ToSql() (string, []interface{}, error) {
 		return "", nil, err
 	}
 
-	tableName := "{{ .Name }}"
+	tableName := "{{ .TableName }}"
 	if q.tableAlias != "" {
 		tableName = tableName + " AS " + q.tableAlias
 		pcs := make([]string, 0, len(q.Columns))

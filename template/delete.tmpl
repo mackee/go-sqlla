@@ -18,7 +18,7 @@ func (q {{ $camelName }}DeleteSQL) ToSql() (string, []interface{}, error) {
 		return "", nil, err
 	}
 
-	query := "DELETE FROM {{ .Name }}"
+	query := "DELETE FROM {{ .TableName }}"
 	if wheres != "" {
 		query += " WHERE" + wheres
 	}

@@ -1,10 +1,10 @@
 {{ define "UpdateColumn" }}{{ $smallTableName := .TableName | toCamel | Untitle }}
-func (q {{ $smallTableName }}UpdateSQL) Set{{ .Name | toCamel | Title }}(v {{ .TypeName }}) {{ $smallTableName }}UpdateSQL {
+func (q {{ $smallTableName }}UpdateSQL) Set{{ .MethodName }}(v {{ .TypeName }}) {{ $smallTableName }}UpdateSQL {
 	q.setMap["`{{ .Name }}`"] = v
 	return q
 }
 
-func (q {{ $smallTableName }}UpdateSQL) Where{{ .Name | toCamel | Title }}(v {{ .TypeName }}, exprs ...sqlla.Operator) {{ $smallTableName }}UpdateSQL {
+func (q {{ $smallTableName }}UpdateSQL) Where{{ .MethodName }}(v {{ .TypeName }}, exprs ...sqlla.Operator) {{ $smallTableName }}UpdateSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
 		op = sqlla.OpEqual
@@ -23,7 +23,7 @@ func (q {{ $smallTableName }}UpdateSQL) Where{{ .Name | toCamel | Title }}(v {{ 
 	return q
 }
 
-func (q {{ $smallTableName }}UpdateSQL) Where{{ .Name | toCamel | Title }}In(vs ...{{ .TypeName }}) {{ $smallTableName }}UpdateSQL {
+func (q {{ $smallTableName }}UpdateSQL) Where{{ .MethodName }}In(vs ...{{ .TypeName }}) {{ $smallTableName }}UpdateSQL {
 {{- if ne .BaseTypeName .TypeName }}
 	_vs := make([]{{ .BaseTypeName }}, 0, len(vs))
 	for _, v := range vs {

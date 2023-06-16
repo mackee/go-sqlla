@@ -4,16 +4,24 @@ import (
 	"go/ast"
 	"go/types"
 	"io"
+	"strings"
+
+	"github.com/serenize/snaker"
 )
 
 type Table struct {
 	Package               *types.Package
 	PackageName           string
-	StructName            string
 	Name                  string
+	StructName            string
+	TableName             string
 	Columns               Columns
 	PkColumn              *Column
 	additionalPackagesMap map[string]struct{}
+}
+
+func (t *Table) NamingIsStructName() bool {
+	return t.Name == t.StructName
 }
 
 func (t *Table) AddColumn(c Column) {
@@ -21,6 +29,11 @@ func (t *Table) AddColumn(c Column) {
 		t.additionalPackagesMap = make(map[string]struct{})
 	}
 	c.TableName = t.Name
+	if t.NamingIsStructName() {
+		c.MethodName = c.FieldName()
+	} else {
+		c.MethodName = strings.Title(snaker.SnakeToCamel(c.Name))
+	}
 	if c.IsPk {
 		t.PkColumn = &c
 	}
@@ -53,6 +66,7 @@ type Columns []Column
 type Column struct {
 	Field        *ast.Field
 	Name         string
+	MethodName   string
 	TypeName     string
 	PkgName      string
 	BaseTypeName string
