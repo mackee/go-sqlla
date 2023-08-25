@@ -111,54 +111,172 @@ func toTable(tablePkg *types.Package, annotationComment string, gd *ast.GenDecl,
 	}
 
 	for _, field := range structType.Fields.List {
-		tagText := field.Tag.Value[1 : len(field.Tag.Value)-1]
-		tag := reflect.StructTag(tagText)
-		columnInfo := tag.Get("db")
-		columnMaps := strings.Split(columnInfo, ",")
-		columnName := columnMaps[0]
-		isPk := false
-		for _, cm := range columnMaps {
-			if cm == "primarykey" {
-				isPk = true
-				break
-			}
-		}
-		t := ti.TypeOf(field.Type)
-		var typeName, pkgName string
-		baseTypeName := t.String()
-		nt, ok := t.(*types.Named)
-		if ok {
-			pkgName = nt.Obj().Pkg().Path()
-			if tablePkg.Path() != pkgName {
-				typeName = strings.Join([]string{nt.Obj().Pkg().Name(), nt.Obj().Name()}, ".")
-			} else {
-				typeName = nt.Obj().Name()
-			}
-			baseTypeName = typeName
-			if _, ok := supportedNonPrimitiveTypes[typeName]; !ok {
-				bt := nt.Underlying()
-				for _, ok := bt.Underlying().(*types.Named); ok; bt = bt.Underlying() {
-				}
-				baseTypeName = bt.String()
-			}
-		} else {
-			typeName = t.String()
-		}
-		column := Column{
-			Field:        field,
-			Name:         columnName,
-			IsPk:         isPk,
-			TypeName:     typeName,
-			BaseTypeName: baseTypeName,
-			PkgName:      pkgName,
-		}
-		if alt, ok := altTypeNames[baseTypeName]; ok {
-			column.AltTypeName = alt
-		}
-		table.AddColumn(column)
+		columns := toColumns(toColumnsInput{
+			field: field,
+			ti:    ti,
+			pkg:   tablePkg,
+		})
+		table.AddColumns(columns)
 	}
 
 	return table, nil
+}
+
+type dbTag struct {
+	columnName string
+	attrs      []string
+}
+
+func parseDBTag(tagText string) *dbTag {
+	tag := reflect.StructTag(tagText)
+	columnInfo := tag.Get("db")
+	if columnInfo == "" {
+		return nil
+	}
+
+	attrs := strings.Split(columnInfo, ",")
+	columnName := attrs[0]
+
+	return &dbTag{
+		columnName: columnName,
+		attrs:      attrs,
+	}
+}
+
+func (d *dbTag) nested() bool {
+	for _, attr := range d.attrs[1:] {
+		if attr == "nested" {
+			return true
+		}
+	}
+	return false
+}
+
+func (d *dbTag) isPrimaryKey() bool {
+	for _, attr := range d.attrs[1:] {
+		if attr == "primarykey" {
+			return true
+		}
+	}
+	return false
+}
+
+type toColumnsInput struct {
+	field *ast.Field
+	ti    *types.Info
+	pkg   *types.Package
+}
+
+func toColumns(input toColumnsInput) []Column {
+	tagText := input.field.Tag.Value[1 : len(input.field.Tag.Value)-1]
+	dt := parseDBTag(tagText)
+	if dt == nil {
+		return nil
+	}
+	if dt.nested() {
+		return toNestedColumns(toNestedColumnsInput{
+			field:  input.field,
+			ti:     input.ti,
+			pkg:    input.pkg,
+			prefix: dt.columnName,
+		})
+	}
+
+	fieldName := input.field.Names[0].Name
+	t := input.ti.TypeOf(input.field.Type)
+	return []Column{toColumn(toColumnInput{
+		fieldName: fieldName,
+		t:         t,
+		pkg:       input.pkg,
+		dbTag:     dt,
+	})}
+}
+
+type toColumnInput struct {
+	fieldName string
+	t         types.Type
+	pkg       *types.Package
+	dbTag     *dbTag
+}
+
+func toColumn(input toColumnInput) Column {
+	isPk := input.dbTag.isPrimaryKey()
+	t := input.t
+	var typeName, pkgName string
+	baseTypeName := t.String()
+	nt, ok := t.(*types.Named)
+	if ok {
+		pkgName = nt.Obj().Pkg().Path()
+		if input.pkg.Path() != pkgName {
+			typeName = strings.Join([]string{nt.Obj().Pkg().Name(), nt.Obj().Name()}, ".")
+		} else {
+			typeName = nt.Obj().Name()
+		}
+		baseTypeName = typeName
+		if _, ok := supportedNonPrimitiveTypes[typeName]; !ok {
+			bt := nt.Underlying()
+			for _, ok := bt.Underlying().(*types.Named); ok; bt = bt.Underlying() {
+			}
+			baseTypeName = bt.String()
+		}
+	} else {
+		typeName = t.String()
+	}
+	column := Column{
+		FieldName:    input.fieldName,
+		Name:         input.dbTag.columnName,
+		IsPk:         isPk,
+		TypeName:     typeName,
+		BaseTypeName: baseTypeName,
+		PkgName:      pkgName,
+	}
+	if alt, ok := altTypeNames[baseTypeName]; ok {
+		column.AltTypeName = alt
+	}
+	return column
+}
+
+type toNestedColumnsInput struct {
+	field  *ast.Field
+	ti     *types.Info
+	pkg    *types.Package
+	prefix string
+}
+
+func toNestedColumns(input toNestedColumnsInput) []Column {
+	t := input.ti.TypeOf(input.field.Type)
+	tn, ok := t.(*types.Named)
+	if !ok {
+		return nil
+	}
+	ut := tn.Underlying()
+	st, ok := ut.(*types.Struct)
+	if !ok {
+		return nil
+	}
+	columns := make([]Column, 0, st.NumFields())
+	fieldName := input.field.Names[0].Name
+	for i := 0; i < st.NumFields(); i++ {
+		field := st.Field(i)
+		tagText := st.Tag(i)
+		dt := parseDBTag(tagText)
+		if dt == nil {
+			continue
+		}
+
+		column := toColumn(toColumnInput{
+			fieldName: field.Name(),
+			t:         field.Type(),
+			pkg:       input.pkg,
+			dbTag:     dt,
+		})
+		column.FieldName = strings.Join([]string{fieldName, column.FieldName}, ".")
+		column.Name = input.prefix + column.Name
+		column.IsPk = false
+		columns = append(columns, column)
+	}
+
+	return columns
 }
 
 func trimAnnotation(comment string) string {

@@ -16,13 +16,14 @@ import (
 
 	"github.com/go-sql-driver/mysql"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/google/go-cmp/cmp"
 	"github.com/mackee/go-sqlla/v2"
 	"github.com/ory/dockertest/v3"
 )
 
 var db *sql.DB
 
-//go:generate genddl -outpath=./mysql.sql -driver=mysql
+//go:generate go run github.com/mackee/go-genddl/cmd/genddl@41aa2f4 -outpath=./mysql.sql -driver=mysql
 
 func TestMain(m *testing.M) {
 	// uses a sensible default on windows (tcp/http) and linux/osx (socket)
@@ -32,7 +33,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// pulls an image, creates a container based on it and runs it
-	resource, err := pool.Run("mysql", "5.7", []string{
+	resource, err := pool.Run("mysql", "8.0", []string{
 		"MYSQL_ROOT_PASSWORD=secret",
 		"MYSQL_DATABASE=test",
 	})
@@ -245,4 +246,54 @@ func TestBulkInsertOnDuplicateKeyUpdate__WithMySQL(t *testing.T) {
 		}
 	}
 
+}
+
+func TestSelectViews(t *testing.T) {
+	ctx := context.Background()
+	now := time.Now()
+
+	u, err := NewUserSQL().Insert().
+		ValueID(42).
+		ValueName("foobar").
+		ValueAge(sql.NullInt64{Valid: true, Int64: 17}).
+		ValueRate(3.14).
+		ValueIconImage([]byte{}).
+		ValueCreatedAt(now).
+		ValueUpdatedAt(mysql.NullTime{Valid: true, Time: now}).
+		ExecContext(ctx, db)
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+	if _, err := NewItemSQL().Insert().
+		ValueID("itemid").
+		ValueName("super_expensive_item").
+		ExecContext(ctx, db); err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+	item, err := NewItemSQL().Select().ID("itemid").SingleContext(ctx, db)
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+	ui, err := NewUserItemSQL().Insert().
+		ValueID(222).
+		ValueUserID(uint64(u.Id)).
+		ValueItemID(string(item.ID)).
+		ValueIsUsed(true).
+		ExecContext(ctx, db)
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+
+	detail, err := NewUserItemDetailSQL().Select().UserItemId(ui.Id).SingleContext(ctx, db)
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+	expect := UserItemDetail{
+		UserItem: ui,
+		User:     u,
+		Item:     item,
+	}
+	if diff := cmp.Diff(expect, detail); diff != "" {
+		t.Errorf("result is mismatch (-want +got):\n%s", diff)
+	}
 }
