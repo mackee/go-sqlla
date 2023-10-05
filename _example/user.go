@@ -9,7 +9,7 @@ import (
 )
 
 //go:generate go run ../cmd/sqlla/main.go
-//go:generate genddl -outpath=./sqlite3.sql -driver=sqlite3
+//go:generate go run github.com/mackee/go-genddl/cmd/genddl@5800fb3 -outpath=./sqlite3.sql -driver=sqlite3
 
 type UserId uint64
 

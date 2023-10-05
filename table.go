@@ -3,7 +3,6 @@
 package sqlla
 
 import (
-	"go/ast"
 	"go/types"
 	"io"
 	"strings"
@@ -26,15 +25,22 @@ func (t *Table) NamingIsStructName() bool {
 	return t.Name == t.StructName
 }
 
+func (t *Table) AddColumns(columns []Column) {
+	for _, c := range columns {
+		t.AddColumn(c)
+	}
+}
+
 func (t *Table) AddColumn(c Column) {
 	if t.additionalPackagesMap == nil {
 		t.additionalPackagesMap = make(map[string]struct{})
 	}
 	c.TableName = t.Name
 	if t.NamingIsStructName() {
-		c.MethodName = c.FieldName()
+		c.MethodName = strings.ReplaceAll(c.FieldName, ".", "")
 	} else {
-		c.MethodName = strings.Title(snaker.SnakeToCamel(c.Name))
+		n := strings.ReplaceAll(c.Name, ".", "_")
+		c.MethodName = strings.Title(snaker.SnakeToCamel(n))
 	}
 	if c.IsPk {
 		t.PkColumn = &c
@@ -66,7 +72,7 @@ func (t Table) Render(w io.Writer) error {
 type Columns []Column
 
 type Column struct {
-	Field        *ast.Field
+	FieldName    string
 	Name         string
 	MethodName   string
 	TypeName     string
@@ -79,11 +85,4 @@ type Column struct {
 
 func (c Column) String() string {
 	return c.Name
-}
-
-func (c Column) FieldName() string {
-	if len(c.Field.Names) > 0 {
-		return c.Field.Names[0].Name
-	}
-	return ""
 }

@@ -6,6 +6,7 @@ replace github.com/mackee/go-sqlla/v2 => ../
 
 require (
 	github.com/go-sql-driver/mysql v1.6.0
+	github.com/google/go-cmp v0.5.9
 	github.com/mackee/go-genddl v0.0.0-20220809061459-645eadea7290
 	github.com/mackee/go-sqlla/v2 v2.11.0
 	github.com/mattn/go-sqlite3 v1.14.9
@@ -41,6 +42,5 @@ require (
 	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/tools v0.1.12 // indirect
-	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
