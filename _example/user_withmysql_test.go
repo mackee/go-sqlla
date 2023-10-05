@@ -23,7 +23,7 @@ import (
 
 var db *sql.DB
 
-//go:generate go run github.com/mackee/go-genddl/cmd/genddl@41aa2f4 -outpath=./mysql.sql -driver=mysql
+//go:generate go run github.com/mackee/go-genddl/cmd/genddl@5800fb3  -outpath=./mysql.sql -driver=mysql
 
 func TestMain(m *testing.M) {
 	// uses a sensible default on windows (tcp/http) and linux/osx (socket)
