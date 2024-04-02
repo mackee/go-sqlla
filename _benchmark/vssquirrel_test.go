@@ -27,7 +27,7 @@ func TestSelect__Squirrel(t *testing.T) {
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
-	if query != "SELECT id, name FROM user WHERE name = ?" {
+	if query != "SELECT id, name FROM `user` WHERE name = ?" {
 		t.Fatal("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{"hogehoge"}) {
@@ -41,7 +41,7 @@ func TestSelect__Sqlla(t *testing.T) {
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
-	if query != "SELECT id, name FROM user WHERE name = ?;" {
+	if query != "SELECT id, name FROM `user` WHERE name = ?;" {
 		t.Fatal("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{"hogehoge"}) {
