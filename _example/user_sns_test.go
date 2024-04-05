@@ -10,7 +10,7 @@ func TestSelectUserSNS(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "SELECT `id`, `sns_type`, `created_at`, `updated_at` FROM user_sns WHERE `sns_type` = ?;" {
+	if query != "SELECT `id`, `sns_type`, `created_at`, `updated_at` FROM `user_sns` WHERE `sns_type` = ?;" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{"GITHUB"}) {

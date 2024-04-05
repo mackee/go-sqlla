@@ -258,7 +258,7 @@ func (q userSNSSelectSQL) ToSql() (string, []interface{}, error) {
 		return "", nil, err
 	}
 
-	tableName := "user_sns"
+	tableName := "`user_sns`"
 	if q.tableAlias != "" {
 		tableName = tableName + " AS " + q.tableAlias
 		pcs := make([]string, 0, len(q.Columns))
@@ -509,7 +509,7 @@ func (q userSNSUpdateSQL) ToSql() (string, []interface{}, error) {
 		return "", []interface{}{}, err
 	}
 
-	query := "UPDATE user_sns SET" + setColumns
+	query := "UPDATE `user_sns` SET" + setColumns
 	if wheres != "" {
 		query += " WHERE" + wheres
 	}
@@ -607,7 +607,7 @@ func (q userSNSInsertSQL) userSNSInsertSQLToSql() (string, []interface{}, error)
 		return "", []interface{}{}, err
 	}
 
-	query := "INSERT INTO user_sns " + qs
+	query := "INSERT INTO `user_sns` " + qs
 
 	return query, vs, nil
 }
@@ -945,7 +945,7 @@ func (q userSNSDeleteSQL) ToSql() (string, []interface{}, error) {
 		return "", nil, err
 	}
 
-	query := "DELETE FROM user_sns"
+	query := "DELETE FROM `user_sns`"
 	if wheres != "" {
 		query += " WHERE" + wheres
 	}

@@ -287,7 +287,7 @@ func (q userExternalSelectSQL) ToSql() (string, []interface{}, error) {
 		return "", nil, err
 	}
 
-	tableName := "user_external"
+	tableName := "`user_external`"
 	if q.tableAlias != "" {
 		tableName = tableName + " AS " + q.tableAlias
 		pcs := make([]string, 0, len(q.Columns))
@@ -562,7 +562,7 @@ func (q userExternalUpdateSQL) ToSql() (string, []interface{}, error) {
 		return "", []interface{}{}, err
 	}
 
-	query := "UPDATE user_external SET" + setColumns
+	query := "UPDATE `user_external` SET" + setColumns
 	if wheres != "" {
 		query += " WHERE" + wheres
 	}
@@ -665,7 +665,7 @@ func (q userExternalInsertSQL) userExternalInsertSQLToSql() (string, []interface
 		return "", []interface{}{}, err
 	}
 
-	query := "INSERT INTO user_external " + qs
+	query := "INSERT INTO `user_external` " + qs
 
 	return query, vs, nil
 }
@@ -1036,7 +1036,7 @@ func (q userExternalDeleteSQL) ToSql() (string, []interface{}, error) {
 		return "", nil, err
 	}
 
-	query := "DELETE FROM user_external"
+	query := "DELETE FROM `user_external`"
 	if wheres != "" {
 		query += " WHERE" + wheres
 	}

@@ -350,7 +350,7 @@ func (q userSelectSQL) ToSql() (string, []interface{}, error) {
 		return "", nil, err
 	}
 
-	tableName := "user"
+	tableName := "`user`"
 	if q.tableAlias != "" {
 		tableName = tableName + " AS " + q.tableAlias
 		pcs := make([]string, 0, len(q.Columns))
@@ -677,7 +677,7 @@ func (q userUpdateSQL) ToSql() (string, []interface{}, error) {
 		return "", []interface{}{}, err
 	}
 
-	query := "UPDATE user SET" + setColumns
+	query := "UPDATE `user` SET" + setColumns
 	if wheres != "" {
 		query += " WHERE" + wheres
 	}
@@ -790,7 +790,7 @@ func (q userInsertSQL) userInsertSQLToSql() (string, []interface{}, error) {
 		return "", []interface{}{}, err
 	}
 
-	query := "INSERT INTO user " + qs
+	query := "INSERT INTO `user` " + qs
 
 	return query, vs, nil
 }
@@ -1231,7 +1231,7 @@ func (q userDeleteSQL) ToSql() (string, []interface{}, error) {
 		return "", nil, err
 	}
 
-	query := "DELETE FROM user"
+	query := "DELETE FROM `user`"
 	if wheres != "" {
 		query += " WHERE" + wheres
 	}

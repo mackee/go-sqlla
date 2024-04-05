@@ -25,7 +25,7 @@ func TestSelect(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "SELECT "+columns+" FROM user WHERE `name` = ?;" {
+	if query != "SELECT "+columns+" FROM `user` WHERE `name` = ?;" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{"hoge"}) {
@@ -39,7 +39,7 @@ func TestSelect__OrderByAndLimit(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "SELECT "+columns+" FROM user WHERE `name` = ? ORDER BY `id` ASC LIMIT 100;" {
+	if query != "SELECT "+columns+" FROM `user` WHERE `name` = ? ORDER BY `id` ASC LIMIT 100;" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{"hoge"}) {
@@ -53,7 +53,7 @@ func TestSelect__InOperator(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "SELECT "+columns+" FROM user WHERE `id` IN(?,?,?,?,?);" {
+	if query != "SELECT "+columns+" FROM `user` WHERE `id` IN(?,?,?,?,?);" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{uint64(1), uint64(2), uint64(3), uint64(4), uint64(5)}) {
@@ -67,7 +67,7 @@ func TestSelect__NullInt64(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "SELECT "+columns+" FROM user WHERE `age` IS NULL;" {
+	if query != "SELECT "+columns+" FROM `user` WHERE `age` IS NULL;" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{}) {
@@ -81,7 +81,7 @@ func TestSelect__NullInt64__IsNotNull(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "SELECT "+columns+" FROM user WHERE `age` IS NOT NULL;" {
+	if query != "SELECT "+columns+" FROM `user` WHERE `age` IS NOT NULL;" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{}) {
@@ -95,7 +95,7 @@ func TestSelect__ForUpdate(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "SELECT "+columns+" FROM user WHERE `id` = ? FOR UPDATE;" {
+	if query != "SELECT "+columns+" FROM `user` WHERE `id` = ? FOR UPDATE;" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{"1"}) {
@@ -112,7 +112,7 @@ func TestSelect__Or(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	expectedQuery := "SELECT " + columns + " FROM user WHERE (( `id` = ? ) OR ( `id` = ? ));"
+	expectedQuery := "SELECT " + columns + " FROM `user` WHERE (( `id` = ? ) OR ( `id` = ? ));"
 	if query != expectedQuery {
 		t.Error("unexpected query:", query, expectedQuery)
 	}
@@ -134,7 +134,7 @@ func TestSelect__OrNull(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	expectedQuery := "SELECT `id`, `user_id`, `item_id`, `is_used`, `has_extension`, `used_at` FROM user_item WHERE `id` IN(?,?) AND (( `used_at` IS NULL ) OR ( `used_at` < ? ));"
+	expectedQuery := "SELECT `id`, `user_id`, `item_id`, `is_used`, `has_extension`, `used_at` FROM `user_item` WHERE `id` IN(?,?) AND (( `used_at` IS NULL ) OR ( `used_at` < ? ));"
 	if query != expectedQuery {
 		t.Error("unexpected query:", query, expectedQuery)
 	}
@@ -155,7 +155,7 @@ func TestSelect__JoinClausesAndTableAlias(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	expectedQuery := "SELECT `u`.`id`, `u`.`name`, `u`.`age`, `u`.`rate`, `u`.`icon_image`, `u`.`created_at`, `u`.`updated_at`, ui.item_id, ui.is_used FROM user AS `u` INNER JOIN user_item AS ui ON u.id = ui.user_id WHERE `u`.`name` = ? AND ui.item_id IN (?,?,?) ORDER BY `u`.`id` DESC;"
+	expectedQuery := "SELECT `u`.`id`, `u`.`name`, `u`.`age`, `u`.`rate`, `u`.`icon_image`, `u`.`created_at`, `u`.`updated_at`, ui.item_id, ui.is_used FROM `user` AS `u` INNER JOIN user_item AS ui ON u.id = ui.user_id WHERE `u`.`name` = ? AND ui.item_id IN (?,?,?) ORDER BY `u`.`id` DESC;"
 	if query != expectedQuery {
 		t.Error("unexpected query:", query, expectedQuery)
 	}
@@ -174,7 +174,7 @@ func TestSelect__SetColumn(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	expectedQuery := "SELECT `u`.`rate`, COUNT(u.id) FROM user AS `u` GROUP BY `u`.`rate` ORDER BY `u`.`rate` DESC;"
+	expectedQuery := "SELECT `u`.`rate`, COUNT(u.id) FROM `user` AS `u` GROUP BY `u`.`rate` ORDER BY `u`.`rate` DESC;"
 	if query != expectedQuery {
 		t.Error("unexpected query:", query, expectedQuery)
 	}
@@ -193,7 +193,7 @@ func TestSelect__GroupByDottedColumn(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	expectedQuery := "SELECT `u`.`rate`, COUNT(u.id) FROM user AS `u` GROUP BY u.rate ORDER BY `u`.`rate` DESC;"
+	expectedQuery := "SELECT `u`.`rate`, COUNT(u.id) FROM `user` AS `u` GROUP BY u.rate ORDER BY `u`.`rate` DESC;"
 	if query != expectedQuery {
 		t.Error("unexpected query:", query, expectedQuery)
 	}
@@ -209,7 +209,7 @@ func TestSelect__LikeOperator(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	expectedQuery := "SELECT " + columns + " FROM user WHERE `name` LIKE ?;"
+	expectedQuery := "SELECT " + columns + " FROM `user` WHERE `name` LIKE ?;"
 	if query != expectedQuery {
 		t.Error("unexpected query:", query, expectedQuery)
 	}
@@ -225,14 +225,14 @@ func TestUpdate(t *testing.T) {
 		t.Error("unexpected error:", err)
 	}
 	switch query {
-	case "UPDATE user SET `name` = ?, `updated_at` = ? WHERE `id` = ?;":
+	case "UPDATE `user` SET `name` = ?, `updated_at` = ? WHERE `id` = ?;":
 		if !reflect.DeepEqual(args[0], "barbar") {
 			t.Error("unexpected args:", args)
 		}
 		if !reflect.DeepEqual(args[2], "1") {
 			t.Error("unexpected args:", args)
 		}
-	case "UPDATE user SET `updated_at` = ?, `name` = ? WHERE `id` = ?;":
+	case "UPDATE `user` SET `updated_at` = ?, `name` = ? WHERE `id` = ?;":
 		if !reflect.DeepEqual(args[2], "1") {
 			t.Error("unexpected args:", args)
 		}
@@ -251,7 +251,7 @@ func TestUpdate__InOperator(t *testing.T) {
 		t.Error("unexpected error:", err)
 	}
 	switch query {
-	case "UPDATE user SET `rate` = ?, `updated_at` = ? WHERE `id` IN(?,?,?);":
+	case "UPDATE `user` SET `rate` = ?, `updated_at` = ? WHERE `id` IN(?,?,?);":
 		if !reflect.DeepEqual(args[0], float64(42)) {
 			t.Errorf("unexpected args: %+v", args[0])
 		}
@@ -260,7 +260,7 @@ func TestUpdate__InOperator(t *testing.T) {
 				t.Errorf("unexpected args: i=%d, %+v", i, args[2:])
 			}
 		}
-	case "UPDATE user SET `updated_at` = ?, `rate` = ? WHERE `id` IN(?,?,?);":
+	case "UPDATE `user` SET `updated_at` = ?, `rate` = ? WHERE `id` IN(?,?,?);":
 		if !reflect.DeepEqual(args[1], float64(42)) {
 			t.Errorf("unexpected args: %+v", args[1])
 		}
@@ -281,7 +281,7 @@ func TestInsert(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	expected := "INSERT INTO user (`created_at`,`name`) VALUES(?,?);"
+	expected := "INSERT INTO `user` (`created_at`,`name`) VALUES(?,?);"
 	if query != expected {
 		t.Error("unexpected query:", query)
 	}
@@ -308,7 +308,7 @@ func TestInsertOnDuplicateKeyUpdate(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	expr := regexp.MustCompile(`^INSERT INTO user \(.*\) VALUES\(\?,\?,\?,\?\) `)
+	expr := regexp.MustCompile("^INSERT INTO `user` \\(.*\\) VALUES\\(\\?,\\?,\\?,\\?\\) ")
 	gotSuffix := expr.ReplaceAllString(query, "")
 	expectedSuffix1 := "ON DUPLICATE KEY UPDATE `age` = ?, `updated_at` = VALUES(`updated_at`);"
 	expectedSuffix2 := "ON DUPLICATE KEY UPDATE `updated_at` = VALUES(`updated_at`), `age` = ?;"
@@ -378,7 +378,7 @@ func TestDelete(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "DELETE FROM user WHERE `name` = ?;" {
+	if query != "DELETE FROM `user` WHERE `name` = ?;" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{"hogehoge"}) {
@@ -392,7 +392,7 @@ func TestDelete__In(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "DELETE FROM user WHERE `name` IN(?,?);" {
+	if query != "DELETE FROM `user` WHERE `name` IN(?,?);" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{"hogehoge", "fugafuga"}) {
