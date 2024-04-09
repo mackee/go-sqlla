@@ -66,15 +66,69 @@ func (t Table) Render(w io.Writer) error {
 type Columns []Column
 
 type Column struct {
-	Field        *ast.Field
-	Name         string
-	MethodName   string
-	TypeName     string
-	PkgName      string
-	BaseTypeName string
-	AltTypeName  string
-	TableName    string
-	IsPk         bool
+	Field         *ast.Field
+	Name          string
+	MethodName    string
+	typeName      string
+	PkgName       string
+	baseTypeName  string
+	altTypeName   string
+	typeParameter string
+	TableName     string
+	IsPk          bool
+}
+
+func (c Column) HasUnderlyingType() bool {
+	return c.baseTypeName != c.typeName
+}
+
+func (c Column) TypeName() string {
+	tn := c.typeName
+	if c.altTypeName != "" {
+		tn = c.altTypeName
+	}
+	if c.typeParameter != "" {
+		return tn + "[" + c.typeParameter + "]"
+	}
+	return tn
+}
+
+func (c Column) BaseTypeName() string {
+	if c.typeParameter != "" {
+		return c.baseTypeName + "[" + c.typeParameter + "]"
+	}
+	return c.baseTypeName
+}
+
+func (c Column) AltTypeName() string {
+	if c.altTypeName == "" {
+		return ""
+	}
+	if c.typeParameter != "" {
+		return c.altTypeName + "[" + c.typeParameter + "]"
+	}
+	return c.altTypeName
+}
+
+func (c Column) ExprTypeName() string {
+	if atn := c.AltTypeName(); atn != "" {
+		return "Expr" + atn
+	}
+	return "Expr" + c.BaseTypeName()
+}
+
+func (c Column) ExprMultiTypeName() string {
+	if atn := c.AltTypeName(); atn != "" {
+		return "ExprMulti" + atn
+	}
+	return "ExprMulti" + c.BaseTypeName()
+}
+
+func (c Column) ExprValueIdentifier() string {
+	if c.typeName != c.baseTypeName {
+		return c.baseTypeName + "(v)"
+	}
+	return "v"
 }
 
 func (c Column) String() string {

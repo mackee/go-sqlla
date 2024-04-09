@@ -28,3 +28,4 @@ _bin
 vendor/
 _artifacts
 _gobin
+go.work

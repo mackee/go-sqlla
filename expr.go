@@ -628,3 +628,64 @@ func (e ExprMultiBytes) ToSql() (string, []interface{}, error) {
 	}
 	return e.Column + " " + ops, vs, nil
 }
+
+type ExprValue[T any] struct {
+	Column string
+	Value  T
+	Op     Operator
+}
+
+func (e ExprValue[T]) ToSql() (string, []interface{}, error) {
+	v := e.Value
+	ops, err := e.Op.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	return e.Column + " " + ops + " ?", []interface{}{v}, nil
+}
+
+type ExprMultiValue[T any] struct {
+	Column string
+	Values []T
+	Op     Operator
+}
+
+func (e ExprMultiValue[T]) ToSql() (string, []interface{}, error) {
+	ops, err := e.Op.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	vs := make([]interface{}, 0, len(e.Values))
+	for _, v := range e.Values {
+		vs = append(vs, interface{}(v))
+	}
+	return e.Column + " " + ops, vs, nil
+}
+
+type ExprNull[T any] struct {
+	Column string
+	Value  sql.Null[T]
+	Op     Operator
+}
+
+func (e ExprNull[T]) ToSql() (string, []interface{}, error) {
+	var ops, placeholder string
+	var err error
+	vs := []interface{}{}
+	if !e.Value.Valid {
+		if e.Op == OpNot {
+			ops, err = opIsNotNull.ToSql()
+		} else {
+			ops, err = opIsNull.ToSql()
+		}
+	} else {
+		ops, err = e.Op.ToSql()
+		placeholder = " ?"
+		vs = append(vs, e.Value)
+	}
+	if err != nil {
+		return "", nil, err
+	}
+
+	return e.Column + " " + ops + placeholder, vs, nil
+}

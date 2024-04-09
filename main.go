@@ -81,6 +81,10 @@ var supportedNonPrimitiveTypes = map[string]struct{}{
 	"sql.NullBool":    {},
 }
 
+var supportedGenericsTypes = map[string]struct{}{
+	"sql.Null": {},
+}
+
 var altTypeNames = map[string]string{
 	"[]byte":         "Bytes",
 	"mysql.NullTime": "MysqlNullTime",
@@ -124,7 +128,7 @@ func toTable(tablePkg *types.Package, annotationComment string, gd *ast.GenDecl,
 			}
 		}
 		t := ti.TypeOf(field.Type)
-		var typeName, pkgName string
+		var typeName, pkgName, typeParameter string
 		baseTypeName := t.String()
 		nt, ok := t.(*types.Named)
 		if ok {
@@ -135,7 +139,18 @@ func toTable(tablePkg *types.Package, annotationComment string, gd *ast.GenDecl,
 				typeName = nt.Obj().Name()
 			}
 			baseTypeName = typeName
-			if _, ok := supportedNonPrimitiveTypes[typeName]; !ok {
+			if _, ok := supportedGenericsTypes[typeName]; ok {
+				tps := nt.TypeParams()
+				if tps == nil {
+					return nil, fmt.Errorf("toTable: has not type params: table=%s, field=%s", table.TableName, columnName)
+				}
+				tpsStr := make([]string, tps.Len())
+				for i := 0; i < tps.Len(); i++ {
+					tp := tps.At(i)
+					tpsStr[i] = tp.String()
+				}
+				typeParameter = strings.Join(tpsStr, ",")
+			} else if _, ok := supportedNonPrimitiveTypes[typeName]; !ok {
 				bt := nt.Underlying()
 				for _, ok := bt.Underlying().(*types.Named); ok; bt = bt.Underlying() {
 				}
@@ -145,15 +160,16 @@ func toTable(tablePkg *types.Package, annotationComment string, gd *ast.GenDecl,
 			typeName = t.String()
 		}
 		column := Column{
-			Field:        field,
-			Name:         columnName,
-			IsPk:         isPk,
-			TypeName:     typeName,
-			BaseTypeName: baseTypeName,
-			PkgName:      pkgName,
+			Field:         field,
+			Name:          columnName,
+			IsPk:          isPk,
+			typeName:      typeName,
+			baseTypeName:  baseTypeName,
+			PkgName:       pkgName,
+			typeParameter: typeParameter,
 		}
 		if alt, ok := altTypeNames[baseTypeName]; ok {
-			column.AltTypeName = alt
+			column.altTypeName = alt
 		}
 		table.AddColumn(column)
 	}

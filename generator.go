@@ -3,8 +3,10 @@
 package sqlla
 
 import (
+	"bufio"
 	"bytes"
 	"embed"
+	"fmt"
 	"go/format"
 	"io"
 	"log"
@@ -64,6 +66,12 @@ func WriteCode(w io.Writer, table *Table) error {
 	err := tmpl.Execute(buf, table)
 	if err != nil {
 		return errors.Wrapf(err, "fail to render")
+	}
+	scanner := bufio.NewScanner(bytes.NewReader(buf.Bytes()))
+	i := 0
+	for scanner.Scan() {
+		i++
+		fmt.Printf("%05d: %s\n", i, scanner.Text())
 	}
 	bs, err := format.Source(buf.Bytes())
 	if err != nil {

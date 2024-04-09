@@ -56,10 +56,7 @@ type SetMapIterator struct {
 
 func (s *SetMapIterator) Iterate() bool {
 	s.cursor++
-	if len(s.keys)-1 < s.cursor {
-		return false
-	}
-	return true
+	return len(s.keys)-1 >= s.cursor
 }
 
 func (s *SetMapIterator) Key() string {

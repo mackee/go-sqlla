@@ -22,7 +22,7 @@ import (
 
 var db *sql.DB
 
-//go:generate genddl -outpath=./mysql.sql -driver=mysql
+//go:generate go run github.com/mackee/go-genddl/cmd/genddl -outpath=./mysql.sql -driver=mysql
 
 func TestMain(m *testing.M) {
 	// uses a sensible default on windows (tcp/http) and linux/osx (socket)
@@ -244,5 +244,4 @@ func TestBulkInsertOnDuplicateKeyUpdate__WithMySQL(t *testing.T) {
 			}
 		}
 	}
-
 }
