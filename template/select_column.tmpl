@@ -6,8 +6,7 @@ func (q {{ $smallTableName }}SelectSQL) {{ .MethodName }}(v {{ .TypeName }}, exp
 	} else {
 		op = exprs[0]
 	}
-
-	where := sqlla.{{ .ExprTypeName | Exprize | Title }}{Value: {{ .ExprValueIdentifier }}, Op: op, Column: q.appendColumnPrefix("`{{ .Name }}`")}
+	where := sqlla.{{ .ExprTypeName }}{Value: {{ .ExprValueIdentifier }}, Op: op, Column: q.appendColumnPrefix("`{{ .Name }}`")}
 	q.where = append(q.where, where)
 	return q
 }
@@ -18,9 +17,9 @@ func (q {{ $smallTableName }}SelectSQL) {{ .MethodName }}In(vs ...{{ .TypeName }
 	for _, v := range vs {
 		_vs = append(_vs, {{ .BaseTypeName }}(v))
 	}
-	where := sqlla.{{ .ExprMultiTypeName | Exprize | Title }}{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`{{ .Name }}`")}
+	where := sqlla.{{ .ExprMultiTypeName }}{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`{{ .Name }}`")}
 {{- else }}
-	where := sqlla.{{ .ExprMultiTypeName | Exprize | Title }}{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`{{ .Name }}`")}
+	where := sqlla.{{ .ExprMultiTypeName }}{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`{{ .Name }}`")}
 {{- end }}
 	q.where = append(q.where, where)
 	return q

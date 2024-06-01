@@ -138,8 +138,7 @@ func (q groupSelectSQL) ID(v GroupID, exprs ...sqlla.Operator) groupSelectSQL {
 	} else {
 		op = exprs[0]
 	}
-
-	where := sqlla.Expruint64{Value: uint64(v), Op: op, Column: q.appendColumnPrefix("`id`")}
+	where := sqlla.ExprUint64{Value: uint64(v), Op: op, Column: q.appendColumnPrefix("`id`")}
 	q.where = append(q.where, where)
 	return q
 }
@@ -149,7 +148,7 @@ func (q groupSelectSQL) IDIn(vs ...GroupID) groupSelectSQL {
 	for _, v := range vs {
 		_vs = append(_vs, uint64(v))
 	}
-	where := sqlla.ExprMultiuint64{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`id`")}
+	where := sqlla.ExprMultiUint64{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`id`")}
 	q.where = append(q.where, where)
 	return q
 }
@@ -177,14 +176,13 @@ func (q groupSelectSQL) Name(v string, exprs ...sqlla.Operator) groupSelectSQL {
 	} else {
 		op = exprs[0]
 	}
-
-	where := sqlla.Exprstring{Value: v, Op: op, Column: q.appendColumnPrefix("`name`")}
+	where := sqlla.ExprString{Value: v, Op: op, Column: q.appendColumnPrefix("`name`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q groupSelectSQL) NameIn(vs ...string) groupSelectSQL {
-	where := sqlla.ExprMultistring{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`name`")}
+	where := sqlla.ExprMultiString{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`name`")}
 	q.where = append(q.where, where)
 	return q
 }
@@ -207,8 +205,7 @@ func (q groupSelectSQL) LeaderUserID(v UserId, exprs ...sqlla.Operator) groupSel
 	} else {
 		op = exprs[0]
 	}
-
-	where := sqlla.Expruint64{Value: uint64(v), Op: op, Column: q.appendColumnPrefix("`leader_user_id`")}
+	where := sqlla.ExprUint64{Value: uint64(v), Op: op, Column: q.appendColumnPrefix("`leader_user_id`")}
 	q.where = append(q.where, where)
 	return q
 }
@@ -218,7 +215,7 @@ func (q groupSelectSQL) LeaderUserIDIn(vs ...UserId) groupSelectSQL {
 	for _, v := range vs {
 		_vs = append(_vs, uint64(v))
 	}
-	where := sqlla.ExprMultiuint64{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`leader_user_id`")}
+	where := sqlla.ExprMultiUint64{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`leader_user_id`")}
 	q.where = append(q.where, where)
 	return q
 }
@@ -241,14 +238,13 @@ func (q groupSelectSQL) SubLeaderUserID(v sql.Null[T], exprs ...sqlla.Operator) 
 	} else {
 		op = exprs[0]
 	}
-
-	where := sqlla.Exprsql.Null[T]{Value: v, Op: op, Column: q.appendColumnPrefix("`sub_leader_user_id`")}
+	where := sqlla.ExprNull[T]{Value: v, Op: op, Column: q.appendColumnPrefix("`sub_leader_user_id`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q groupSelectSQL) SubLeaderUserIDIn(vs ...sql.Null[T]) groupSelectSQL {
-	where := sqlla.ExprMultisql.Null[T]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`sub_leader_user_id`")}
+	where := sqlla.ExprMultiNull[T]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`sub_leader_user_id`")}
 	q.where = append(q.where, where)
 	return q
 }
@@ -271,14 +267,13 @@ func (q groupSelectSQL) CreatedAt(v time.Time, exprs ...sqlla.Operator) groupSel
 	} else {
 		op = exprs[0]
 	}
-
-	where := sqlla.Exprtime.Time{Value: v, Op: op, Column: q.appendColumnPrefix("`created_at`")}
+	where := sqlla.ExprTime{Value: v, Op: op, Column: q.appendColumnPrefix("`created_at`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q groupSelectSQL) CreatedAtIn(vs ...time.Time) groupSelectSQL {
-	where := sqlla.ExprMultitime.Time{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`created_at`")}
+	where := sqlla.ExprMultiTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`created_at`")}
 	q.where = append(q.where, where)
 	return q
 }
@@ -294,20 +289,19 @@ func (q groupSelectSQL) OrderByCreatedAt(order sqlla.Order) groupSelectSQL {
 	return q
 }
 
-func (q groupSelectSQL) UpdatedAt(v MysqlNullTime, exprs ...sqlla.Operator) groupSelectSQL {
+func (q groupSelectSQL) UpdatedAt(v mysql.NullTime, exprs ...sqlla.Operator) groupSelectSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
 		op = sqlla.OpEqual
 	} else {
 		op = exprs[0]
 	}
-
 	where := sqlla.ExprMysqlNullTime{Value: v, Op: op, Column: q.appendColumnPrefix("`updated_at`")}
 	q.where = append(q.where, where)
 	return q
 }
 
-func (q groupSelectSQL) UpdatedAtIn(vs ...MysqlNullTime) groupSelectSQL {
+func (q groupSelectSQL) UpdatedAtIn(vs ...mysql.NullTime) groupSelectSQL {
 	where := sqlla.ExprMultiMysqlNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`updated_at`")}
 	q.where = append(q.where, where)
 	return q
@@ -597,29 +591,25 @@ func (q groupUpdateSQL) WhereCreatedAtIn(vs ...time.Time) groupUpdateSQL {
 	return q
 }
 
-func (q groupUpdateSQL) SetUpdatedAt(v MysqlNullTime) groupUpdateSQL {
+func (q groupUpdateSQL) SetUpdatedAt(v mysql.NullTime) groupUpdateSQL {
 	q.setMap["`updated_at`"] = v
 	return q
 }
 
-func (q groupUpdateSQL) WhereUpdatedAt(v MysqlNullTime, exprs ...sqlla.Operator) groupUpdateSQL {
+func (q groupUpdateSQL) WhereUpdatedAt(v mysql.NullTime, exprs ...sqlla.Operator) groupUpdateSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
 		op = sqlla.OpEqual
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprNullTime{Value: mysql.NullTime(v), Op: op, Column: "`updated_at`"}
+	where := sqlla.ExprMysqlNullTime{Value: v, Op: op, Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-func (q groupUpdateSQL) WhereUpdatedAtIn(vs ...MysqlNullTime) groupUpdateSQL {
-	_vs := make([]mysql.NullTime, 0, len(vs))
-	for _, v := range vs {
-		_vs = append(_vs, mysql.NullTime(v))
-	}
-	where := sqlla.ExprMultiNullTime{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
+func (q groupUpdateSQL) WhereUpdatedAtIn(vs ...mysql.NullTime) groupUpdateSQL {
+	where := sqlla.ExprMultiMysqlNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -723,7 +713,7 @@ func (q groupInsertSQL) ValueCreatedAt(v time.Time) groupInsertSQL {
 	return q
 }
 
-func (q groupInsertSQL) ValueUpdatedAt(v MysqlNullTime) groupInsertSQL {
+func (q groupInsertSQL) ValueUpdatedAt(v mysql.NullTime) groupInsertSQL {
 	q.setMap["`updated_at`"] = v
 	return q
 }
@@ -891,7 +881,7 @@ func (q groupInsertOnDuplicateKeyUpdateSQL) SameOnUpdateCreatedAt() groupInsertO
 	return q
 }
 
-func (q groupInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateUpdatedAt(v MysqlNullTime) groupInsertOnDuplicateKeyUpdateSQL {
+func (q groupInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateUpdatedAt(v mysql.NullTime) groupInsertOnDuplicateKeyUpdateSQL {
 	q.onDuplicateKeyUpdateMap["`updated_at`"] = v
 	return q
 }
@@ -1138,24 +1128,20 @@ func (q groupDeleteSQL) CreatedAtIn(vs ...time.Time) groupDeleteSQL {
 	return q
 }
 
-func (q groupDeleteSQL) UpdatedAt(v MysqlNullTime, exprs ...sqlla.Operator) groupDeleteSQL {
+func (q groupDeleteSQL) UpdatedAt(v mysql.NullTime, exprs ...sqlla.Operator) groupDeleteSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
 		op = sqlla.OpEqual
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprNullTime{Value: mysql.NullTime(v), Op: op, Column: "`updated_at`"}
+	where := sqlla.ExprMysqlNullTime{Value: v, Op: op, Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-func (q groupDeleteSQL) UpdatedAtIn(vs ...MysqlNullTime) groupDeleteSQL {
-	_vs := make([]mysql.NullTime, 0, len(vs))
-	for _, v := range vs {
-		_vs = append(_vs, mysql.NullTime(v))
-	}
-	where := sqlla.ExprMultiNullTime{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
+func (q groupDeleteSQL) UpdatedAtIn(vs ...mysql.NullTime) groupDeleteSQL {
+	where := sqlla.ExprMultiMysqlNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }

@@ -8,6 +8,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/Masterminds/goutils"
 	"github.com/serenize/snaker"
 )
 
@@ -34,7 +35,7 @@ func (t *Table) AddColumn(c Column) {
 	if t.NamingIsStructName() {
 		c.MethodName = c.FieldName()
 	} else {
-		c.MethodName = strings.Title(snaker.SnakeToCamel(c.Name))
+		c.MethodName = goutils.Capitalize(snaker.SnakeToCamel(c.Name))
 	}
 	if c.IsPk {
 		t.PkColumn = &c
@@ -84,9 +85,6 @@ func (c Column) HasUnderlyingType() bool {
 
 func (c Column) TypeName() string {
 	tn := c.typeName
-	if c.altTypeName != "" {
-		tn = c.altTypeName
-	}
 	if c.typeParameter != "" {
 		return tn + "[" + c.typeParameter + "]"
 	}
@@ -110,18 +108,29 @@ func (c Column) AltTypeName() string {
 	return c.altTypeName
 }
 
-func (c Column) ExprTypeName() string {
+func (c Column) typeNameForExpr() string {
+	tname := c.BaseTypeName()
 	if atn := c.AltTypeName(); atn != "" {
-		return "Expr" + atn
+		tname = atn
 	}
-	return "Expr" + c.BaseTypeName()
+	tname = c.exprize(tname)
+	tname = goutils.Capitalize(tname)
+	return tname
+}
+
+func (c Column) ExprTypeName() string {
+	return "Expr" + c.typeNameForExpr()
+}
+
+func (c Column) exprize(s string) string {
+	s = strings.TrimPrefix(s, "sql.")
+	s = strings.TrimPrefix(s, "time.")
+	s = strings.TrimPrefix(s, "mysql.")
+	return s
 }
 
 func (c Column) ExprMultiTypeName() string {
-	if atn := c.AltTypeName(); atn != "" {
-		return "ExprMulti" + atn
-	}
-	return "ExprMulti" + c.BaseTypeName()
+	return "ExprMulti" + c.typeNameForExpr()
 }
 
 func (c Column) ExprValueIdentifier() string {
