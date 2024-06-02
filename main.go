@@ -94,8 +94,10 @@ func toTable(tablePkg *types.Package, annotationComment string, gd *ast.GenDecl,
 	table := new(Table)
 	table.Package = tablePkg
 	table.PackageName = tablePkg.Name()
+	table.additionalPackagesMap = make(map[string]struct{})
 
 	table.TableName = trimAnnotation(annotationComment)
+	qualifier := types.RelativeTo(tablePkg)
 
 	spec := gd.Specs[0]
 	ts, ok := spec.(*ast.TypeSpec)
@@ -140,14 +142,26 @@ func toTable(tablePkg *types.Package, annotationComment string, gd *ast.GenDecl,
 			}
 			baseTypeName = typeName
 			if _, ok := supportedGenericsTypes[typeName]; ok {
-				tps := nt.TypeParams()
-				if tps == nil {
+				tas := nt.TypeArgs()
+				if tas == nil {
 					return nil, fmt.Errorf("toTable: has not type params: table=%s, field=%s", table.TableName, columnName)
 				}
-				tpsStr := make([]string, tps.Len())
-				for i := 0; i < tps.Len(); i++ {
-					tp := tps.At(i)
-					tpsStr[i] = tp.String()
+				tpsStr := make([]string, tas.Len())
+				for i := 0; i < tas.Len(); i++ {
+					ta := tas.At(i)
+					switch ata := ta.(type) {
+					case *types.Named:
+						tn := ata.Obj()
+						tpsStr[i] = tn.Id()
+						if qualifier(tn.Pkg()) != "" {
+							tpsStr[i] = tn.Pkg().Name() + "." + tn.Id()
+							table.additionalPackagesMap[tn.Pkg().Path()] = struct{}{}
+						}
+					case *types.Basic:
+						tpsStr[i] = ata.Name()
+					default:
+						return nil, fmt.Errorf("toTable: unsupported type param: table=%s, field=%s, type=%s", table.TableName, columnName, ta.String())
+					}
 				}
 				typeParameter = strings.Join(tpsStr, ",")
 			} else if _, ok := supportedNonPrimitiveTypes[typeName]; !ok {

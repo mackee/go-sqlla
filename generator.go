@@ -60,7 +60,7 @@ func WriteCode(w io.Writer, table *Table) error {
 	i := 0
 	for scanner.Scan() {
 		i++
-		fmt.Printf("%05d: %s\n", i, scanner.Text())
+		// fmt.Printf("%05d: %s\n", i, scanner.Text())
 	}
 	bs, err := format.Source(buf.Bytes())
 	if err != nil {

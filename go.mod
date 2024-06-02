@@ -3,6 +3,7 @@ module github.com/mackee/go-sqlla/v2
 go 1.20
 
 require (
+	github.com/Masterminds/goutils v1.1.1
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/pkg/errors v0.9.1
 	github.com/serenize/snaker v0.0.0-20201027110005-a7ad2135616e
