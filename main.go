@@ -3,6 +3,7 @@
 package sqlla
 
 import (
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/types"
@@ -14,6 +15,17 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
+func toPackages(dir string) ([]*packages.Package, error) {
+	conf := &packages.Config{
+		Mode: packages.NeedCompiledGoFiles | packages.NeedSyntax | packages.NeedTypes | packages.NeedTypesInfo,
+	}
+	pkgs, err := packages.Load(conf, dir)
+	if err != nil {
+		return nil, fmt.Errorf("error toPackages: %w", err)
+	}
+	return pkgs, nil
+}
+
 func Run(from, ext string) {
 	fullpath, err := filepath.Abs(from)
 	if err != nil {
@@ -21,10 +33,7 @@ func Run(from, ext string) {
 	}
 	dir := filepath.Dir(fullpath)
 
-	conf := &packages.Config{
-		Mode: packages.NeedCompiledGoFiles | packages.NeedSyntax | packages.NeedTypes | packages.NeedTypesInfo,
-	}
-	pkgs, err := packages.Load(conf, dir)
+	pkgs, err := toPackages(dir)
 	if err != nil {
 		panic(err)
 	}
@@ -32,30 +41,11 @@ func Run(from, ext string) {
 		files := pkg.Syntax
 		for _, f := range files {
 			for _, decl := range f.Decls {
-				pos := pkg.Fset.Position(decl.Pos())
-				if pos.Filename != fullpath {
-					continue
-				}
-				genDecl, ok := decl.(*ast.GenDecl)
-				if !ok {
-					continue
-				}
-				if genDecl.Doc == nil {
-					continue
-				}
-				var hasAnnotation bool
-				var annotationComment string
-				for _, comment := range genDecl.Doc.List {
-					if trimmed := trimAnnotation(comment.Text); trimmed != comment.Text {
-						hasAnnotation = true
-						annotationComment = comment.Text
-					}
-				}
-				if !hasAnnotation {
-					continue
-				}
-				table, err := toTable(pkg.Types, annotationComment, genDecl, pkg.TypesInfo)
+				table, err := declToTable(pkg, decl, fullpath)
 				if err != nil {
+					if errors.Is(err, errNotTargetDecl) {
+						continue
+					}
 					panic(err)
 				}
 				filename := filepath.Join(dir, table.TableName+ext)
@@ -69,6 +59,38 @@ func Run(from, ext string) {
 			}
 		}
 	}
+}
+
+var errNotTargetDecl = fmt.Errorf("not target decl")
+
+func declToTable(pkg *packages.Package, decl ast.Decl, fullpath string) (*Table, error) {
+	pos := pkg.Fset.Position(decl.Pos())
+	if pos.Filename != fullpath {
+		return nil, errNotTargetDecl
+	}
+	genDecl, ok := decl.(*ast.GenDecl)
+	if !ok {
+		return nil, errNotTargetDecl
+	}
+	if genDecl.Doc == nil {
+		return nil, errNotTargetDecl
+	}
+	var hasAnnotation bool
+	var annotationComment string
+	for _, comment := range genDecl.Doc.List {
+		if trimmed := trimAnnotation(comment.Text); trimmed != comment.Text {
+			hasAnnotation = true
+			annotationComment = comment.Text
+		}
+	}
+	if !hasAnnotation {
+		return nil, errNotTargetDecl
+	}
+	table, err := toTable(pkg.Types, annotationComment, genDecl, pkg.TypesInfo)
+	if err != nil {
+		return nil, fmt.Errorf("error toTable: %w", err)
+	}
+	return table, nil
 }
 
 var supportedNonPrimitiveTypes = map[string]struct{}{
