@@ -1,4 +1,7 @@
 {{ define "DeleteColumn" }}{{ $smallTableName := .TableName | toCamel | Untitle }}
+{{- if .IsNullT }}
+{{- template "DeleteColumnNullT" . }}
+{{- else }}
 func (q {{ $smallTableName }}DeleteSQL) {{ .MethodName }}(v {{ .TypeName }}, exprs ...sqlla.Operator) {{ $smallTableName }}DeleteSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
@@ -25,4 +28,5 @@ func (q {{ $smallTableName }}DeleteSQL) {{ .MethodName }}In(vs ...{{ .TypeName }
 	q.where = append(q.where, where)
 	return q
 }
+{{- end }}
 {{ end }}

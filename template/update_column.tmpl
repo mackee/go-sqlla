@@ -1,4 +1,7 @@
 {{ define "UpdateColumn" }}{{ $smallTableName := .TableName | toCamel | Untitle }}
+{{- if .IsNullT }}
+{{- template "UpdateColumnNullT" . }}
+{{- else }}
 func (q {{ $smallTableName }}UpdateSQL) Set{{ .MethodName }}(v {{ .TypeName }}) {{ $smallTableName }}UpdateSQL {
 	q.setMap["`{{ .Name }}`"] = v
 	return q
@@ -29,4 +32,5 @@ func (q {{ $smallTableName }}UpdateSQL) Where{{ .MethodName }}In(vs ...{{ .TypeN
 	q.where = append(q.where, where)
 	return q
 }
+{{- end }}
 {{ end }}

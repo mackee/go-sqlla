@@ -42,5 +42,7 @@ func TestColumnNullT(t *testing.T) {
 	require.NotNil(t, table)
 	assert.False(t, table.Columns[0].IsNullT()) // ID
 	assert.True(t, table.Columns[1].IsNullT())  // ModifiedAt
-	assert.False(t, table.Columns[2].IsNullT()) // FIXME: not supported yet
+	assert.Equal(t, table.Columns[1].TypeParameter(), "time.Time")
+	assert.False(t, table.Columns[2].IsNullT())           // FIXME: not supported yet
+	assert.Equal(t, table.Columns[2].TypeParameter(), "") // FIXME: not supported yet
 }

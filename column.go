@@ -57,6 +57,10 @@ func (c Column) IsNullT() bool {
 	return c.baseTypeName == "sql.Null" && c.typeParameter != ""
 }
 
+func (c Column) TypeParameter() string {
+	return c.typeParameter
+}
+
 func (c Column) typeNameForExpr() string {
 	tname := c.BaseTypeName()
 	if atn := c.AltTypeName(); atn != "" {

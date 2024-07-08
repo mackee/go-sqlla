@@ -1,4 +1,8 @@
-{{ define "SelectColumn" }}{{ $smallTableName := .TableName | toCamel | Untitle }}
+{{ define "SelectColumn" }}
+{{- $smallTableName := .TableName | toCamel | Untitle }}
+{{- if .IsNullT }}
+{{- template "SelectColumnNullT" . }}
+{{- else }}
 func (q {{ $smallTableName }}SelectSQL) {{ .MethodName }}(v {{ .TypeName }}, exprs ...sqlla.Operator) {{ $smallTableName }}SelectSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
@@ -24,6 +28,7 @@ func (q {{ $smallTableName }}SelectSQL) {{ .MethodName }}In(vs ...{{ .TypeName }
 	q.where = append(q.where, where)
 	return q
 }
+{{- end }}
 
 {{ if .IsPk -}}
 func (q {{ $smallTableName }}SelectSQL) PkColumn(pk int64, exprs ...sqlla.Operator) {{ $smallTableName }}SelectSQL {

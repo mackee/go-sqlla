@@ -1,7 +1,20 @@
 {{ define "InsertColumn" }}{{ $smallTableName := .TableName | toCamel | Untitle }}
+{{- if .IsNullT }}
+func (q {{ $smallTableName }}InsertSQL) Value{{ .MethodName }}(v {{ .TypeParameter }}) {{ $smallTableName }}InsertSQL {
+	q.setMap["`{{ .Name }}`"] = sql.Null[{{ .TypeParameter }}]{ V: v, Valid: true }
+	return q
+}
+
+func (q {{ $smallTableName }}InsertSQL) Value{{ .MethodName }}IsNull() {{ $smallTableName }}InsertSQL {
+	q.setMap["`{{ .Name }}`"] = sql.Null[{{ .TypeParameter }}]{ Valid: false }
+	return q
+}
+
+{{- else }}
 func (q {{ $smallTableName }}InsertSQL) Value{{ .MethodName }}(v {{ .TypeName }}) {{ $smallTableName }}InsertSQL {
 	q.setMap["`{{ .Name }}`"] = v
 	return q
 }
+{{- end }}
 
 {{ end }}
