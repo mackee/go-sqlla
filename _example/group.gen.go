@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"database/sql"
-	"github.com/go-sql-driver/mysql"
 	"github.com/mackee/go-sqlla/_example/id"
 	"time"
 
@@ -351,20 +350,36 @@ func (q groupSelectSQL) OrderByCreatedAt(order sqlla.Order) groupSelectSQL {
 	return q
 }
 
-func (q groupSelectSQL) UpdatedAt(v mysql.NullTime, exprs ...sqlla.Operator) groupSelectSQL {
+func (q groupSelectSQL) UpdatedAt(v time.Time, exprs ...sqlla.Operator) groupSelectSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
 		op = sqlla.OpEqual
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprMysqlNullTime{Value: v, Op: op, Column: q.appendColumnPrefix("`updated_at`")}
+	where := sqlla.ExprNull[time.Time]{Value: sql.Null[time.Time]{V: v, Valid: true}, Op: op, Column: q.appendColumnPrefix("`updated_at`")}
 	q.where = append(q.where, where)
 	return q
 }
 
-func (q groupSelectSQL) UpdatedAtIn(vs ...mysql.NullTime) groupSelectSQL {
-	where := sqlla.ExprMultiMysqlNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`updated_at`")}
+func (q groupSelectSQL) UpdatedAtIsNull() groupSelectSQL {
+	where := sqlla.ExprNull[time.Time]{Value: sql.Null[time.Time]{Valid: false}, Op: sqlla.OpEqual, Column: q.appendColumnPrefix("`updated_at`")}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q groupSelectSQL) UpdatedAtIsNotNull() groupSelectSQL {
+	where := sqlla.ExprNull[time.Time]{Value: sql.Null[time.Time]{Valid: false}, Op: sqlla.OpNot, Column: q.appendColumnPrefix("`updated_at`")}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q groupSelectSQL) UpdatedAtIn(vs ...time.Time) groupSelectSQL {
+	_vs := make([]sql.Null[time.Time], 0, len(vs))
+	for _, v := range vs {
+		_vs = append(_vs, sql.Null[time.Time]{V: v, Valid: true})
+	}
+	where := sqlla.ExprMultiValue[sql.Null[time.Time]]{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`updated_at`")}
 	q.where = append(q.where, where)
 	return q
 }
@@ -719,25 +734,46 @@ func (q groupUpdateSQL) WhereCreatedAtIn(vs ...time.Time) groupUpdateSQL {
 	return q
 }
 
-func (q groupUpdateSQL) SetUpdatedAt(v mysql.NullTime) groupUpdateSQL {
-	q.setMap["`updated_at`"] = v
+func (q groupUpdateSQL) SetUpdatedAt(v time.Time) groupUpdateSQL {
+	q.setMap["`updated_at`"] = sql.Null[time.Time]{V: v, Valid: true}
 	return q
 }
 
-func (q groupUpdateSQL) WhereUpdatedAt(v mysql.NullTime, exprs ...sqlla.Operator) groupUpdateSQL {
+func (q groupUpdateSQL) SetUpdatedAtToNull() groupUpdateSQL {
+	q.setMap["`updated_at`"] = sql.Null[time.Time]{Valid: false}
+	return q
+}
+
+func (q groupUpdateSQL) WhereUpdatedAt(v time.Time, exprs ...sqlla.Operator) groupUpdateSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
 		op = sqlla.OpEqual
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprMysqlNullTime{Value: v, Op: op, Column: "`updated_at`"}
+	where := sqlla.ExprNull[time.Time]{Value: sql.Null[time.Time]{V: v, Valid: true}, Op: op, Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-func (q groupUpdateSQL) WhereUpdatedAtIn(vs ...mysql.NullTime) groupUpdateSQL {
-	where := sqlla.ExprMultiMysqlNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
+func (q groupUpdateSQL) WhereUpdatedAtIsNull() groupUpdateSQL {
+	where := sqlla.ExprNull[time.Time]{Value: sql.Null[time.Time]{Valid: false}, Op: sqlla.OpEqual, Column: "`updated_at`"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q groupUpdateSQL) WhereUpdatedAtIsNotNull() groupUpdateSQL {
+	where := sqlla.ExprNull[time.Time]{Value: sql.Null[time.Time]{Valid: false}, Op: sqlla.OpNot, Column: "`updated_at`"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q groupUpdateSQL) WhereUpdatedAtIn(vs ...time.Time) groupUpdateSQL {
+	_vs := make([]sql.Null[time.Time], 0, len(vs))
+	for _, v := range vs {
+		_vs = append(_vs, sql.Null[time.Time]{V: v, Valid: true})
+	}
+	where := sqlla.ExprMultiValue[sql.Null[time.Time]]{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -856,8 +892,13 @@ func (q groupInsertSQL) ValueCreatedAt(v time.Time) groupInsertSQL {
 	return q
 }
 
-func (q groupInsertSQL) ValueUpdatedAt(v mysql.NullTime) groupInsertSQL {
-	q.setMap["`updated_at`"] = v
+func (q groupInsertSQL) ValueUpdatedAt(v time.Time) groupInsertSQL {
+	q.setMap["`updated_at`"] = sql.Null[time.Time]{V: v, Valid: true}
+	return q
+}
+
+func (q groupInsertSQL) ValueUpdatedAtIsNull() groupInsertSQL {
+	q.setMap["`updated_at`"] = sql.Null[time.Time]{Valid: false}
 	return q
 }
 
@@ -1039,7 +1080,7 @@ func (q groupInsertOnDuplicateKeyUpdateSQL) SameOnUpdateCreatedAt() groupInsertO
 	return q
 }
 
-func (q groupInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateUpdatedAt(v mysql.NullTime) groupInsertOnDuplicateKeyUpdateSQL {
+func (q groupInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateUpdatedAt(v sql.Null[time.Time]) groupInsertOnDuplicateKeyUpdateSQL {
 	q.onDuplicateKeyUpdateMap["`updated_at`"] = v
 	return q
 }
@@ -1336,20 +1377,36 @@ func (q groupDeleteSQL) CreatedAtIn(vs ...time.Time) groupDeleteSQL {
 	return q
 }
 
-func (q groupDeleteSQL) UpdatedAt(v mysql.NullTime, exprs ...sqlla.Operator) groupDeleteSQL {
+func (q groupDeleteSQL) UpdatedAt(v time.Time, exprs ...sqlla.Operator) groupDeleteSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
 		op = sqlla.OpEqual
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprMysqlNullTime{Value: v, Op: op, Column: "`updated_at`"}
+	where := sqlla.ExprNull[time.Time]{Value: sql.Null[time.Time]{V: v, Valid: true}, Op: op, Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-func (q groupDeleteSQL) UpdatedAtIn(vs ...mysql.NullTime) groupDeleteSQL {
-	where := sqlla.ExprMultiMysqlNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
+func (q groupDeleteSQL) UpdatedAtIsNull() groupDeleteSQL {
+	where := sqlla.ExprNull[time.Time]{Value: sql.Null[time.Time]{Valid: false}, Op: sqlla.OpEqual, Column: "`updated_at`"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q groupDeleteSQL) UpdatedAtIsNotNull() groupDeleteSQL {
+	where := sqlla.ExprNull[time.Time]{Value: sql.Null[time.Time]{Valid: false}, Op: sqlla.OpNot, Column: "`updated_at`"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q groupDeleteSQL) UpdatedAtIn(vs ...time.Time) groupDeleteSQL {
+	_vs := make([]sql.Null[time.Time], 0, len(vs))
+	for _, v := range vs {
+		_vs = append(_vs, sql.Null[time.Time]{V: v, Valid: true})
+	}
+	where := sqlla.ExprMultiValue[sql.Null[time.Time]]{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }

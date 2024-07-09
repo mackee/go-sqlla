@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/go-sql-driver/mysql"
 	"github.com/mackee/go-sqlla/_example/id"
 )
 
@@ -21,6 +20,6 @@ type Group struct {
 	SubLeaderUserID sql.Null[UserId]     `db:"sub_leader_user_id"`
 	ChildGroupID    sql.Null[id.GroupID] `db:"child_group_id"`
 
-	CreatedAt time.Time      `db:"created_at"`
-	UpdatedAt mysql.NullTime `db:"updated_at"`
+	CreatedAt time.Time           `db:"created_at"`
+	UpdatedAt sql.Null[time.Time] `db:"updated_at"`
 }
