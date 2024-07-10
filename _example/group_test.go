@@ -76,7 +76,7 @@ func TestSelectNullable(t *testing.T) {
 		{
 			name:   "query by type parameters multiple",
 			query:  example.NewGroupSQL().Select().SubLeaderUserIDIn(42, 43, 44),
-			expect: "SELECT " + groupAllColumns + " FROM `group` WHERE `sub_leader_user_id` IN (?,?,?);",
+			expect: "SELECT " + groupAllColumns + " FROM `group` WHERE `sub_leader_user_id` IN(?,?,?);",
 			args: []interface{}{
 				sql.Null[example.UserId]{V: 42, Valid: true},
 				sql.Null[example.UserId]{V: 43, Valid: true},
