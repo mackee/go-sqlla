@@ -154,6 +154,28 @@ func TestInsertNullable(t *testing.T) {
 			expect: "INSERT INTO `group` (`sub_leader_user_id`) VALUES(?);",
 			args:   []interface{}{sql.Null[example.UserId]{V: 42, Valid: true}},
 		},
+		{
+			name: "INSERT ON DUPLICATE KEY UPDATE SET with type parameter",
+			query: example.NewGroupSQL().Insert().ValueSubLeaderUserID(42).
+				OnDuplicateKeyUpdate().
+				ValueOnUpdateSubLeaderUserID(43),
+			expect: "INSERT INTO `group` (`sub_leader_user_id`) VALUES(?) ON DUPLICATE KEY UPDATE `sub_leader_user_id` = ?;",
+			args: []interface{}{
+				sql.Null[example.UserId]{V: 42, Valid: true},
+				sql.Null[example.UserId]{V: 43, Valid: true},
+			},
+		},
+		{
+			name: "INSERT ON DUPLICATE KEY UPDATE SET TO NULL",
+			query: example.NewGroupSQL().Insert().ValueSubLeaderUserID(42).
+				OnDuplicateKeyUpdate().
+				ValueOnUpdateSubLeaderUserIDToNull(),
+			expect: "INSERT INTO `group` (`sub_leader_user_id`) VALUES(?) ON DUPLICATE KEY UPDATE `sub_leader_user_id` = ?;",
+			args: []interface{}{
+				sql.Null[example.UserId]{V: 42, Valid: true},
+				sql.Null[example.UserId]{Valid: false},
+			},
+		},
 	}
 	testCases.assert(t)
 }

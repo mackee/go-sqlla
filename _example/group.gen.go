@@ -1035,8 +1035,13 @@ func (q groupInsertOnDuplicateKeyUpdateSQL) SameOnUpdateLeaderUserID() groupInse
 	return q
 }
 
-func (q groupInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateSubLeaderUserID(v sql.Null[UserId]) groupInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`sub_leader_user_id`"] = v
+func (q groupInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateSubLeaderUserID(v UserId) groupInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`sub_leader_user_id`"] = sql.Null[UserId]{V: v, Valid: true}
+	return q
+}
+
+func (q groupInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateSubLeaderUserIDToNull() groupInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`sub_leader_user_id`"] = sql.Null[UserId]{Valid: false}
 	return q
 }
 
@@ -1050,8 +1055,13 @@ func (q groupInsertOnDuplicateKeyUpdateSQL) SameOnUpdateSubLeaderUserID() groupI
 	return q
 }
 
-func (q groupInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateChildGroupID(v sql.Null[id.GroupID]) groupInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`child_group_id`"] = v
+func (q groupInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateChildGroupID(v id.GroupID) groupInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`child_group_id`"] = sql.Null[id.GroupID]{V: v, Valid: true}
+	return q
+}
+
+func (q groupInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateChildGroupIDToNull() groupInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`child_group_id`"] = sql.Null[id.GroupID]{Valid: false}
 	return q
 }
 
@@ -1080,8 +1090,13 @@ func (q groupInsertOnDuplicateKeyUpdateSQL) SameOnUpdateCreatedAt() groupInsertO
 	return q
 }
 
-func (q groupInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateUpdatedAt(v sql.Null[time.Time]) groupInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`updated_at`"] = v
+func (q groupInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateUpdatedAt(v time.Time) groupInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`updated_at`"] = sql.Null[time.Time]{V: v, Valid: true}
+	return q
+}
+
+func (q groupInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateUpdatedAtToNull() groupInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`updated_at`"] = sql.Null[time.Time]{Valid: false}
 	return q
 }
 
