@@ -3,11 +3,10 @@
 package sqlla
 
 import (
-	"go/ast"
 	"go/types"
 	"io"
-	"strings"
 
+	"github.com/Masterminds/goutils"
 	"github.com/serenize/snaker"
 )
 
@@ -34,7 +33,7 @@ func (t *Table) AddColumn(c Column) {
 	if t.NamingIsStructName() {
 		c.MethodName = c.FieldName()
 	} else {
-		c.MethodName = strings.Title(snaker.SnakeToCamel(c.Name))
+		c.MethodName = goutils.Capitalize(snaker.SnakeToCamel(c.Name))
 	}
 	if c.IsPk {
 		t.PkColumn = &c
@@ -61,29 +60,4 @@ func (t *Table) HasPk() bool {
 
 func (t Table) Render(w io.Writer) error {
 	return nil
-}
-
-type Columns []Column
-
-type Column struct {
-	Field        *ast.Field
-	Name         string
-	MethodName   string
-	TypeName     string
-	PkgName      string
-	BaseTypeName string
-	AltTypeName  string
-	TableName    string
-	IsPk         bool
-}
-
-func (c Column) String() string {
-	return c.Name
-}
-
-func (c Column) FieldName() string {
-	if len(c.Field.Names) > 0 {
-		return c.Field.Names[0].Name
-	}
-	return ""
 }

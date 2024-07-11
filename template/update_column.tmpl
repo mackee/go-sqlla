@@ -1,4 +1,7 @@
 {{ define "UpdateColumn" }}{{ $smallTableName := .TableName | toCamel | Untitle }}
+{{- if .IsNullT }}
+{{- template "UpdateColumnNullT" . }}
+{{- else }}
 func (q {{ $smallTableName }}UpdateSQL) Set{{ .MethodName }}(v {{ .TypeName }}) {{ $smallTableName }}UpdateSQL {
 	q.setMap["`{{ .Name }}`"] = v
 	return q
@@ -11,31 +14,23 @@ func (q {{ $smallTableName }}UpdateSQL) Where{{ .MethodName }}(v {{ .TypeName }}
 	} else {
 		op = exprs[0]
 	}
-
-{{- if ne .BaseTypeName .TypeName }}
-	where := sqlla.Expr{{ .BaseTypeName | Exprize | Title }}{Value: {{ .BaseTypeName }}(v), Op: op, Column: "`{{ .Name }}`"}
-{{- else if .AltTypeName }}
-	where := sqlla.Expr{{ .AltTypeName | Exprize | Title }}{Value: v, Op: op, Column: "`{{ .Name }}`"}
-{{- else }}
-	where := sqlla.Expr{{ .BaseTypeName | Exprize | Title }}{Value: v, Op: op, Column: "`{{ .Name }}`"}
-{{- end }}
+	where := sqlla.{{ .ExprTypeName }}{Value: {{ .ExprValueIdentifier }}, Op: op, Column: "`{{ .Name }}`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q {{ $smallTableName }}UpdateSQL) Where{{ .MethodName }}In(vs ...{{ .TypeName }}) {{ $smallTableName }}UpdateSQL {
-{{- if ne .BaseTypeName .TypeName }}
+{{- if .HasUnderlyingType }}
 	_vs := make([]{{ .BaseTypeName }}, 0, len(vs))
 	for _, v := range vs {
 		_vs = append(_vs, {{ .BaseTypeName }}(v))
 	}
-	where := sqlla.ExprMulti{{ .BaseTypeName | Exprize | Title }}{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`{{ .Name }}`"}
-{{- else if .AltTypeName }}
-	where := sqlla.ExprMulti{{ .AltTypeName | Exprize | Title }}{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`{{ .Name }}`"}
+	where := sqlla.{{ .ExprMultiTypeName }}{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`{{ .Name }}`"}
 {{- else }}
-	where := sqlla.ExprMulti{{ .BaseTypeName | Exprize | Title }}{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`{{ .Name }}`"}
+	where := sqlla.{{ .ExprMultiTypeName }}{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`{{ .Name }}`"}
 {{- end }}
 	q.where = append(q.where, where)
 	return q
 }
+{{- end }}
 {{ end }}

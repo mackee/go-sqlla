@@ -1,9 +1,9 @@
-package example
+package example_test
 
 import (
 	"context"
 	"database/sql"
-	"io/ioutil"
+	"io"
 	"os"
 	"reflect"
 	"regexp"
@@ -13,19 +13,20 @@ import (
 	"time"
 
 	"github.com/go-sql-driver/mysql"
+	example "github.com/mackee/go-sqlla/_example"
 	"github.com/mackee/go-sqlla/v2"
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var columns = "`id`, `name`, `age`, `rate`, `icon_image`, `created_at`, `updated_at`"
+var userAllColumns = strings.Join(example.UserAllColumns, ", ")
 
 func TestSelect(t *testing.T) {
-	q := NewUserSQL().Select().Name("hoge")
+	q := example.NewUserSQL().Select().Name("hoge")
 	query, args, err := q.ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "SELECT "+columns+" FROM `user` WHERE `name` = ?;" {
+	if query != "SELECT "+userAllColumns+" FROM `user` WHERE `name` = ?;" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{"hoge"}) {
@@ -34,12 +35,12 @@ func TestSelect(t *testing.T) {
 }
 
 func TestSelect__OrderByAndLimit(t *testing.T) {
-	q := NewUserSQL().Select().Name("hoge").OrderByID(sqlla.Asc).Limit(uint64(100))
+	q := example.NewUserSQL().Select().Name("hoge").OrderByID(sqlla.Asc).Limit(uint64(100))
 	query, args, err := q.ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "SELECT "+columns+" FROM `user` WHERE `name` = ? ORDER BY `id` ASC LIMIT 100;" {
+	if query != "SELECT "+userAllColumns+" FROM `user` WHERE `name` = ? ORDER BY `id` ASC LIMIT 100;" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{"hoge"}) {
@@ -48,12 +49,12 @@ func TestSelect__OrderByAndLimit(t *testing.T) {
 }
 
 func TestSelect__InOperator(t *testing.T) {
-	q := NewUserSQL().Select().IDIn(1, 2, 3, 4, 5)
+	q := example.NewUserSQL().Select().IDIn(1, 2, 3, 4, 5)
 	query, args, err := q.ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "SELECT "+columns+" FROM `user` WHERE `id` IN(?,?,?,?,?);" {
+	if query != "SELECT "+userAllColumns+" FROM `user` WHERE `id` IN(?,?,?,?,?);" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{uint64(1), uint64(2), uint64(3), uint64(4), uint64(5)}) {
@@ -62,12 +63,12 @@ func TestSelect__InOperator(t *testing.T) {
 }
 
 func TestSelect__NullInt64(t *testing.T) {
-	q := NewUserSQL().Select().Age(sql.NullInt64{})
+	q := example.NewUserSQL().Select().Age(sql.NullInt64{})
 	query, args, err := q.ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "SELECT "+columns+" FROM `user` WHERE `age` IS NULL;" {
+	if query != "SELECT "+userAllColumns+" FROM `user` WHERE `age` IS NULL;" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{}) {
@@ -76,12 +77,12 @@ func TestSelect__NullInt64(t *testing.T) {
 }
 
 func TestSelect__NullInt64__IsNotNull(t *testing.T) {
-	q := NewUserSQL().Select().Age(sql.NullInt64{}, sqlla.OpNot)
+	q := example.NewUserSQL().Select().Age(sql.NullInt64{}, sqlla.OpNot)
 	query, args, err := q.ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "SELECT "+columns+" FROM `user` WHERE `age` IS NOT NULL;" {
+	if query != "SELECT "+userAllColumns+" FROM `user` WHERE `age` IS NOT NULL;" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{}) {
@@ -90,12 +91,12 @@ func TestSelect__NullInt64__IsNotNull(t *testing.T) {
 }
 
 func TestSelect__ForUpdate(t *testing.T) {
-	q := NewUserSQL().Select().ID(UserId(1)).ForUpdate()
+	q := example.NewUserSQL().Select().ID(example.UserId(1)).ForUpdate()
 	query, args, err := q.ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	if query != "SELECT "+columns+" FROM `user` WHERE `id` = ? FOR UPDATE;" {
+	if query != "SELECT "+userAllColumns+" FROM `user` WHERE `id` = ? FOR UPDATE;" {
 		t.Error("unexpected query:", query)
 	}
 	if !reflect.DeepEqual(args, []interface{}{"1"}) {
@@ -104,15 +105,15 @@ func TestSelect__ForUpdate(t *testing.T) {
 }
 
 func TestSelect__Or(t *testing.T) {
-	q := NewUserSQL().Select().Or(
-		NewUserSQL().Select().ID(UserId(1)),
-		NewUserSQL().Select().ID(UserId(2)),
+	q := example.NewUserSQL().Select().Or(
+		example.NewUserSQL().Select().ID(example.UserId(1)),
+		example.NewUserSQL().Select().ID(example.UserId(2)),
 	)
 	query, args, err := q.ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	expectedQuery := "SELECT " + columns + " FROM `user` WHERE (( `id` = ? ) OR ( `id` = ? ));"
+	expectedQuery := "SELECT " + userAllColumns + " FROM `user` WHERE (( `id` = ? ) OR ( `id` = ? ));"
 	if query != expectedQuery {
 		t.Error("unexpected query:", query, expectedQuery)
 	}
@@ -124,11 +125,11 @@ func TestSelect__Or(t *testing.T) {
 func TestSelect__OrNull(t *testing.T) {
 	now := time.Now()
 	nt := sql.NullTime{Time: now, Valid: true}
-	q := NewUserItemSQL().Select().
+	q := example.NewUserItemSQL().Select().
 		IDIn(uint64(1), uint64(2)).
 		Or(
-			NewUserItemSQL().Select().UsedAt(sql.NullTime{}, sqlla.OpIs),
-			NewUserItemSQL().Select().UsedAt(nt, sqlla.OpLess),
+			example.NewUserItemSQL().Select().UsedAt(sql.NullTime{}, sqlla.OpIs),
+			example.NewUserItemSQL().Select().UsedAt(nt, sqlla.OpLess),
 		)
 	query, args, err := q.ToSql()
 	if err != nil {
@@ -144,8 +145,8 @@ func TestSelect__OrNull(t *testing.T) {
 }
 
 func TestSelect__JoinClausesAndTableAlias(t *testing.T) {
-	query, args, err := NewUserSQL().Select().
-		SetColumns(append(userAllColumns, "ui.item_id", "ui.is_used")...).
+	query, args, err := example.NewUserSQL().Select().
+		SetColumns(append(example.UserAllColumns, "ui.item_id", "ui.is_used")...).
 		TableAlias("u").
 		JoinClause("INNER JOIN user_item AS ui ON u.id = ui.user_id").
 		Name("hogehoge").
@@ -165,7 +166,7 @@ func TestSelect__JoinClausesAndTableAlias(t *testing.T) {
 }
 
 func TestSelect__SetColumn(t *testing.T) {
-	query, args, err := NewUserSQL().Select().
+	query, args, err := example.NewUserSQL().Select().
 		SetColumns("rate", "COUNT(u.id)").
 		TableAlias("u").
 		OrderByRate(sqlla.Desc).
@@ -184,7 +185,7 @@ func TestSelect__SetColumn(t *testing.T) {
 }
 
 func TestSelect__GroupByDottedColumn(t *testing.T) {
-	query, args, err := NewUserSQL().Select().
+	query, args, err := example.NewUserSQL().Select().
 		SetColumns("rate", "COUNT(u.id)").
 		TableAlias("u").
 		OrderByRate(sqlla.Desc).
@@ -203,13 +204,13 @@ func TestSelect__GroupByDottedColumn(t *testing.T) {
 }
 
 func TestSelect__LikeOperator(t *testing.T) {
-	query, args, err := NewUserSQL().Select().
+	query, args, err := example.NewUserSQL().Select().
 		Name("%foobar%", sqlla.OpLike).
 		ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
-	expectedQuery := "SELECT " + columns + " FROM `user` WHERE `name` LIKE ?;"
+	expectedQuery := "SELECT " + userAllColumns + " FROM `user` WHERE `name` LIKE ?;"
 	if query != expectedQuery {
 		t.Error("unexpected query:", query, expectedQuery)
 	}
@@ -219,7 +220,7 @@ func TestSelect__LikeOperator(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	q := NewUserSQL().Update().SetName("barbar").WhereID(UserId(1))
+	q := example.NewUserSQL().Update().SetName("barbar").WhereID(example.UserId(1))
 	query, args, err := q.ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
@@ -245,7 +246,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestUpdate__InOperator(t *testing.T) {
-	q := NewUserSQL().Update().SetRate(42).WhereIDIn(UserId(1), UserId(2), UserId(3))
+	q := example.NewUserSQL().Update().SetRate(42).WhereIDIn(example.UserId(1), example.UserId(2), example.UserId(3))
 	query, args, err := q.ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
@@ -272,11 +273,10 @@ func TestUpdate__InOperator(t *testing.T) {
 	default:
 		t.Error("unexpected query:", query)
 	}
-
 }
 
 func TestInsert(t *testing.T) {
-	q := NewUserSQL().Insert().ValueName("hogehoge")
+	q := example.NewUserSQL().Insert().ValueName("hogehoge")
 	query, args, err := q.ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
@@ -292,7 +292,7 @@ func TestInsert(t *testing.T) {
 
 func TestInsertOnDuplicateKeyUpdate(t *testing.T) {
 	now := time.Now()
-	q := NewUserSQL().Insert().
+	q := example.NewUserSQL().Insert().
 		ValueID(1).
 		ValueName("hogehoge").
 		ValueUpdatedAt(mysql.NullTime{
@@ -321,9 +321,9 @@ func TestInsertOnDuplicateKeyUpdate(t *testing.T) {
 }
 
 func TestBulkInsert(t *testing.T) {
-	items := NewUserItemSQL().BulkInsert()
+	items := example.NewUserItemSQL().BulkInsert()
 	for i := 1; i <= 10; i++ {
-		q := NewUserItemSQL().Insert().
+		q := example.NewUserItemSQL().Insert().
 			ValueUserID(42).
 			ValueItemID(strconv.Itoa(i))
 		items.Append(q)
@@ -342,10 +342,10 @@ func TestBulkInsert(t *testing.T) {
 }
 
 func TestBulkInsertWithOnDuplicateKeyUpdate(t *testing.T) {
-	items := NewUserItemSQL().BulkInsert()
+	items := example.NewUserItemSQL().BulkInsert()
 	items.Append(
-		NewUserItemSQL().Insert().ValueUserID(42).ValueItemID("1").ValueIsUsed(true),
-		NewUserItemSQL().Insert().ValueUserID(42).ValueItemID("2").ValueIsUsed(true),
+		example.NewUserItemSQL().Insert().ValueUserID(42).ValueItemID("1").ValueIsUsed(true),
+		example.NewUserItemSQL().Insert().ValueUserID(42).ValueItemID("2").ValueIsUsed(true),
 	)
 
 	now := sql.NullTime{
@@ -369,11 +369,10 @@ func TestBulkInsertWithOnDuplicateKeyUpdate(t *testing.T) {
 	if !reflect.DeepEqual(vs, []interface{}{true, "1", uint64(42), true, "2", uint64(42), now}) {
 		t.Errorf("vs is not valid: %+v", vs)
 	}
-
 }
 
 func TestDelete(t *testing.T) {
-	q := NewUserSQL().Delete().Name("hogehoge")
+	q := example.NewUserSQL().Delete().Name("hogehoge")
 	query, args, err := q.ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
@@ -387,7 +386,7 @@ func TestDelete(t *testing.T) {
 }
 
 func TestDelete__In(t *testing.T) {
-	q := NewUserSQL().Delete().NameIn("hogehoge", "fugafuga")
+	q := example.NewUserSQL().Delete().NameIn("hogehoge", "fugafuga")
 	query, args, err := q.ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
@@ -401,7 +400,7 @@ func TestDelete__In(t *testing.T) {
 }
 
 func setupDB(t *testing.T) *sql.DB {
-	dbFile, err := ioutil.TempFile("", "sqlla_test")
+	dbFile, err := os.CreateTemp("", "sqlla_test")
 	if err != nil {
 		t.Fatal("cannot create tempfile error:", err)
 	}
@@ -415,7 +414,7 @@ func setupDB(t *testing.T) *sql.DB {
 		t.Fatal("cannot open schema file error:", err)
 	}
 
-	b, err := ioutil.ReadAll(schemaFile)
+	b, err := io.ReadAll(schemaFile)
 	if err != nil {
 		t.Fatal("cannot read schema file error:", err)
 	}
@@ -433,7 +432,7 @@ func setupDB(t *testing.T) *sql.DB {
 func TestCRUD__WithSqlite3(t *testing.T) {
 	db := setupDB(t)
 
-	query, args, err := NewUserSQL().Insert().ValueName("hogehoge").ValueIconImage([]byte{}).ToSql()
+	query, args, err := example.NewUserSQL().Insert().ValueName("hogehoge").ValueIconImage([]byte{}).ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
@@ -442,7 +441,7 @@ func TestCRUD__WithSqlite3(t *testing.T) {
 		t.Error("cannot insert row error:", err)
 	}
 
-	query, args, err = NewUserSQL().Select().Name("hogehoge").ToSql()
+	query, args, err = example.NewUserSQL().Select().Name("hogehoge").ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
@@ -465,7 +464,7 @@ func TestCRUD__WithSqlite3(t *testing.T) {
 		t.Error("empty id:", id)
 	}
 
-	query, args, err = NewUserSQL().Select().IDIn(UserId(1)).ToSql()
+	query, args, err = example.NewUserSQL().Select().IDIn(example.UserId(1)).ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
@@ -488,7 +487,7 @@ func TestCRUD__WithSqlite3(t *testing.T) {
 		t.Error("unmatched id:", rescanID)
 	}
 
-	query, args, err = NewUserSQL().Update().WhereID(UserId(id)).SetName("barbar").ToSql()
+	query, args, err = example.NewUserSQL().Update().WhereID(example.UserId(id)).SetName("barbar").ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
@@ -500,7 +499,7 @@ func TestCRUD__WithSqlite3(t *testing.T) {
 		t.Error("unexpected row affected:", rows)
 	}
 
-	query, args, err = NewUserSQL().Delete().Name("barbar").ToSql()
+	query, args, err = example.NewUserSQL().Delete().Name("barbar").ToSql()
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
@@ -516,34 +515,34 @@ func TestCRUD__WithSqlite3(t *testing.T) {
 func TestORM__WithSqlite3(t *testing.T) {
 	db := setupDB(t)
 
-	insertedRow, err := NewUserSQL().Insert().ValueName("hogehoge").ValueIconImage([]byte{}).Exec(db)
+	insertedRow, err := example.NewUserSQL().Insert().ValueName("hogehoge").ValueIconImage([]byte{}).Exec(db)
 	if err != nil {
 		t.Error("cannot insert row error:", err)
 	}
-	if insertedRow.Id == UserId(0) {
+	if insertedRow.Id == example.UserId(0) {
 		t.Error("empty id:", insertedRow.Id)
 	}
 	if insertedRow.Name != "hogehoge" {
 		t.Error("unexpected name:", insertedRow.Name)
 	}
 
-	singleRow, err := NewUserSQL().Select().ID(insertedRow.Id).Single(db)
+	singleRow, err := example.NewUserSQL().Select().ID(insertedRow.Id).Single(db)
 	if err != nil {
 		t.Error("cannot select row error:", err)
 	}
-	if singleRow.Id == UserId(0) {
+	if singleRow.Id == example.UserId(0) {
 		t.Error("empty id:", singleRow.Id)
 	}
 	if singleRow.Name != "hogehoge" {
 		t.Error("unexpected name:", singleRow.Name)
 	}
 
-	_, err = NewUserSQL().Insert().ValueName("fugafuga").ValueIconImage([]byte{}).Exec(db)
+	_, err = example.NewUserSQL().Insert().ValueName("fugafuga").ValueIconImage([]byte{}).Exec(db)
 	if err != nil {
 		t.Error("cannot insert row error:", err)
 	}
 
-	rows, err := NewUserSQL().Select().All(db)
+	rows, err := example.NewUserSQL().Select().All(db)
 	if err != nil {
 		t.Error("cannot select row error:", err)
 	}
@@ -552,7 +551,7 @@ func TestORM__WithSqlite3(t *testing.T) {
 	}
 
 	for _, row := range rows {
-		if row.Id == UserId(0) {
+		if row.Id == example.UserId(0) {
 			t.Error("empty id:", row.Id)
 		}
 		if row.Name != "hogehoge" && row.Name != "fugafuga" {
@@ -594,7 +593,7 @@ func TestORM__WithSqlite3__Binary(t *testing.T) {
 	db := setupDB(t)
 	binary := []byte("binary")
 
-	insertedRow, err := NewUserSQL().Insert().
+	insertedRow, err := example.NewUserSQL().Insert().
 		ValueName("hogehoge").
 		ValueIconImage(binary).
 		Exec(db)
@@ -605,7 +604,7 @@ func TestORM__WithSqlite3__Binary(t *testing.T) {
 		t.Error("unexpected IconImage:", insertedRow.IconImage)
 	}
 
-	singleRow, err := NewUserSQL().Select().ID(insertedRow.Id).Single(db)
+	singleRow, err := example.NewUserSQL().Select().ID(insertedRow.Id).Single(db)
 	if err != nil {
 		t.Error("cannot select row error:", err)
 	}
@@ -632,7 +631,7 @@ func TestORM__WithSqlite3__NullBinary(t *testing.T) {
 	now := time.Now()
 	db := setupDB(t)
 
-	_, err := NewUserExternalSQL().Insert().
+	_, err := example.NewUserExternalSQL().Insert().
 		ValueID(42).
 		ValueUserID(4242).
 		ValueIconImage(nil).
@@ -643,7 +642,7 @@ func TestORM__WithSqlite3__NullBinary(t *testing.T) {
 		t.Error("cannot insert row error:", err)
 	}
 
-	singleRow, err := NewUserExternalSQL().Select().ID(42).SingleContext(ctx, db)
+	singleRow, err := example.NewUserExternalSQL().Select().ID(42).SingleContext(ctx, db)
 	if err != nil {
 		t.Error("cannot select row error:", err)
 	}

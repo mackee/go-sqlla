@@ -188,9 +188,13 @@ func outputSchema(db *sql.DB, table string, out io.Writer) error {
 		}
 		outBuf.WriteString(schemaType)
 		if c.IsPk {
-			outBuf.WriteString(fmt.Sprintf(" `db:\"%s,primarykey\"`\n", c.Name))
+			if _, err := fmt.Fprintf(outBuf, " `db:\"%s,primarykey\"`\n", c.Name); err != nil {
+				return err
+			}
 		} else {
-			outBuf.WriteString(fmt.Sprintf(" `db:\"%s\"`\n", c.Name))
+			if _, err := fmt.Fprintf(outBuf, " `db:\"%s\"`\n", c.Name); err != nil {
+				return err
+			}
 		}
 	}
 	outBuf.WriteString("}")
@@ -246,6 +250,6 @@ func sqlTypeToSchemaType(c Column) (string, error) {
 		}
 		return "time.Time", nil
 	default:
-		return "", fmt.Errorf("unexpected column type: %+v\n", c)
+		return "", fmt.Errorf("unexpected column type: %+v", c)
 	}
 }

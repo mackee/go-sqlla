@@ -10,8 +10,8 @@ import (
 	"log"
 	"strings"
 	"text/template"
-	"unicode"
 
+	"github.com/Masterminds/goutils"
 	"github.com/pkg/errors"
 	"github.com/serenize/snaker"
 )
@@ -27,21 +27,11 @@ var tmpl = template.New("table")
 func init() {
 	tmpl = tmpl.Funcs(
 		template.FuncMap{
-			"Title": strings.Title,
-			"Exprize": func(s string) string {
-				s = strings.TrimPrefix(s, "sql.")
-				s = strings.TrimPrefix(s, "time.")
-				s = strings.TrimPrefix(s, "mysql.")
-
-				return s
+			"Title": func(s string) string {
+				return goutils.Capitalize(s)
 			},
 			"Untitle": func(s string) string {
-				s0 := rune(s[0])
-				if !unicode.IsUpper(s0) {
-					return s
-				}
-				s0l := unicode.ToLower(rune(s[0]))
-				return string(s0l) + s[1:]
+				return goutils.Uncapitalize(s)
 			},
 			"toLower": strings.ToLower,
 			"toSnake": snaker.CamelToSnake,
@@ -67,6 +57,9 @@ func WriteCode(w io.Writer, table *Table) error {
 	}
 	bs, err := format.Source(buf.Bytes())
 	if err != nil {
+		if _, err := w.Write(buf.Bytes()); err != nil {
+			return errors.Wrapf(err, "fail to write: table=%s", table.Name)
+		}
 		return errors.Wrapf(err, "fail to format: table=%s", table.Name)
 	}
 	_, err = w.Write(bs)

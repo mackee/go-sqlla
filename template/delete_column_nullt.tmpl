@@ -1,0 +1,36 @@
+{{ define "DeleteColumnNullT" }}
+{{ $smallTableName := .TableName | toCamel | Untitle }}
+func (q {{ $smallTableName }}DeleteSQL) {{ .MethodName }}(v {{ .TypeParameter }}, exprs ...sqlla.Operator) {{ $smallTableName }}DeleteSQL {
+	var op sqlla.Operator
+	if len(exprs) == 0 {
+		op = sqlla.OpEqual
+	} else {
+		op = exprs[0]
+	}
+	where := sqlla.ExprNull[{{ .TypeParameter }}]{Value: sql.Null[{{ .TypeParameter }}]{ V: v, Valid: true }, Op: op, Column: "`{{ .Name }}`"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q {{ $smallTableName }}DeleteSQL) {{ .MethodName }}IsNull() {{ $smallTableName }}DeleteSQL {
+	where := sqlla.ExprNull[{{ .TypeParameter }}]{Value: sql.Null[{{ .TypeParameter }}]{ Valid: false }, Op: sqlla.OpEqual, Column: "`{{ .Name }}`"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q {{ $smallTableName }}DeleteSQL) {{ .MethodName }}IsNotNull() {{ $smallTableName }}DeleteSQL {
+	where := sqlla.ExprNull[{{ .TypeParameter }}]{Value: sql.Null[{{ .TypeParameter }}]{ Valid: false }, Op: sqlla.OpNot, Column: "`{{ .Name }}`"}
+	q.where = append(q.where, where)
+	return q
+}
+
+func (q {{ $smallTableName }}DeleteSQL) {{ .MethodName }}In(vs ...{{ .TypeParameter }}) {{ $smallTableName }}DeleteSQL {
+	_vs := make([]sql.Null[{{ .TypeParameter }}], 0, len(vs))
+	for _, v := range vs {
+		_vs = append(_vs, sql.Null[{{ .TypeParameter }}]{V: v, Valid: true})
+	}
+	where := sqlla.ExprMultiValue[sql.Null[{{ .TypeParameter }}]]{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`{{ .Name }}`"}
+	q.where = append(q.where, where)
+	return q
+}
+{{- end }}

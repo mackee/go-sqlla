@@ -3,6 +3,7 @@
 package sqlla
 
 import (
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/types"
@@ -14,6 +15,17 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
+func toPackages(dir string) ([]*packages.Package, error) {
+	conf := &packages.Config{
+		Mode: packages.NeedCompiledGoFiles | packages.NeedSyntax | packages.NeedTypes | packages.NeedTypesInfo,
+	}
+	pkgs, err := packages.Load(conf, dir)
+	if err != nil {
+		return nil, fmt.Errorf("error toPackages: %w", err)
+	}
+	return pkgs, nil
+}
+
 func Run(from, ext string) {
 	fullpath, err := filepath.Abs(from)
 	if err != nil {
@@ -21,10 +33,7 @@ func Run(from, ext string) {
 	}
 	dir := filepath.Dir(fullpath)
 
-	conf := &packages.Config{
-		Mode: packages.NeedCompiledGoFiles | packages.NeedSyntax | packages.NeedTypes | packages.NeedTypesInfo,
-	}
-	pkgs, err := packages.Load(conf, dir)
+	pkgs, err := toPackages(dir)
 	if err != nil {
 		panic(err)
 	}
@@ -32,30 +41,11 @@ func Run(from, ext string) {
 		files := pkg.Syntax
 		for _, f := range files {
 			for _, decl := range f.Decls {
-				pos := pkg.Fset.Position(decl.Pos())
-				if pos.Filename != fullpath {
-					continue
-				}
-				genDecl, ok := decl.(*ast.GenDecl)
-				if !ok {
-					continue
-				}
-				if genDecl.Doc == nil {
-					continue
-				}
-				var hasAnnotation bool
-				var annotationComment string
-				for _, comment := range genDecl.Doc.List {
-					if trimmed := trimAnnotation(comment.Text); trimmed != comment.Text {
-						hasAnnotation = true
-						annotationComment = comment.Text
-					}
-				}
-				if !hasAnnotation {
-					continue
-				}
-				table, err := toTable(pkg.Types, annotationComment, genDecl, pkg.TypesInfo)
+				table, err := declToTable(pkg, decl, fullpath)
 				if err != nil {
+					if errors.Is(err, errNotTargetDecl) {
+						continue
+					}
 					panic(err)
 				}
 				filename := filepath.Join(dir, table.TableName+ext)
@@ -71,6 +61,38 @@ func Run(from, ext string) {
 	}
 }
 
+var errNotTargetDecl = fmt.Errorf("not target decl")
+
+func declToTable(pkg *packages.Package, decl ast.Decl, fullpath string) (*Table, error) {
+	pos := pkg.Fset.Position(decl.Pos())
+	if pos.Filename != fullpath {
+		return nil, errNotTargetDecl
+	}
+	genDecl, ok := decl.(*ast.GenDecl)
+	if !ok {
+		return nil, errNotTargetDecl
+	}
+	if genDecl.Doc == nil {
+		return nil, errNotTargetDecl
+	}
+	var hasAnnotation bool
+	var annotationComment string
+	for _, comment := range genDecl.Doc.List {
+		if trimmed := trimAnnotation(comment.Text); trimmed != comment.Text {
+			hasAnnotation = true
+			annotationComment = comment.Text
+		}
+	}
+	if !hasAnnotation {
+		return nil, errNotTargetDecl
+	}
+	table, err := toTable(pkg.Types, annotationComment, genDecl, pkg.TypesInfo)
+	if err != nil {
+		return nil, fmt.Errorf("error toTable: %w", err)
+	}
+	return table, nil
+}
+
 var supportedNonPrimitiveTypes = map[string]struct{}{
 	"time.Time":       {},
 	"mysql.NullTime":  {},
@@ -79,6 +101,10 @@ var supportedNonPrimitiveTypes = map[string]struct{}{
 	"sql.NullString":  {},
 	"sql.NullFloat64": {},
 	"sql.NullBool":    {},
+}
+
+var supportedGenericsTypes = map[string]struct{}{
+	"sql.Null": {},
 }
 
 var altTypeNames = map[string]string{
@@ -90,8 +116,10 @@ func toTable(tablePkg *types.Package, annotationComment string, gd *ast.GenDecl,
 	table := new(Table)
 	table.Package = tablePkg
 	table.PackageName = tablePkg.Name()
+	table.additionalPackagesMap = make(map[string]struct{})
 
 	table.TableName = trimAnnotation(annotationComment)
+	qualifier := types.RelativeTo(tablePkg)
 
 	spec := gd.Specs[0]
 	ts, ok := spec.(*ast.TypeSpec)
@@ -124,7 +152,7 @@ func toTable(tablePkg *types.Package, annotationComment string, gd *ast.GenDecl,
 			}
 		}
 		t := ti.TypeOf(field.Type)
-		var typeName, pkgName string
+		var typeName, pkgName, typeParameter string
 		baseTypeName := t.String()
 		nt, ok := t.(*types.Named)
 		if ok {
@@ -135,7 +163,30 @@ func toTable(tablePkg *types.Package, annotationComment string, gd *ast.GenDecl,
 				typeName = nt.Obj().Name()
 			}
 			baseTypeName = typeName
-			if _, ok := supportedNonPrimitiveTypes[typeName]; !ok {
+			if _, ok := supportedGenericsTypes[typeName]; ok {
+				tas := nt.TypeArgs()
+				if tas == nil {
+					return nil, fmt.Errorf("toTable: has not type params: table=%s, field=%s", table.TableName, columnName)
+				}
+				tpsStr := make([]string, tas.Len())
+				for i := 0; i < tas.Len(); i++ {
+					ta := tas.At(i)
+					switch ata := ta.(type) {
+					case *types.Named:
+						tn := ata.Obj()
+						tpsStr[i] = tn.Id()
+						if qualifier(tn.Pkg()) != "" {
+							tpsStr[i] = tn.Pkg().Name() + "." + tn.Id()
+							table.additionalPackagesMap[tn.Pkg().Path()] = struct{}{}
+						}
+					case *types.Basic:
+						tpsStr[i] = ata.Name()
+					default:
+						return nil, fmt.Errorf("toTable: unsupported type param: table=%s, field=%s, type=%s", table.TableName, columnName, ta.String())
+					}
+				}
+				typeParameter = strings.Join(tpsStr, ",")
+			} else if _, ok := supportedNonPrimitiveTypes[typeName]; !ok {
 				bt := nt.Underlying()
 				for _, ok := bt.Underlying().(*types.Named); ok; bt = bt.Underlying() {
 				}
@@ -145,15 +196,16 @@ func toTable(tablePkg *types.Package, annotationComment string, gd *ast.GenDecl,
 			typeName = t.String()
 		}
 		column := Column{
-			Field:        field,
-			Name:         columnName,
-			IsPk:         isPk,
-			TypeName:     typeName,
-			BaseTypeName: baseTypeName,
-			PkgName:      pkgName,
+			Field:         field,
+			Name:          columnName,
+			IsPk:          isPk,
+			typeName:      typeName,
+			baseTypeName:  baseTypeName,
+			PkgName:       pkgName,
+			typeParameter: typeParameter,
 		}
 		if alt, ok := altTypeNames[baseTypeName]; ok {
-			column.AltTypeName = alt
+			column.altTypeName = alt
 		}
 		table.AddColumn(column)
 	}
