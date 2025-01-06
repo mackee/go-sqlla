@@ -16,7 +16,7 @@ import (
 	"github.com/serenize/snaker"
 )
 
-//go:embed template/*
+//go:embed template/* template/plugins/*
 var templates embed.FS
 
 //go:embed template/table.tmpl
@@ -34,7 +34,7 @@ func init() {
 	tmpl = tmpl.Funcs(fm)
 
 	var err error
-	tmpl, err = tmpl.ParseFS(templates, "template/*.tmpl")
+	tmpl, err = tmpl.ParseFS(templates, "template/*.tmpl", "template/plugins/*.tmpl")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -45,9 +45,8 @@ func init() {
 }
 
 func WriteCode(w io.Writer, table *Table) error {
-	buf := new(bytes.Buffer)
-	err := tmpl.Execute(buf, table)
-	if err != nil {
+	buf := &bytes.Buffer{}
+	if err := tmpl.Execute(buf, table); err != nil {
 		return errors.Wrapf(err, "fail to render")
 	}
 	bs, err := format.Source(buf.Bytes())
@@ -57,6 +56,8 @@ func WriteCode(w io.Writer, table *Table) error {
 		}
 		return errors.Wrapf(err, "fail to format: table=%s", table.Name)
 	}
-	_, err = w.Write(bs)
-	return err
+	if _, err := w.Write(bs); err != nil {
+		return errors.Wrapf(err, "fail to write: table=%s", table.Name)
+	}
+	return nil
 }

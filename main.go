@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/types"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -29,13 +30,15 @@ func toPackages(dir string) ([]*packages.Package, error) {
 func Run(from, ext string) {
 	fullpath, err := filepath.Abs(from)
 	if err != nil {
-		panic(err)
+		slog.Error("failed to filepath.Abs", slog.String("from", from), slog.Any("error", err))
+		os.Exit(1)
 	}
 	dir := filepath.Dir(fullpath)
 
 	pkgs, err := toPackages(dir)
 	if err != nil {
-		panic(err)
+		slog.Error("failed to toPackages", slog.String("dir", dir), slog.Any("error", err))
+		os.Exit(1)
 	}
 	for _, pkg := range pkgs {
 		files := pkg.Syntax
@@ -46,15 +49,26 @@ func Run(from, ext string) {
 					if errors.Is(err, errNotTargetDecl) {
 						continue
 					}
-					panic(err)
+					slog.Error("error declToTable", slog.Any("error", err))
+					os.Exit(1)
 				}
 				filename := filepath.Join(dir, table.TableName+ext)
 				f, err := os.Create(filename)
 				if err != nil {
-					panic(err)
+					slog.Error("error create", slog.String("filename", filename), slog.Any("error", err))
+					os.Exit(1)
 				}
 				if err := WriteCode(f, table); err != nil {
-					panic(err)
+					slog.Error("error WriteCode", slog.String("filename", filename), slog.Any("error", err))
+					os.Exit(1)
+				}
+				if err := f.Close(); err != nil {
+					slog.Error("error close", slog.String("filename", filename), slog.Any("error", err))
+					os.Exit(1)
+				}
+				if err := table.Plugins.WriteCode(); err != nil {
+					slog.Error("error Plugins.WriteCode", slog.Any("error", err))
+					os.Exit(1)
 				}
 			}
 		}
@@ -137,6 +151,15 @@ func toTable(tablePkg *types.Package, annotationComment string, gd *ast.GenDecl,
 	} else {
 		table.Name = table.TableName
 	}
+	comments := make([]string, 0, len(gd.Doc.List))
+	for _, comment := range gd.Doc.List {
+		comments = append(comments, comment.Text)
+	}
+	plugins, err := parsePluginsByComments(comments)
+	if err != nil {
+		return nil, fmt.Errorf("toTable: error parsePluginsByComments: table=%s, err=%w", table.TableName, err)
+	}
+	table.SetPlugins(plugins)
 
 	for _, field := range structType.Fields.List {
 		tagText := field.Tag.Value[1 : len(field.Tag.Value)-1]

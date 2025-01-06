@@ -14,6 +14,8 @@ import (
 type UserId uint64
 
 // +table: user
+//
+//sqlla:plugin count outpath=./user_count.gen.go
 type User struct {
 	Id        UserId         `db:"id,primarykey,autoincrement"`
 	Name      string         `db:"name"`
