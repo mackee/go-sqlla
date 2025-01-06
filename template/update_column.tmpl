@@ -1,4 +1,4 @@
-{{ define "UpdateColumn" }}{{ $smallTableName := .TableName | toCamel | Untitle }}
+{{ define "UpdateColumn" }}{{ $smallTableName := .TableName | toCamel | untitle }}
 {{- if .IsNullT }}
 {{- template "UpdateColumnNullT" . }}
 {{- else }}

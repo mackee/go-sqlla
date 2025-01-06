@@ -5,6 +5,7 @@ go 1.21
 require (
 	github.com/Masterminds/goutils v1.1.1
 	github.com/go-sql-driver/mysql v1.6.0
+	github.com/go-task/slim-sprig v0.0.0-20210107165309-348f09dbbbc0
 	github.com/pkg/errors v0.9.1
 	github.com/serenize/snaker v0.0.0-20201027110005-a7ad2135616e
 	github.com/stretchr/testify v1.9.0

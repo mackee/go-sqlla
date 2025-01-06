@@ -8,10 +8,10 @@ import (
 	"go/format"
 	"io"
 	"log"
-	"strings"
 	"text/template"
 
 	"github.com/Masterminds/goutils"
+	sprig "github.com/go-task/slim-sprig"
 	"github.com/pkg/errors"
 	"github.com/serenize/snaker"
 )
@@ -25,19 +25,14 @@ var tableTmpl []byte
 var tmpl = template.New("table")
 
 func init() {
-	tmpl = tmpl.Funcs(
-		template.FuncMap{
-			"Title": func(s string) string {
-				return goutils.Capitalize(s)
-			},
-			"Untitle": func(s string) string {
-				return goutils.Uncapitalize(s)
-			},
-			"toLower": strings.ToLower,
-			"toSnake": snaker.CamelToSnake,
-			"toCamel": snaker.SnakeToCamel,
-		},
-	)
+	fm := sprig.FuncMap()
+	fm["untitle"] = func(s string) string {
+		return goutils.Uncapitalize(s)
+	}
+	fm["toSnake"] = snaker.CamelToSnake
+	fm["toCamel"] = snaker.SnakeToCamel
+	tmpl = tmpl.Funcs(fm)
+
 	var err error
 	tmpl, err = tmpl.ParseFS(templates, "template/*.tmpl")
 	if err != nil {

@@ -1,5 +1,5 @@
 {{ define "SelectColumn" }}
-{{- $smallTableName := .TableName | toCamel | Untitle }}
+{{- $smallTableName := .TableName | toCamel | untitle }}
 {{- if .IsNullT }}
 {{- template "SelectColumnNullT" . }}
 {{- else }}

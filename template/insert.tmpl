@@ -1,5 +1,5 @@
 {{ define "Insert" }}
-{{- $camelName := .Name | toCamel | Untitle -}}
+{{- $camelName := .Name | toCamel | untitle -}}
 {{- $constructor := printf "New%sSQL" (.Name | toCamel) -}}
 type {{ $camelName }}InsertSQL struct {
 	{{ $camelName }}SQL

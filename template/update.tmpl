@@ -1,5 +1,5 @@
-{{ define "Update" }}{{ $camelName := .Name | toCamel | Untitle }}
-{{- $constructor := printf "New%sSQL" (.Name | toCamel | Title) -}}
+{{ define "Update" }}{{ $camelName := .Name | toCamel | untitle }}
+{{- $constructor := printf "New%sSQL" (.Name | toCamel | title) -}}
 type {{ $camelName }}UpdateSQL struct {
 	{{ $camelName }}SQL
 	setMap	sqlla.SetMap
@@ -42,7 +42,7 @@ func (q {{ $camelName }}UpdateSQL) ToSql() (string, []interface{}, error) {
 
 {{- if .HasPk }}
 func (s {{ .StructName }}) Update() {{ $camelName }}UpdateSQL {
-	return {{ $constructor }}().Update().Where{{ .PkColumn.Name | toCamel | Title }}(s.{{ .PkColumn.FieldName }})
+	return {{ $constructor }}().Update().Where{{ .PkColumn.Name | toCamel | title }}(s.{{ .PkColumn.FieldName }})
 }
 
 func (q {{ $camelName }}UpdateSQL) Exec(db sqlla.DB) ([]{{ .StructName }}, error) {

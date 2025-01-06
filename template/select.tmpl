@@ -1,6 +1,6 @@
 {{ define "Select" }}
-{{- $camelName := .Name | toCamel | Untitle -}}
-{{- $constructor := printf "New%sSQL" (.Name | toCamel | Title) -}}
+{{- $camelName := .Name | toCamel | untitle -}}
+{{- $constructor := printf "New%sSQL" (.Name | toCamel | title) -}}
 var {{ $camelName }}AllColumns = []string{
 	{{ range .Columns }}"`{{ .Name }}`",{{ end }}
 }
@@ -165,7 +165,7 @@ func (q {{ $camelName }}SelectSQL) ToSql() (string, []interface{}, error) {
 
 {{ if .HasPk -}}
 func (s {{ .StructName }}) Select() ({{ $camelName }}SelectSQL) {
-	return {{ $constructor }}().Select().{{ .PkColumn.Name | toCamel | Title }}(s.{{ .PkColumn.FieldName }})
+	return {{ $constructor }}().Select().{{ .PkColumn.Name | toCamel | title }}(s.{{ .PkColumn.FieldName }})
 }
 {{ end -}}
 

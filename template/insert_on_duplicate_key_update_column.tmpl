@@ -1,4 +1,4 @@
-{{ define "InsertOnDuplicateKeyUpdateColumn" }}{{ $smallTableName := .TableName | toCamel | Untitle }}
+{{ define "InsertOnDuplicateKeyUpdateColumn" }}{{ $smallTableName := .TableName | toCamel | untitle }}
 {{- if .IsNullT }}
 func (q {{ $smallTableName }}InsertOnDuplicateKeyUpdateSQL) ValueOnUpdate{{ .MethodName }} (v {{ .TypeParameter }}) {{ $smallTableName }}InsertOnDuplicateKeyUpdateSQL {
 	q.onDuplicateKeyUpdateMap["`{{ .Name }}`"] = sql.Null[{{ .TypeParameter }}]{ V: v, Valid: true }

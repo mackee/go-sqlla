@@ -13,12 +13,12 @@ import (
 	{{ end }}
 	"github.com/mackee/go-sqlla/v2"
 )
-{{ $camelName := .Name | toCamel | Untitle }}
+{{ $camelName := .Name | toCamel | untitle }}
 type {{ $camelName }}SQL struct {
 	where sqlla.Where
 }
 
-func New{{ .Name | toCamel | Title }}SQL() {{ $camelName }}SQL {
+func New{{ .Name | toCamel | title }}SQL() {{ $camelName }}SQL {
 	q := {{ $camelName }}SQL{}
 	return q
 }
