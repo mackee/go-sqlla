@@ -1,0 +1,53 @@
+{{ define "plugin.slice" }}
+{{- $structName := .Table.StructName }}
+{{- $receiver := substr 0 1 $structName | lower }}
+{{- $sliceTypeName := pluralize $structName }}
+type {{ $sliceTypeName }} []*{{ $structName }}
+
+{{- if not (empty .Args.columns) }}
+{{- $table := .Table }}
+{{ range $index, $columnName := splitList "," .Args.columns }}
+{{- $column := $table.Lookup $columnName }}
+{{- $methodName := pluralize $column.FieldName }}
+func ({{ $receiver }} {{ $sliceTypeName }}) {{ $methodName }}() []{{ $column.TypeName }} {
+	vs := make([]{{ $column.TypeName }}, len({{ $receiver }}))
+	for i := range {{ $receiver }} {
+		vs[i] = {{ $receiver }}[i].{{ $column.FieldName }}
+	}
+	return vs
+}
+{{ end }}
+{{- end }}
+
+{{- if not (empty .Args.keyBy) }}
+{{- $table := .Table }}
+{{ range $index, $columnName := splitList "," .Args.keyBy }}
+{{- $column := $table.Lookup $columnName }}
+{{- $fieldName := pluralize $column.FieldName }}
+func ( {{ $receiver }} {{ $sliceTypeName }}) AssociateBy{{ $fieldName }}() map[{{ $column.TypeName }}]*{{ $structName }} {
+	m := make(map[{{ $column.TypeName }}]*{{ $structName }}, len({{ $receiver }}))
+	for _, v := range {{ $receiver }} {
+		m[v.{{ $column.FieldName }}] = v
+	}
+	return m
+}
+{{ end }}
+{{- end }}
+
+{{- if not (empty .Args.groupBy) }}
+{{- $table := .Table }}
+{{ range $index, $columnName := splitList "," .Args.groupBy }}
+{{- $column := $table.Lookup $columnName }}
+{{- $fieldName := pluralize $column.FieldName }}
+func ( {{ $receiver }} {{ $sliceTypeName }}) GroupBy{{ $fieldName }}() map[{{ $column.TypeName }}]{{ $sliceTypeName }} {
+	m := make(map[{{ $column.TypeName }}]{{ $sliceTypeName }}, len({{ $receiver }}))
+	for _, v := range {{ $receiver }} {
+		m[v.{{ $column.FieldName }}] = append(m[v.{{ $column.FieldName }}], v)
+	}
+	return m
+}
+{{ end }}
+{{- end }}
+
+
+{{ end }}

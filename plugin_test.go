@@ -1,7 +1,9 @@
 package sqlla_test
 
 import (
+	"encoding/json"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/mackee/go-sqlla/v2"
@@ -20,9 +22,10 @@ func Test_parsePluginsByComments(t *testing.T) {
 			},
 			want: sqlla.Plugins{
 				{
-					Name:    "count",
-					Outpath: "user_count.gen.go",
-					Args:    map[string]string{},
+					Name: "count",
+					Args: map[string]string{
+						"outpath": "user_count.gen.go",
+					},
 				},
 			},
 		},
@@ -33,9 +36,9 @@ func Test_parsePluginsByComments(t *testing.T) {
 			},
 			want: sqlla.Plugins{
 				{
-					Name:    "table",
-					Outpath: "user_table.gen.go",
+					Name: "table",
 					Args: map[string]string{
+						"outpath":       "user_table.gen.go",
 						"getcolumns":    "id,name",
 						"listincolumns": "id,name",
 						"listcolumns":   "age",
@@ -43,6 +46,13 @@ func Test_parsePluginsByComments(t *testing.T) {
 				},
 			},
 		},
+	}
+	prettyPrint := func(v any) string {
+		bs := &strings.Builder{}
+		enc := json.NewEncoder(bs)
+		enc.SetIndent("", "  ")
+		enc.Encode(v)
+		return bs.String()
 	}
 	for _, tt := range tc {
 		t.Run(tt.name, func(t *testing.T) {
@@ -52,7 +62,7 @@ func Test_parsePluginsByComments(t *testing.T) {
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("parsePlguinByComments() = %v, want %v", got, tt.want)
+				t.Errorf("parsePlguinByComments() = %s, want %s", prettyPrint(got), prettyPrint(tt.want))
 			}
 		})
 	}

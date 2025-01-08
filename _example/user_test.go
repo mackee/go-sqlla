@@ -663,39 +663,3 @@ func TestORM__WithSqlite3__NullBinary(t *testing.T) {
 		t.Errorf("result.IconImage is not replaced to \"updated\": %s", result.IconImage)
 	}
 }
-
-func TestORM__Plugin__Count(t *testing.T) {
-	ctx := context.Background()
-	db := setupDB(t)
-
-	for _, name := range []string{"hoge", "fuga", "piyo"} {
-		if _, err := example.NewUserSQL().Insert().
-			ValueName(name).
-			ValueIconImage([]byte{}).
-			ExecContextWithoutSelect(ctx, db); err != nil {
-			t.Error("cannot insert row error:", err)
-		}
-	}
-
-	allCount, err := example.NewUserSQL().Select().CountContext(ctx, db, "id")
-	if err != nil {
-		t.Error("cannot select row error:", err)
-	}
-	if allCount != 3 {
-		t.Error("unexpected allCount:", allCount)
-	}
-	hogeCount, err := example.NewUserSQL().Select().Name("hoge").CountContext(ctx, db, "id")
-	if err != nil {
-		t.Error("cannot select row error:", err)
-	}
-	if hogeCount != 1 {
-		t.Error("unexpected hogeCount:", hogeCount)
-	}
-	notFoundCount, err := example.NewUserSQL().Select().Name("notfound").CountContext(ctx, db, "id")
-	if err != nil {
-		t.Error("cannot select row error:", err)
-	}
-	if notFoundCount != 0 {
-		t.Error("unexpected notFoundCount:", notFoundCount)
-	}
-}

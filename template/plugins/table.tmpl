@@ -1,0 +1,162 @@
+{{ define "plugin.table" }}
+{{- $structName := .Table.StructName }}
+{{- $receiver := substr 0 1 $structName | lower }}
+{{- $tableTypeName := printf "%sTable" $structName }}
+{{- $table := .Table }}
+{{- $sliceTypeName := pluralize $structName }}
+type {{ $tableTypeName }} struct {}
+
+func New{{ $tableTypeName }}() *{{ $tableTypeName }} {
+	return &{{ $tableTypeName }}{}
+}
+
+{{- if not (empty .Args.get) }}
+{{ $getColumns := splitList "," .Args.get }}
+{{ range $index, $joinedColumnNames := $getColumns }}
+{{ $columnNames := splitList "&" $joinedColumnNames }}
+{{ $methodName := join "And" $columnNames }}
+func ({{ $receiver }} *{{ $tableTypeName }}) GetBy{{ $methodName }}(ctx context.Context, db sqlla.DB,
+{{- range $index, $columnName := $columnNames -}}
+	c{{ $index }}{{ " " }}
+	{{- $column := $table.Lookup $columnName -}}
+	{{ ternary $column.TypeParameter $column.TypeName $column.IsNullT }},
+{{- end }}) (*{{ $structName }}, error) {
+	row, err := New{{ $structName }}SQL().Select().
+	{{- range $index, $columnName := $columnNames }}
+		{{ $column := $table.Lookup $columnName }}
+		{{ $column.MethodName }}(c{{ $index }}).
+	{{- end }}
+		SingleContext(ctx, db)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get {{ $structName }} by {{ join " and " $columnNames }}: %w", err)
+	}
+	return &row, nil
+}
+{{- end }}
+{{- end }}
+
+{{- if not (empty .Args.list) }}
+{{ $listColumns := splitList "," .Args.list }}
+{{ range $index, $joinedColumnNames := $listColumns }}
+{{ $columnNames := splitList "&" $joinedColumnNames }}
+{{ $methodName := join "And" $columnNames }}
+func ({{ $receiver }} *{{ $tableTypeName }}) ListBy{{ $methodName }}(ctx context.Context, db sqlla.DB,
+{{- range $index, $columnName := $columnNames -}}
+	c{{ $index }}{{ " " }}
+	{{- $column := $table.Lookup $columnName -}}
+	{{ ternary $column.TypeParameter $column.TypeName $column.IsNullT }},
+{{- end }}) ({{ $sliceTypeName }}, error) {
+	_rows, err := New{{ $structName }}SQL().Select().
+	{{- range $index, $columnName := $columnNames }}
+		{{ $column := $table.Lookup $columnName }}
+		{{ $column.MethodName }}(c{{ $index }}).
+	{{- end }}
+		AllContext(ctx, db)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list {{ $structName }} by {{ join " and " $columnNames }}: %w", err)
+	}
+	rows := make({{ $sliceTypeName }}, len(_rows))
+	for i := range _rows {
+		rows[i] = &_rows[i]
+	}
+	return rows, nil
+}
+{{- end }}
+{{- end }}
+
+{{- if not (empty .Args.create) }}
+{{ $createColumns := splitList "," .Args.create }}
+{{ $createInputTypeName := printf "%sCreateInput" $tableTypeName }}
+
+{{ $hasPk := false }}
+{{ $noNullTColumns := list }}
+{{ $nullTColumns := list }}
+type {{ $createInputTypeName }} struct {
+{{- range $index, $columnName := $createColumns }}
+	{{- $column := $table.Lookup $columnName -}}
+	{{- if $column.IsPk }}{{ $hasPk = true }}{{ end }}
+	{{ $column.FieldName }} {{ $column.TypeName }}
+	{{- if $column.IsNullT }}
+	{{- $nullTColumns = append $nullTColumns $column.FieldName }}
+	{{- else }}
+	{{- $noNullTColumns = append $noNullTColumns $column.FieldName }}
+	{{- end }}
+{{- end }}
+}
+
+func ({{ $receiver }} *{{ $tableTypeName }}) newCreateSQL(input {{ $createInputTypeName }}) {{ $structName | untitle }}InsertSQL {
+	query := New{{ $structName }}SQL().Insert().
+	{{ $lastIndex := sub (len $noNullTColumns) 1 }}
+	{{- range $index, $columnName := $noNullTColumns }}
+		{{- $column := $table.Lookup $columnName }}
+		Value{{ $column.MethodName }}(input.{{ $column.FieldName }})
+		{{- if ne $lastIndex $index }}.{{ end }}
+	{{- end }}
+	{{- range $index, $columnName := $nullTColumns }}
+	{{- $column := $table.Lookup $columnName }}
+	if input.{{ $columnName }}.Valid {
+		query = query.Value{{ $column.MethodName }}(input.{{ $columnName }}.V)
+	} else {
+		query = query.Value{{ $column.MethodName }}IsNull()
+	}
+	{{- end }}
+	return query
+}
+
+func ({{ $receiver }} *{{ $tableTypeName }}) Create(ctx context.Context, db sqlla.DB, input {{ $createInputTypeName }}) (*{{ $structName }}, error) {
+	{{- if $hasPk }}
+	_, err := {{ $receiver }}.newCreateSQL(input).ExecContextWithoutSelect(ctx, db)
+	{{- else }}
+	row, err := {{ $receiver }}.newCreateSQL(input).ExecContext(ctx, db)
+	{{- end }}
+	if err != nil {
+		return nil, fmt.Errorf("failed to create {{ $structName }}: %w", err)
+	}
+	{{- if $hasPk }}
+	row, err := New{{ $structName }}SQL().Select().
+		{{ $table.PkColumn.MethodName }}(input.{{ $table.PkColumn.FieldName }}).
+		SingleContext(ctx, db)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get created {{ $structName }}: %w", err)
+	}
+	{{- end }}
+	return &row, nil
+}
+
+func ({{ $receiver }} *{{ $tableTypeName }}) CreateMulti(ctx context.Context, db sqlla.DB, inputs []{{ $createInputTypeName }}) (
+{{- if $hasPk }}{{ $sliceTypeName }},{{ end }} error) {
+	bi := New{{ $structName }}SQL().BulkInsert()
+	{{- if $hasPk }}
+	ids := make([]{{ $table.PkColumn.TypeName }}, len(inputs))
+	{{- end }}
+	for _, input := range inputs {
+		bi.Append({{ $receiver }}.newCreateSQL(input))
+		{{- if $hasPk }}
+		ids = append(ids, input.{{ $table.PkColumn.FieldName }})
+		{{- end }}
+	}
+	if _, err := bi.ExecContext(ctx, db); err != nil {
+		{{- if $hasPk }}
+		return nil, fmt.Errorf("failed to create {{ $structName }}s: %w", err)
+		{{- else }}
+		return fmt.Errorf("failed to create {{ $structName }}s: %w", err)
+		{{- end }}
+	}
+	{{- if $hasPk }}
+	_rows, err := New{{ $structName }}SQL().Select().
+		{{ $table.PkColumn.MethodName }}In(ids...).
+		AllContext(ctx, db)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get created {{ $structName }}s: %w", err)
+	}
+	rows := make({{ $sliceTypeName }}, len(_rows))
+	for i := range _rows {
+		rows[i] = &_rows[i]
+	}
+	return rows, nil
+	{{- else }}
+	return nil
+	{{- end }}
+}
+{{- end }}
+{{ end }}

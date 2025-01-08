@@ -9,7 +9,7 @@ replace github.com/mackee/go-sqlla/v2 => ../
 require (
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/mackee/go-genddl v0.0.0-20240709095411-bc59661f6bd5
-	github.com/mackee/go-sqlla/v2 v2.0.0-00010101000000-000000000000
+	github.com/mackee/go-sqlla/v2 v2.15.0
 	github.com/mattn/go-sqlite3 v1.14.9
 	github.com/ory/dockertest/v3 v3.9.1
 )
@@ -19,12 +19,14 @@ require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
+	github.com/alecthomas/kong v1.6.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
 	github.com/containerd/continuity v0.3.0 // indirect
 	github.com/docker/cli v20.10.14+incompatible // indirect
 	github.com/docker/docker v25.0.6+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
+	github.com/gertd/go-pluralize v0.2.1 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20210107165309-348f09dbbbc0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect

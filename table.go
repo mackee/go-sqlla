@@ -64,3 +64,12 @@ func (t *Table) SetPlugins(plugins Plugins) {
 	}
 	t.Plugins = plugins
 }
+
+func (t *Table) Lookup(columnFieldName string) *Column {
+	for _, column := range t.Columns {
+		if column.FieldName() == columnFieldName {
+			return &column
+		}
+	}
+	return nil
+}

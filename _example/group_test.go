@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	example "github.com/mackee/go-sqlla/_example"
-	"github.com/mackee/go-sqlla/_example/id"
 	"github.com/mackee/go-sqlla/v2"
 )
 
@@ -65,22 +64,22 @@ func TestSelectNullable(t *testing.T) {
 			name:   "query by type parameter",
 			query:  example.NewGroupSQL().Select().SubLeaderUserID(42),
 			expect: "SELECT " + groupAllColumns + " FROM `group` WHERE `sub_leader_user_id` = ?;",
-			args:   []interface{}{sql.Null[example.UserId]{V: 42, Valid: true}},
+			args:   []interface{}{sql.Null[int64]{V: 42, Valid: true}},
 		},
 		{
 			name:   "query by type parameter with operator",
 			query:  example.NewGroupSQL().Select().SubLeaderUserID(42, sqlla.OpLess),
 			expect: "SELECT " + groupAllColumns + " FROM `group` WHERE `sub_leader_user_id` < ?;",
-			args:   []interface{}{sql.Null[example.UserId]{V: 42, Valid: true}},
+			args:   []interface{}{sql.Null[int64]{V: 42, Valid: true}},
 		},
 		{
 			name:   "query by type parameters multiple",
 			query:  example.NewGroupSQL().Select().SubLeaderUserIDIn(42, 43, 44),
 			expect: "SELECT " + groupAllColumns + " FROM `group` WHERE `sub_leader_user_id` IN(?,?,?);",
 			args: []interface{}{
-				sql.Null[example.UserId]{V: 42, Valid: true},
-				sql.Null[example.UserId]{V: 43, Valid: true},
-				sql.Null[example.UserId]{V: 44, Valid: true},
+				sql.Null[int64]{V: 42, Valid: true},
+				sql.Null[int64]{V: 43, Valid: true},
+				sql.Null[int64]{V: 44, Valid: true},
 			},
 		},
 	}
@@ -93,27 +92,27 @@ func TestUpdateNullable(t *testing.T) {
 			name:   "SET NOT NULL WHERE IS NULL",
 			query:  example.NewGroupSQL().Update().SetSubLeaderUserID(42).WhereSubLeaderUserIDIsNull(),
 			expect: "UPDATE `group` SET `sub_leader_user_id` = ? WHERE `sub_leader_user_id` IS NULL;",
-			args:   []interface{}{sql.Null[example.UserId]{V: example.UserId(42), Valid: true}},
+			args:   []interface{}{sql.Null[int64]{V: 42, Valid: true}},
 		},
 		{
 			name:   "SET NULL WHERE IS NULL",
 			query:  example.NewGroupSQL().Update().SetSubLeaderUserIDToNull().WhereSubLeaderUserIDIsNull(),
 			expect: "UPDATE `group` SET `sub_leader_user_id` = ? WHERE `sub_leader_user_id` IS NULL;",
-			args:   []interface{}{sql.Null[example.UserId]{Valid: false}},
+			args:   []interface{}{sql.Null[int64]{Valid: false}},
 		},
 		{
 			name:   "SET NULL WHERE IS NOT NULL",
 			query:  example.NewGroupSQL().Update().SetChildGroupIDToNull().WhereSubLeaderUserIDIsNotNull(),
 			expect: "UPDATE `group` SET `child_group_id` = ? WHERE `sub_leader_user_id` IS NOT NULL;",
-			args:   []interface{}{sql.Null[id.GroupID]{Valid: false}},
+			args:   []interface{}{sql.Null[int64]{Valid: false}},
 		},
 		{
 			name:   "SET NOT NULL WHERE equal type parameters",
 			query:  example.NewGroupSQL().Update().SetChildGroupID(42).WhereChildGroupID(100),
 			expect: "UPDATE `group` SET `child_group_id` = ? WHERE `child_group_id` = ?;",
 			args: []interface{}{
-				sql.Null[id.GroupID]{V: 42, Valid: true},
-				sql.Null[id.GroupID]{V: 100, Valid: true},
+				sql.Null[int64]{V: 42, Valid: true},
+				sql.Null[int64]{V: 100, Valid: true},
 			},
 		},
 		{
@@ -121,8 +120,8 @@ func TestUpdateNullable(t *testing.T) {
 			query:  example.NewGroupSQL().Update().SetChildGroupID(42).WhereChildGroupID(100, sqlla.OpGreater),
 			expect: "UPDATE `group` SET `child_group_id` = ? WHERE `child_group_id` > ?;",
 			args: []interface{}{
-				sql.Null[id.GroupID]{V: 42, Valid: true},
-				sql.Null[id.GroupID]{V: 100, Valid: true},
+				sql.Null[int64]{V: 42, Valid: true},
+				sql.Null[int64]{V: 100, Valid: true},
 			},
 		},
 		{
@@ -130,10 +129,10 @@ func TestUpdateNullable(t *testing.T) {
 			query:  example.NewGroupSQL().Update().SetChildGroupID(42).WhereChildGroupIDIn(100, 101, 102),
 			expect: "UPDATE `group` SET `child_group_id` = ? WHERE `child_group_id` IN(?,?,?);",
 			args: []interface{}{
-				sql.Null[id.GroupID]{V: 42, Valid: true},
-				sql.Null[id.GroupID]{V: 100, Valid: true},
-				sql.Null[id.GroupID]{V: 101, Valid: true},
-				sql.Null[id.GroupID]{V: 102, Valid: true},
+				sql.Null[int64]{V: 42, Valid: true},
+				sql.Null[int64]{V: 100, Valid: true},
+				sql.Null[int64]{V: 101, Valid: true},
+				sql.Null[int64]{V: 102, Valid: true},
 			},
 		},
 	}
@@ -146,13 +145,13 @@ func TestInsertNullable(t *testing.T) {
 			name:   "INSERT NULL column",
 			query:  example.NewGroupSQL().Insert().ValueSubLeaderUserIDIsNull(),
 			expect: "INSERT INTO `group` (`sub_leader_user_id`) VALUES(?);",
-			args:   []interface{}{sql.Null[example.UserId]{Valid: false}},
+			args:   []interface{}{sql.Null[int64]{Valid: false}},
 		},
 		{
 			name:   "INSERT with type parameter",
 			query:  example.NewGroupSQL().Insert().ValueSubLeaderUserID(42),
 			expect: "INSERT INTO `group` (`sub_leader_user_id`) VALUES(?);",
-			args:   []interface{}{sql.Null[example.UserId]{V: 42, Valid: true}},
+			args:   []interface{}{sql.Null[int64]{V: 42, Valid: true}},
 		},
 		{
 			name: "INSERT ON DUPLICATE KEY UPDATE SET with type parameter",
@@ -161,8 +160,8 @@ func TestInsertNullable(t *testing.T) {
 				ValueOnUpdateSubLeaderUserID(43),
 			expect: "INSERT INTO `group` (`sub_leader_user_id`) VALUES(?) ON DUPLICATE KEY UPDATE `sub_leader_user_id` = ?;",
 			args: []interface{}{
-				sql.Null[example.UserId]{V: 42, Valid: true},
-				sql.Null[example.UserId]{V: 43, Valid: true},
+				sql.Null[int64]{V: 42, Valid: true},
+				sql.Null[int64]{V: 43, Valid: true},
 			},
 		},
 		{
@@ -172,8 +171,8 @@ func TestInsertNullable(t *testing.T) {
 				ValueOnUpdateSubLeaderUserIDToNull(),
 			expect: "INSERT INTO `group` (`sub_leader_user_id`) VALUES(?) ON DUPLICATE KEY UPDATE `sub_leader_user_id` = ?;",
 			args: []interface{}{
-				sql.Null[example.UserId]{V: 42, Valid: true},
-				sql.Null[example.UserId]{Valid: false},
+				sql.Null[int64]{V: 42, Valid: true},
+				sql.Null[int64]{Valid: false},
 			},
 		},
 	}
@@ -198,22 +197,22 @@ func TestDeleteNullable(t *testing.T) {
 			name:   "query by type parameter",
 			query:  example.NewGroupSQL().Delete().SubLeaderUserID(42),
 			expect: "DELETE FROM `group` WHERE `sub_leader_user_id` = ?;",
-			args:   []interface{}{sql.Null[example.UserId]{V: 42, Valid: true}},
+			args:   []interface{}{sql.Null[int64]{V: 42, Valid: true}},
 		},
 		{
 			name:   "query by type parameter with operator",
 			query:  example.NewGroupSQL().Delete().SubLeaderUserID(42, sqlla.OpLess),
 			expect: "DELETE FROM `group` WHERE `sub_leader_user_id` < ?;",
-			args:   []interface{}{sql.Null[example.UserId]{V: 42, Valid: true}},
+			args:   []interface{}{sql.Null[int64]{V: 42, Valid: true}},
 		},
 		{
 			name:   "query by type parameters multiple",
 			query:  example.NewGroupSQL().Delete().SubLeaderUserIDIn(42, 43, 44),
 			expect: "DELETE FROM `group` WHERE `sub_leader_user_id` IN(?,?,?);",
 			args: []interface{}{
-				sql.Null[example.UserId]{V: 42, Valid: true},
-				sql.Null[example.UserId]{V: 43, Valid: true},
-				sql.Null[example.UserId]{V: 44, Valid: true},
+				sql.Null[int64]{V: 42, Valid: true},
+				sql.Null[int64]{V: 43, Valid: true},
+				sql.Null[int64]{V: 44, Valid: true},
 			},
 		},
 	}

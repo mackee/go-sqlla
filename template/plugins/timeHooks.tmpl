@@ -1,0 +1,41 @@
+{{ define "plugin.timeHooks" }}
+{{- $structName := .Table.StructName }}
+{{- $receiver := substr 0 1 $structName | lower }}
+{{ if not (empty .Args.create) }}
+{{- $createHookColumns := splitList "," .Args.create }}
+{{- $insertSQLTypeName := printf "%sInsertSQL" ($structName | untitle) }}
+func ({{$receiver}} {{$structName}}) DefaultInsertHook(q {{ $insertSQLTypeName }}) ({{ $insertSQLTypeName }}, error) {
+	now := time.Now()
+	return q.
+	{{- $lastIndex := sub (len $createHookColumns) 1 }}
+	{{- range $index, $column := $createHookColumns }}
+		Value{{ $column }}(now){{ if ne $lastIndex $index }}.{{ end }}
+	{{- end }}, nil
+}
+{{- end }}
+
+{{ if not (empty .Args.update) }}
+{{- $updateHookColumns := splitList "," .Args.update }}
+{{- $updateSQLTypeName := printf "%sUpdateSQL" ($structName | untitle) }}
+func ({{$receiver}} {{$structName}}) DefaultUpdateHook(q {{ $updateSQLTypeName }}) ({{ $updateSQLTypeName }}, error) {
+	now := time.Now()
+	return q.
+	{{- $lastIndex := sub (len $updateHookColumns) 1 }}
+	{{- range $index, $column := $updateHookColumns }}
+		Set{{ $column }}(now){{ if ne $lastIndex $index }}.{{ end }}
+	{{- end }}, nil
+}
+{{- end }}
+
+{{ if not (empty .Args.sameOnUpdate) }}
+{{- $sameOnUpdateColumns := splitList "," .Args.sameOnUpdate }}
+{{- $insertOnDuplicateKeyUpdateSQLTypeName := printf "%sInsertOnDuplicateKeyUpdateSQL" (.Table.StructName | untitle) }}
+func ({{$receiver}} {{$structName}}) DefaultInsertOnDuplicateKeyUpdateHook(q {{ $insertOnDuplicateKeyUpdateSQLTypeName }}) ({{ $insertOnDuplicateKeyUpdateSQLTypeName }}, error) {
+	return q.
+	{{- $lastIndex := sub (len $sameOnUpdateColumns) 1 }}
+	{{- range $index, $column := $sameOnUpdateColumns }}
+		SameOnUpdate{{ $column }}(){{ if ne $lastIndex $index }}.{{ end }}
+	{{- end }}, nil
+}
+{{- end }}
+{{ end }}

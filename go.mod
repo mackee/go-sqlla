@@ -1,9 +1,11 @@
 module github.com/mackee/go-sqlla/v2
 
-go 1.21
+go 1.22
 
 require (
 	github.com/Masterminds/goutils v1.1.1
+	github.com/alecthomas/kong v1.6.1
+	github.com/gertd/go-pluralize v0.2.1
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/go-task/slim-sprig v0.0.0-20210107165309-348f09dbbbc0
 	github.com/pkg/errors v0.9.1

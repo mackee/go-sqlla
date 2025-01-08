@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"database/sql"
-	"github.com/mackee/go-sqlla/_example/id"
 	"time"
 
 	"github.com/mackee/go-sqlla/v2"
@@ -231,36 +230,36 @@ func (q groupSelectSQL) OrderByLeaderUserID(order sqlla.Order) groupSelectSQL {
 	return q
 }
 
-func (q groupSelectSQL) SubLeaderUserID(v UserId, exprs ...sqlla.Operator) groupSelectSQL {
+func (q groupSelectSQL) SubLeaderUserID(v int64, exprs ...sqlla.Operator) groupSelectSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
 		op = sqlla.OpEqual
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprNull[UserId]{Value: sql.Null[UserId]{V: v, Valid: true}, Op: op, Column: q.appendColumnPrefix("`sub_leader_user_id`")}
+	where := sqlla.ExprNull[int64]{Value: sql.Null[int64]{V: v, Valid: true}, Op: op, Column: q.appendColumnPrefix("`sub_leader_user_id`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q groupSelectSQL) SubLeaderUserIDIsNull() groupSelectSQL {
-	where := sqlla.ExprNull[UserId]{Value: sql.Null[UserId]{Valid: false}, Op: sqlla.OpEqual, Column: q.appendColumnPrefix("`sub_leader_user_id`")}
+	where := sqlla.ExprNull[int64]{Value: sql.Null[int64]{Valid: false}, Op: sqlla.OpEqual, Column: q.appendColumnPrefix("`sub_leader_user_id`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q groupSelectSQL) SubLeaderUserIDIsNotNull() groupSelectSQL {
-	where := sqlla.ExprNull[UserId]{Value: sql.Null[UserId]{Valid: false}, Op: sqlla.OpNot, Column: q.appendColumnPrefix("`sub_leader_user_id`")}
+	where := sqlla.ExprNull[int64]{Value: sql.Null[int64]{Valid: false}, Op: sqlla.OpNot, Column: q.appendColumnPrefix("`sub_leader_user_id`")}
 	q.where = append(q.where, where)
 	return q
 }
 
-func (q groupSelectSQL) SubLeaderUserIDIn(vs ...UserId) groupSelectSQL {
-	_vs := make([]sql.Null[UserId], 0, len(vs))
+func (q groupSelectSQL) SubLeaderUserIDIn(vs ...int64) groupSelectSQL {
+	_vs := make([]sql.Null[int64], 0, len(vs))
 	for _, v := range vs {
-		_vs = append(_vs, sql.Null[UserId]{V: v, Valid: true})
+		_vs = append(_vs, sql.Null[int64]{V: v, Valid: true})
 	}
-	where := sqlla.ExprMultiValue[sql.Null[UserId]]{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`sub_leader_user_id`")}
+	where := sqlla.ExprMultiValue[sql.Null[int64]]{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`sub_leader_user_id`")}
 	q.where = append(q.where, where)
 	return q
 }
@@ -276,36 +275,36 @@ func (q groupSelectSQL) OrderBySubLeaderUserID(order sqlla.Order) groupSelectSQL
 	return q
 }
 
-func (q groupSelectSQL) ChildGroupID(v id.GroupID, exprs ...sqlla.Operator) groupSelectSQL {
+func (q groupSelectSQL) ChildGroupID(v int64, exprs ...sqlla.Operator) groupSelectSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
 		op = sqlla.OpEqual
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprNull[id.GroupID]{Value: sql.Null[id.GroupID]{V: v, Valid: true}, Op: op, Column: q.appendColumnPrefix("`child_group_id`")}
+	where := sqlla.ExprNull[int64]{Value: sql.Null[int64]{V: v, Valid: true}, Op: op, Column: q.appendColumnPrefix("`child_group_id`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q groupSelectSQL) ChildGroupIDIsNull() groupSelectSQL {
-	where := sqlla.ExprNull[id.GroupID]{Value: sql.Null[id.GroupID]{Valid: false}, Op: sqlla.OpEqual, Column: q.appendColumnPrefix("`child_group_id`")}
+	where := sqlla.ExprNull[int64]{Value: sql.Null[int64]{Valid: false}, Op: sqlla.OpEqual, Column: q.appendColumnPrefix("`child_group_id`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q groupSelectSQL) ChildGroupIDIsNotNull() groupSelectSQL {
-	where := sqlla.ExprNull[id.GroupID]{Value: sql.Null[id.GroupID]{Valid: false}, Op: sqlla.OpNot, Column: q.appendColumnPrefix("`child_group_id`")}
+	where := sqlla.ExprNull[int64]{Value: sql.Null[int64]{Valid: false}, Op: sqlla.OpNot, Column: q.appendColumnPrefix("`child_group_id`")}
 	q.where = append(q.where, where)
 	return q
 }
 
-func (q groupSelectSQL) ChildGroupIDIn(vs ...id.GroupID) groupSelectSQL {
-	_vs := make([]sql.Null[id.GroupID], 0, len(vs))
+func (q groupSelectSQL) ChildGroupIDIn(vs ...int64) groupSelectSQL {
+	_vs := make([]sql.Null[int64], 0, len(vs))
 	for _, v := range vs {
-		_vs = append(_vs, sql.Null[id.GroupID]{V: v, Valid: true})
+		_vs = append(_vs, sql.Null[int64]{V: v, Valid: true})
 	}
-	where := sqlla.ExprMultiValue[sql.Null[id.GroupID]]{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`child_group_id`")}
+	where := sqlla.ExprMultiValue[sql.Null[int64]]{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`child_group_id`")}
 	q.where = append(q.where, where)
 	return q
 }
@@ -350,36 +349,20 @@ func (q groupSelectSQL) OrderByCreatedAt(order sqlla.Order) groupSelectSQL {
 	return q
 }
 
-func (q groupSelectSQL) UpdatedAt(v time.Time, exprs ...sqlla.Operator) groupSelectSQL {
+func (q groupSelectSQL) UpdatedAt(v sql.NullTime, exprs ...sqlla.Operator) groupSelectSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
 		op = sqlla.OpEqual
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprNull[time.Time]{Value: sql.Null[time.Time]{V: v, Valid: true}, Op: op, Column: q.appendColumnPrefix("`updated_at`")}
+	where := sqlla.ExprNullTime{Value: v, Op: op, Column: q.appendColumnPrefix("`updated_at`")}
 	q.where = append(q.where, where)
 	return q
 }
 
-func (q groupSelectSQL) UpdatedAtIsNull() groupSelectSQL {
-	where := sqlla.ExprNull[time.Time]{Value: sql.Null[time.Time]{Valid: false}, Op: sqlla.OpEqual, Column: q.appendColumnPrefix("`updated_at`")}
-	q.where = append(q.where, where)
-	return q
-}
-
-func (q groupSelectSQL) UpdatedAtIsNotNull() groupSelectSQL {
-	where := sqlla.ExprNull[time.Time]{Value: sql.Null[time.Time]{Valid: false}, Op: sqlla.OpNot, Column: q.appendColumnPrefix("`updated_at`")}
-	q.where = append(q.where, where)
-	return q
-}
-
-func (q groupSelectSQL) UpdatedAtIn(vs ...time.Time) groupSelectSQL {
-	_vs := make([]sql.Null[time.Time], 0, len(vs))
-	for _, v := range vs {
-		_vs = append(_vs, sql.Null[time.Time]{V: v, Valid: true})
-	}
-	where := sqlla.ExprMultiValue[sql.Null[time.Time]]{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`updated_at`")}
+func (q groupSelectSQL) UpdatedAtIn(vs ...sql.NullTime) groupSelectSQL {
+	where := sqlla.ExprMultiNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`updated_at`")}
 	q.where = append(q.where, where)
 	return q
 }
@@ -666,90 +649,90 @@ func (q groupUpdateSQL) WhereLeaderUserIDIn(vs ...UserId) groupUpdateSQL {
 	return q
 }
 
-func (q groupUpdateSQL) SetSubLeaderUserID(v UserId) groupUpdateSQL {
-	q.setMap["`sub_leader_user_id`"] = sql.Null[UserId]{V: v, Valid: true}
+func (q groupUpdateSQL) SetSubLeaderUserID(v int64) groupUpdateSQL {
+	q.setMap["`sub_leader_user_id`"] = sql.Null[int64]{V: v, Valid: true}
 	return q
 }
 
 func (q groupUpdateSQL) SetSubLeaderUserIDToNull() groupUpdateSQL {
-	q.setMap["`sub_leader_user_id`"] = sql.Null[UserId]{Valid: false}
+	q.setMap["`sub_leader_user_id`"] = sql.Null[int64]{Valid: false}
 	return q
 }
 
-func (q groupUpdateSQL) WhereSubLeaderUserID(v UserId, exprs ...sqlla.Operator) groupUpdateSQL {
+func (q groupUpdateSQL) WhereSubLeaderUserID(v int64, exprs ...sqlla.Operator) groupUpdateSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
 		op = sqlla.OpEqual
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprNull[UserId]{Value: sql.Null[UserId]{V: v, Valid: true}, Op: op, Column: "`sub_leader_user_id`"}
+	where := sqlla.ExprNull[int64]{Value: sql.Null[int64]{V: v, Valid: true}, Op: op, Column: "`sub_leader_user_id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q groupUpdateSQL) WhereSubLeaderUserIDIsNull() groupUpdateSQL {
-	where := sqlla.ExprNull[UserId]{Value: sql.Null[UserId]{Valid: false}, Op: sqlla.OpEqual, Column: "`sub_leader_user_id`"}
+	where := sqlla.ExprNull[int64]{Value: sql.Null[int64]{Valid: false}, Op: sqlla.OpEqual, Column: "`sub_leader_user_id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q groupUpdateSQL) WhereSubLeaderUserIDIsNotNull() groupUpdateSQL {
-	where := sqlla.ExprNull[UserId]{Value: sql.Null[UserId]{Valid: false}, Op: sqlla.OpNot, Column: "`sub_leader_user_id`"}
+	where := sqlla.ExprNull[int64]{Value: sql.Null[int64]{Valid: false}, Op: sqlla.OpNot, Column: "`sub_leader_user_id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-func (q groupUpdateSQL) WhereSubLeaderUserIDIn(vs ...UserId) groupUpdateSQL {
-	_vs := make([]sql.Null[UserId], 0, len(vs))
+func (q groupUpdateSQL) WhereSubLeaderUserIDIn(vs ...int64) groupUpdateSQL {
+	_vs := make([]sql.Null[int64], 0, len(vs))
 	for _, v := range vs {
-		_vs = append(_vs, sql.Null[UserId]{V: v, Valid: true})
+		_vs = append(_vs, sql.Null[int64]{V: v, Valid: true})
 	}
-	where := sqlla.ExprMultiValue[sql.Null[UserId]]{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`sub_leader_user_id`"}
+	where := sqlla.ExprMultiValue[sql.Null[int64]]{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`sub_leader_user_id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-func (q groupUpdateSQL) SetChildGroupID(v id.GroupID) groupUpdateSQL {
-	q.setMap["`child_group_id`"] = sql.Null[id.GroupID]{V: v, Valid: true}
+func (q groupUpdateSQL) SetChildGroupID(v int64) groupUpdateSQL {
+	q.setMap["`child_group_id`"] = sql.Null[int64]{V: v, Valid: true}
 	return q
 }
 
 func (q groupUpdateSQL) SetChildGroupIDToNull() groupUpdateSQL {
-	q.setMap["`child_group_id`"] = sql.Null[id.GroupID]{Valid: false}
+	q.setMap["`child_group_id`"] = sql.Null[int64]{Valid: false}
 	return q
 }
 
-func (q groupUpdateSQL) WhereChildGroupID(v id.GroupID, exprs ...sqlla.Operator) groupUpdateSQL {
+func (q groupUpdateSQL) WhereChildGroupID(v int64, exprs ...sqlla.Operator) groupUpdateSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
 		op = sqlla.OpEqual
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprNull[id.GroupID]{Value: sql.Null[id.GroupID]{V: v, Valid: true}, Op: op, Column: "`child_group_id`"}
+	where := sqlla.ExprNull[int64]{Value: sql.Null[int64]{V: v, Valid: true}, Op: op, Column: "`child_group_id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q groupUpdateSQL) WhereChildGroupIDIsNull() groupUpdateSQL {
-	where := sqlla.ExprNull[id.GroupID]{Value: sql.Null[id.GroupID]{Valid: false}, Op: sqlla.OpEqual, Column: "`child_group_id`"}
+	where := sqlla.ExprNull[int64]{Value: sql.Null[int64]{Valid: false}, Op: sqlla.OpEqual, Column: "`child_group_id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q groupUpdateSQL) WhereChildGroupIDIsNotNull() groupUpdateSQL {
-	where := sqlla.ExprNull[id.GroupID]{Value: sql.Null[id.GroupID]{Valid: false}, Op: sqlla.OpNot, Column: "`child_group_id`"}
+	where := sqlla.ExprNull[int64]{Value: sql.Null[int64]{Valid: false}, Op: sqlla.OpNot, Column: "`child_group_id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-func (q groupUpdateSQL) WhereChildGroupIDIn(vs ...id.GroupID) groupUpdateSQL {
-	_vs := make([]sql.Null[id.GroupID], 0, len(vs))
+func (q groupUpdateSQL) WhereChildGroupIDIn(vs ...int64) groupUpdateSQL {
+	_vs := make([]sql.Null[int64], 0, len(vs))
 	for _, v := range vs {
-		_vs = append(_vs, sql.Null[id.GroupID]{V: v, Valid: true})
+		_vs = append(_vs, sql.Null[int64]{V: v, Valid: true})
 	}
-	where := sqlla.ExprMultiValue[sql.Null[id.GroupID]]{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`child_group_id`"}
+	where := sqlla.ExprMultiValue[sql.Null[int64]]{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`child_group_id`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -777,46 +760,25 @@ func (q groupUpdateSQL) WhereCreatedAtIn(vs ...time.Time) groupUpdateSQL {
 	return q
 }
 
-func (q groupUpdateSQL) SetUpdatedAt(v time.Time) groupUpdateSQL {
-	q.setMap["`updated_at`"] = sql.Null[time.Time]{V: v, Valid: true}
+func (q groupUpdateSQL) SetUpdatedAt(v sql.NullTime) groupUpdateSQL {
+	q.setMap["`updated_at`"] = v
 	return q
 }
 
-func (q groupUpdateSQL) SetUpdatedAtToNull() groupUpdateSQL {
-	q.setMap["`updated_at`"] = sql.Null[time.Time]{Valid: false}
-	return q
-}
-
-func (q groupUpdateSQL) WhereUpdatedAt(v time.Time, exprs ...sqlla.Operator) groupUpdateSQL {
+func (q groupUpdateSQL) WhereUpdatedAt(v sql.NullTime, exprs ...sqlla.Operator) groupUpdateSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
 		op = sqlla.OpEqual
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprNull[time.Time]{Value: sql.Null[time.Time]{V: v, Valid: true}, Op: op, Column: "`updated_at`"}
+	where := sqlla.ExprNullTime{Value: v, Op: op, Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-func (q groupUpdateSQL) WhereUpdatedAtIsNull() groupUpdateSQL {
-	where := sqlla.ExprNull[time.Time]{Value: sql.Null[time.Time]{Valid: false}, Op: sqlla.OpEqual, Column: "`updated_at`"}
-	q.where = append(q.where, where)
-	return q
-}
-
-func (q groupUpdateSQL) WhereUpdatedAtIsNotNull() groupUpdateSQL {
-	where := sqlla.ExprNull[time.Time]{Value: sql.Null[time.Time]{Valid: false}, Op: sqlla.OpNot, Column: "`updated_at`"}
-	q.where = append(q.where, where)
-	return q
-}
-
-func (q groupUpdateSQL) WhereUpdatedAtIn(vs ...time.Time) groupUpdateSQL {
-	_vs := make([]sql.Null[time.Time], 0, len(vs))
-	for _, v := range vs {
-		_vs = append(_vs, sql.Null[time.Time]{V: v, Valid: true})
-	}
-	where := sqlla.ExprMultiValue[sql.Null[time.Time]]{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
+func (q groupUpdateSQL) WhereUpdatedAtIn(vs ...sql.NullTime) groupUpdateSQL {
+	where := sqlla.ExprMultiNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -910,23 +872,23 @@ func (q groupInsertSQL) ValueLeaderUserID(v UserId) groupInsertSQL {
 	return q
 }
 
-func (q groupInsertSQL) ValueSubLeaderUserID(v UserId) groupInsertSQL {
-	q.setMap["`sub_leader_user_id`"] = sql.Null[UserId]{V: v, Valid: true}
+func (q groupInsertSQL) ValueSubLeaderUserID(v int64) groupInsertSQL {
+	q.setMap["`sub_leader_user_id`"] = sql.Null[int64]{V: v, Valid: true}
 	return q
 }
 
 func (q groupInsertSQL) ValueSubLeaderUserIDIsNull() groupInsertSQL {
-	q.setMap["`sub_leader_user_id`"] = sql.Null[UserId]{Valid: false}
+	q.setMap["`sub_leader_user_id`"] = sql.Null[int64]{Valid: false}
 	return q
 }
 
-func (q groupInsertSQL) ValueChildGroupID(v id.GroupID) groupInsertSQL {
-	q.setMap["`child_group_id`"] = sql.Null[id.GroupID]{V: v, Valid: true}
+func (q groupInsertSQL) ValueChildGroupID(v int64) groupInsertSQL {
+	q.setMap["`child_group_id`"] = sql.Null[int64]{V: v, Valid: true}
 	return q
 }
 
 func (q groupInsertSQL) ValueChildGroupIDIsNull() groupInsertSQL {
-	q.setMap["`child_group_id`"] = sql.Null[id.GroupID]{Valid: false}
+	q.setMap["`child_group_id`"] = sql.Null[int64]{Valid: false}
 	return q
 }
 
@@ -935,13 +897,8 @@ func (q groupInsertSQL) ValueCreatedAt(v time.Time) groupInsertSQL {
 	return q
 }
 
-func (q groupInsertSQL) ValueUpdatedAt(v time.Time) groupInsertSQL {
-	q.setMap["`updated_at`"] = sql.Null[time.Time]{V: v, Valid: true}
-	return q
-}
-
-func (q groupInsertSQL) ValueUpdatedAtIsNull() groupInsertSQL {
-	q.setMap["`updated_at`"] = sql.Null[time.Time]{Valid: false}
+func (q groupInsertSQL) ValueUpdatedAt(v sql.NullTime) groupInsertSQL {
+	q.setMap["`updated_at`"] = v
 	return q
 }
 
@@ -1078,13 +1035,13 @@ func (q groupInsertOnDuplicateKeyUpdateSQL) SameOnUpdateLeaderUserID() groupInse
 	return q
 }
 
-func (q groupInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateSubLeaderUserID(v UserId) groupInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`sub_leader_user_id`"] = sql.Null[UserId]{V: v, Valid: true}
+func (q groupInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateSubLeaderUserID(v int64) groupInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`sub_leader_user_id`"] = sql.Null[int64]{V: v, Valid: true}
 	return q
 }
 
 func (q groupInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateSubLeaderUserIDToNull() groupInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`sub_leader_user_id`"] = sql.Null[UserId]{Valid: false}
+	q.onDuplicateKeyUpdateMap["`sub_leader_user_id`"] = sql.Null[int64]{Valid: false}
 	return q
 }
 
@@ -1098,13 +1055,13 @@ func (q groupInsertOnDuplicateKeyUpdateSQL) SameOnUpdateSubLeaderUserID() groupI
 	return q
 }
 
-func (q groupInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateChildGroupID(v id.GroupID) groupInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`child_group_id`"] = sql.Null[id.GroupID]{V: v, Valid: true}
+func (q groupInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateChildGroupID(v int64) groupInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`child_group_id`"] = sql.Null[int64]{V: v, Valid: true}
 	return q
 }
 
 func (q groupInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateChildGroupIDToNull() groupInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`child_group_id`"] = sql.Null[id.GroupID]{Valid: false}
+	q.onDuplicateKeyUpdateMap["`child_group_id`"] = sql.Null[int64]{Valid: false}
 	return q
 }
 
@@ -1133,13 +1090,8 @@ func (q groupInsertOnDuplicateKeyUpdateSQL) SameOnUpdateCreatedAt() groupInsertO
 	return q
 }
 
-func (q groupInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateUpdatedAt(v time.Time) groupInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`updated_at`"] = sql.Null[time.Time]{V: v, Valid: true}
-	return q
-}
-
-func (q groupInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateUpdatedAtToNull() groupInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`updated_at`"] = sql.Null[time.Time]{Valid: false}
+func (q groupInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateUpdatedAt(v sql.NullTime) groupInsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap["`updated_at`"] = v
 	return q
 }
 
@@ -1349,70 +1301,70 @@ func (q groupDeleteSQL) LeaderUserIDIn(vs ...UserId) groupDeleteSQL {
 	return q
 }
 
-func (q groupDeleteSQL) SubLeaderUserID(v UserId, exprs ...sqlla.Operator) groupDeleteSQL {
+func (q groupDeleteSQL) SubLeaderUserID(v int64, exprs ...sqlla.Operator) groupDeleteSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
 		op = sqlla.OpEqual
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprNull[UserId]{Value: sql.Null[UserId]{V: v, Valid: true}, Op: op, Column: "`sub_leader_user_id`"}
+	where := sqlla.ExprNull[int64]{Value: sql.Null[int64]{V: v, Valid: true}, Op: op, Column: "`sub_leader_user_id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q groupDeleteSQL) SubLeaderUserIDIsNull() groupDeleteSQL {
-	where := sqlla.ExprNull[UserId]{Value: sql.Null[UserId]{Valid: false}, Op: sqlla.OpEqual, Column: "`sub_leader_user_id`"}
+	where := sqlla.ExprNull[int64]{Value: sql.Null[int64]{Valid: false}, Op: sqlla.OpEqual, Column: "`sub_leader_user_id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q groupDeleteSQL) SubLeaderUserIDIsNotNull() groupDeleteSQL {
-	where := sqlla.ExprNull[UserId]{Value: sql.Null[UserId]{Valid: false}, Op: sqlla.OpNot, Column: "`sub_leader_user_id`"}
+	where := sqlla.ExprNull[int64]{Value: sql.Null[int64]{Valid: false}, Op: sqlla.OpNot, Column: "`sub_leader_user_id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-func (q groupDeleteSQL) SubLeaderUserIDIn(vs ...UserId) groupDeleteSQL {
-	_vs := make([]sql.Null[UserId], 0, len(vs))
+func (q groupDeleteSQL) SubLeaderUserIDIn(vs ...int64) groupDeleteSQL {
+	_vs := make([]sql.Null[int64], 0, len(vs))
 	for _, v := range vs {
-		_vs = append(_vs, sql.Null[UserId]{V: v, Valid: true})
+		_vs = append(_vs, sql.Null[int64]{V: v, Valid: true})
 	}
-	where := sqlla.ExprMultiValue[sql.Null[UserId]]{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`sub_leader_user_id`"}
+	where := sqlla.ExprMultiValue[sql.Null[int64]]{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`sub_leader_user_id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-func (q groupDeleteSQL) ChildGroupID(v id.GroupID, exprs ...sqlla.Operator) groupDeleteSQL {
+func (q groupDeleteSQL) ChildGroupID(v int64, exprs ...sqlla.Operator) groupDeleteSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
 		op = sqlla.OpEqual
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprNull[id.GroupID]{Value: sql.Null[id.GroupID]{V: v, Valid: true}, Op: op, Column: "`child_group_id`"}
+	where := sqlla.ExprNull[int64]{Value: sql.Null[int64]{V: v, Valid: true}, Op: op, Column: "`child_group_id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q groupDeleteSQL) ChildGroupIDIsNull() groupDeleteSQL {
-	where := sqlla.ExprNull[id.GroupID]{Value: sql.Null[id.GroupID]{Valid: false}, Op: sqlla.OpEqual, Column: "`child_group_id`"}
+	where := sqlla.ExprNull[int64]{Value: sql.Null[int64]{Valid: false}, Op: sqlla.OpEqual, Column: "`child_group_id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q groupDeleteSQL) ChildGroupIDIsNotNull() groupDeleteSQL {
-	where := sqlla.ExprNull[id.GroupID]{Value: sql.Null[id.GroupID]{Valid: false}, Op: sqlla.OpNot, Column: "`child_group_id`"}
+	where := sqlla.ExprNull[int64]{Value: sql.Null[int64]{Valid: false}, Op: sqlla.OpNot, Column: "`child_group_id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-func (q groupDeleteSQL) ChildGroupIDIn(vs ...id.GroupID) groupDeleteSQL {
-	_vs := make([]sql.Null[id.GroupID], 0, len(vs))
+func (q groupDeleteSQL) ChildGroupIDIn(vs ...int64) groupDeleteSQL {
+	_vs := make([]sql.Null[int64], 0, len(vs))
 	for _, v := range vs {
-		_vs = append(_vs, sql.Null[id.GroupID]{V: v, Valid: true})
+		_vs = append(_vs, sql.Null[int64]{V: v, Valid: true})
 	}
-	where := sqlla.ExprMultiValue[sql.Null[id.GroupID]]{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`child_group_id`"}
+	where := sqlla.ExprMultiValue[sql.Null[int64]]{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`child_group_id`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -1435,36 +1387,20 @@ func (q groupDeleteSQL) CreatedAtIn(vs ...time.Time) groupDeleteSQL {
 	return q
 }
 
-func (q groupDeleteSQL) UpdatedAt(v time.Time, exprs ...sqlla.Operator) groupDeleteSQL {
+func (q groupDeleteSQL) UpdatedAt(v sql.NullTime, exprs ...sqlla.Operator) groupDeleteSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {
 		op = sqlla.OpEqual
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprNull[time.Time]{Value: sql.Null[time.Time]{V: v, Valid: true}, Op: op, Column: "`updated_at`"}
+	where := sqlla.ExprNullTime{Value: v, Op: op, Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
-func (q groupDeleteSQL) UpdatedAtIsNull() groupDeleteSQL {
-	where := sqlla.ExprNull[time.Time]{Value: sql.Null[time.Time]{Valid: false}, Op: sqlla.OpEqual, Column: "`updated_at`"}
-	q.where = append(q.where, where)
-	return q
-}
-
-func (q groupDeleteSQL) UpdatedAtIsNotNull() groupDeleteSQL {
-	where := sqlla.ExprNull[time.Time]{Value: sql.Null[time.Time]{Valid: false}, Op: sqlla.OpNot, Column: "`updated_at`"}
-	q.where = append(q.where, where)
-	return q
-}
-
-func (q groupDeleteSQL) UpdatedAtIn(vs ...time.Time) groupDeleteSQL {
-	_vs := make([]sql.Null[time.Time], 0, len(vs))
-	for _, v := range vs {
-		_vs = append(_vs, sql.Null[time.Time]{V: v, Valid: true})
-	}
-	where := sqlla.ExprMultiValue[sql.Null[time.Time]]{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
+func (q groupDeleteSQL) UpdatedAtIn(vs ...sql.NullTime) groupDeleteSQL {
+	where := sqlla.ExprMultiNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }

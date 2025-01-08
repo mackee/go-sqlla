@@ -1,0 +1,33 @@
+{{ define "plugin.myrelations" -}}
+{{- $structName := .Table.StructName }}
+{{- $receiver := substr 0 1 $structName | lower }}
+{{- $splitted := splitn ":" 2 .Args.key }}
+{{- $srcColumn := $splitted._0 }}
+{{- $dstTableColumn := splitn "." 2 $splitted._1 }}
+{{- $dstTable := $dstTableColumn._0 }}
+{{- $methodName := default $dstTable .Args.method }}
+{{- $dstColumn := $dstTableColumn._1 }}
+{{- $srcColumnField := .Table.Lookup $srcColumn }}
+{{- $isNullable := contains ".Null" $srcColumnField.TypeName }}
+func ({{ $receiver }} *{{ $structName }}) {{ $methodName }}(ctx context.Context, db sqlla.DB) (*{{ $dstTable }}, error) {
+	{{- if $isNullable }}
+	  {{- $nullValue := "V" }}
+	  {{- if not $srcColumnField.IsNullT }}
+	    {{- $nullValue = trimPrefix "sql.Null" $srcColumnField.TypeName }}
+	    {{- if eq $srcColumnField.TypeName "mysql.NullTime" }}
+	      {{- $nullValue = "Time" }}
+	    {{- end }}
+	  {{- end }}
+	if !{{ $receiver }}.{{ $srcColumn }}.Valid {
+		return nil, nil
+	}
+	row, err := New{{ $dstTable }}SQL().Select().{{ $dstColumn }}({{ $receiver }}.{{ $srcColumn }}.{{ $nullValue }}).SingleContext(ctx, db)
+	{{- else }}
+	row, err := New{{ $dstTable }}SQL().Select().{{ $dstColumn }}({{ $receiver }}.{{ $srcColumn }}).SingleContext(ctx, db)
+	{{- end }}
+	if err != nil {
+		return nil, fmt.Errorf("failed to get {{ $dstTable }}: %w", err)
+	}
+	return &row, nil
+}
+{{ end }}
