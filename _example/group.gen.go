@@ -91,7 +91,7 @@ func (q groupSelectSQL) TableAlias(alias string) groupSelectSQL {
 func (q groupSelectSQL) SetColumns(columns ...string) groupSelectSQL {
 	q.Columns = make([]string, 0, len(columns))
 	for _, column := range columns {
-		if strings.ContainsAny(column, "(.`") {
+		if strings.ContainsAny(column, "(."+"`") {
 			q.Columns = append(q.Columns, column)
 		} else {
 			q.Columns = append(q.Columns, "`"+column+"`")
@@ -121,7 +121,7 @@ func (q groupSelectSQL) appendColumnPrefix(column string) string {
 func (q groupSelectSQL) GroupBy(columns ...string) groupSelectSQL {
 	q.groupByColumns = make([]string, 0, len(columns))
 	for _, column := range columns {
-		if strings.ContainsAny(column, "(.`") {
+		if strings.ContainsAny(column, "(."+"`") {
 			q.groupByColumns = append(q.groupByColumns, column)
 		} else {
 			q.groupByColumns = append(q.groupByColumns, "`"+column+"`")
@@ -801,7 +801,7 @@ func (q groupUpdateSQL) ToSql() (string, []interface{}, error) {
 		return "", []interface{}{}, err
 	}
 
-	query := "UPDATE `group` SET" + setColumns
+	query := "UPDATE " + "`group`" + " SET" + setColumns
 	if wheres != "" {
 		query += " WHERE" + wheres
 	}
@@ -924,7 +924,7 @@ func (q groupInsertSQL) groupInsertSQLToSql() (string, []interface{}, error) {
 		return "", []interface{}{}, err
 	}
 
-	query := "INSERT INTO `group` " + qs
+	query := "INSERT INTO " + "`group`" + " " + qs
 
 	return query, vs, nil
 }
@@ -1001,7 +1001,7 @@ func (q groupInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateID(v sqlla.SetMapRaw
 }
 
 func (q groupInsertOnDuplicateKeyUpdateSQL) SameOnUpdateID() groupInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`id`"] = sqlla.SetMapRawValue("VALUES(`id`)")
+	q.onDuplicateKeyUpdateMap["`id`"] = sqlla.SetMapRawValue("VALUES(" + "`id`" + ")")
 	return q
 }
 
@@ -1016,7 +1016,7 @@ func (q groupInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateName(v sqlla.SetMapR
 }
 
 func (q groupInsertOnDuplicateKeyUpdateSQL) SameOnUpdateName() groupInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`name`"] = sqlla.SetMapRawValue("VALUES(`name`)")
+	q.onDuplicateKeyUpdateMap["`name`"] = sqlla.SetMapRawValue("VALUES(" + "`name`" + ")")
 	return q
 }
 
@@ -1031,7 +1031,7 @@ func (q groupInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateLeaderUserID(v sqlla
 }
 
 func (q groupInsertOnDuplicateKeyUpdateSQL) SameOnUpdateLeaderUserID() groupInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`leader_user_id`"] = sqlla.SetMapRawValue("VALUES(`leader_user_id`)")
+	q.onDuplicateKeyUpdateMap["`leader_user_id`"] = sqlla.SetMapRawValue("VALUES(" + "`leader_user_id`" + ")")
 	return q
 }
 
@@ -1051,7 +1051,7 @@ func (q groupInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateSubLeaderUserID(v sq
 }
 
 func (q groupInsertOnDuplicateKeyUpdateSQL) SameOnUpdateSubLeaderUserID() groupInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`sub_leader_user_id`"] = sqlla.SetMapRawValue("VALUES(`sub_leader_user_id`)")
+	q.onDuplicateKeyUpdateMap["`sub_leader_user_id`"] = sqlla.SetMapRawValue("VALUES(" + "`sub_leader_user_id`" + ")")
 	return q
 }
 
@@ -1071,7 +1071,7 @@ func (q groupInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateChildGroupID(v sqlla
 }
 
 func (q groupInsertOnDuplicateKeyUpdateSQL) SameOnUpdateChildGroupID() groupInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`child_group_id`"] = sqlla.SetMapRawValue("VALUES(`child_group_id`)")
+	q.onDuplicateKeyUpdateMap["`child_group_id`"] = sqlla.SetMapRawValue("VALUES(" + "`child_group_id`" + ")")
 	return q
 }
 
@@ -1086,7 +1086,7 @@ func (q groupInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateCreatedAt(v sqlla.Se
 }
 
 func (q groupInsertOnDuplicateKeyUpdateSQL) SameOnUpdateCreatedAt() groupInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`created_at`"] = sqlla.SetMapRawValue("VALUES(`created_at`)")
+	q.onDuplicateKeyUpdateMap["`created_at`"] = sqlla.SetMapRawValue("VALUES(" + "`created_at`" + ")")
 	return q
 }
 
@@ -1101,7 +1101,7 @@ func (q groupInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateUpdatedAt(v sqlla.Se
 }
 
 func (q groupInsertOnDuplicateKeyUpdateSQL) SameOnUpdateUpdatedAt() groupInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`updated_at`"] = sqlla.SetMapRawValue("VALUES(`updated_at`)")
+	q.onDuplicateKeyUpdateMap["`updated_at`"] = sqlla.SetMapRawValue("VALUES(" + "`updated_at`" + ")")
 	return q
 }
 
@@ -1202,7 +1202,7 @@ func (q *groupBulkInsertSQL) groupInsertSQLToSql() (string, []interface{}, error
 		return "", []interface{}{}, err
 	}
 
-	return "INSERT INTO `group` " + query, vs, nil
+	return "INSERT INTO " + "`group`" + " " + query, vs, nil
 }
 
 func (q *groupBulkInsertSQL) ToSql() (string, []interface{}, error) {
@@ -1411,7 +1411,7 @@ func (q groupDeleteSQL) ToSql() (string, []interface{}, error) {
 		return "", nil, err
 	}
 
-	query := "DELETE FROM `group`"
+	query := "DELETE FROM " + "`group`"
 	if wheres != "" {
 		query += " WHERE" + wheres
 	}

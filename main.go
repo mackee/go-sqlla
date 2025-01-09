@@ -20,10 +20,15 @@ type Options struct {
 	From    []string `help:"source file path" env:"GOFILE" arg:"" required:""`
 	Ext     string   `help:"file extension" env:"SQLLA_GENERATE_FILE_EXT" default:".gen.go"`
 	Plugins []string `help:"additional plugin files. allow asterisk(*) and multiple values" name:"plugins" env:"SQLLA_TEMPLATE_FILES"`
+	Dialect string   `help:"SQL Dialect" env:"SQLLA_DIALECT" enum:"mysql,sqlite,postgresql" default:"mysql"`
 }
 
 func Run(opts Options) error {
-	g, err := NewGenerator(opts.Plugins...)
+	dialect, err := NewDialect(opts.Dialect)
+	if err != nil {
+		return fmt.Errorf("failed to NewDialect: %w", err)
+	}
+	g, err := NewGenerator(dialect, opts.Plugins...)
 	if err != nil {
 		return fmt.Errorf("failed to NewGenerator: %w", err)
 	}

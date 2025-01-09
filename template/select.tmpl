@@ -2,7 +2,7 @@
 {{- $camelName := .Name | toCamel | untitle -}}
 {{- $constructor := printf "New%sSQL" (.Name | toCamel | title) -}}
 var {{ $camelName }}AllColumns = []string{
-	{{ range .Columns }}"`{{ .Name }}`",{{ end }}
+	{{ range .Columns }}{{ cquoteby .Name }},{{ end }}
 }
 
 type {{ $camelName }}SelectSQL struct {
@@ -63,17 +63,17 @@ func (q {{ $camelName }}SelectSQL) ForUpdate() {{ $camelName }}SelectSQL {
 }
 
 func (q {{ $camelName }}SelectSQL) TableAlias(alias string) {{ $camelName }}SelectSQL {
-	q.tableAlias = "`" + alias + "`"
+	q.tableAlias = {{ cquote }} + alias + {{ cquote }}
 	return q
 }
 
 func (q {{ $camelName }}SelectSQL) SetColumns(columns ...string) {{ $camelName }}SelectSQL {
 	q.Columns = make([]string, 0, len(columns))
 	for _, column := range columns {
-		if strings.ContainsAny(column, "(.`") {
+		if strings.ContainsAny(column, "(." + {{ cquote }}) {
 			q.Columns = append(q.Columns, column)
 		} else {
-			q.Columns = append(q.Columns, "`" + column + "`")
+			q.Columns = append(q.Columns, {{ cquote }} + column + {{ cquote }})
 		}
 	}
 	return q
@@ -100,10 +100,10 @@ func (q {{ $camelName }}SelectSQL) appendColumnPrefix(column string) string {
 func (q {{ $camelName }}SelectSQL) GroupBy(columns ...string) {{ $camelName }}SelectSQL {
 	q.groupByColumns = make([]string, 0, len(columns))
 	for _, column := range columns {
-		if strings.ContainsAny(column, "(.`") {
+		if strings.ContainsAny(column, "(." + {{ cquote }}) {
 			q.groupByColumns = append(q.groupByColumns, column)
 		} else {
-			q.groupByColumns = append(q.groupByColumns, "`" + column + "`")
+			q.groupByColumns = append(q.groupByColumns, {{ cquote }} + column + {{ cquote }})
 		}
 	}
 	return q
@@ -117,7 +117,7 @@ func (q {{ $camelName }}SelectSQL) ToSql() (string, []interface{}, error) {
 		return "", nil, err
 	}
 
-	tableName := "`{{ .TableName }}`"
+	tableName := {{ cquoteby .TableName }}
 	if q.tableAlias != "" {
 		tableName = tableName + " AS " + q.tableAlias
 		pcs := make([]string, 0, len(q.Columns))

@@ -90,7 +90,7 @@ func (q userItemSelectSQL) TableAlias(alias string) userItemSelectSQL {
 func (q userItemSelectSQL) SetColumns(columns ...string) userItemSelectSQL {
 	q.Columns = make([]string, 0, len(columns))
 	for _, column := range columns {
-		if strings.ContainsAny(column, "(.`") {
+		if strings.ContainsAny(column, "(."+"`") {
 			q.Columns = append(q.Columns, column)
 		} else {
 			q.Columns = append(q.Columns, "`"+column+"`")
@@ -120,7 +120,7 @@ func (q userItemSelectSQL) appendColumnPrefix(column string) string {
 func (q userItemSelectSQL) GroupBy(columns ...string) userItemSelectSQL {
 	q.groupByColumns = make([]string, 0, len(columns))
 	for _, column := range columns {
-		if strings.ContainsAny(column, "(.`") {
+		if strings.ContainsAny(column, "(."+"`") {
 			q.groupByColumns = append(q.groupByColumns, column)
 		} else {
 			q.groupByColumns = append(q.groupByColumns, "`"+column+"`")
@@ -657,7 +657,7 @@ func (q userItemUpdateSQL) ToSql() (string, []interface{}, error) {
 		return "", []interface{}{}, err
 	}
 
-	query := "UPDATE `user_item` SET" + setColumns
+	query := "UPDATE " + "`user_item`" + " SET" + setColumns
 	if wheres != "" {
 		query += " WHERE" + wheres
 	}
@@ -765,7 +765,7 @@ func (q userItemInsertSQL) userItemInsertSQLToSql() (string, []interface{}, erro
 		return "", []interface{}{}, err
 	}
 
-	query := "INSERT INTO `user_item` " + qs
+	query := "INSERT INTO " + "`user_item`" + " " + qs
 
 	return query, vs, nil
 }
@@ -842,7 +842,7 @@ func (q userItemInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateID(v sqlla.SetMap
 }
 
 func (q userItemInsertOnDuplicateKeyUpdateSQL) SameOnUpdateID() userItemInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`id`"] = sqlla.SetMapRawValue("VALUES(`id`)")
+	q.onDuplicateKeyUpdateMap["`id`"] = sqlla.SetMapRawValue("VALUES(" + "`id`" + ")")
 	return q
 }
 
@@ -857,7 +857,7 @@ func (q userItemInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateUserID(v sqlla.Se
 }
 
 func (q userItemInsertOnDuplicateKeyUpdateSQL) SameOnUpdateUserID() userItemInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`user_id`"] = sqlla.SetMapRawValue("VALUES(`user_id`)")
+	q.onDuplicateKeyUpdateMap["`user_id`"] = sqlla.SetMapRawValue("VALUES(" + "`user_id`" + ")")
 	return q
 }
 
@@ -872,7 +872,7 @@ func (q userItemInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateItemID(v sqlla.Se
 }
 
 func (q userItemInsertOnDuplicateKeyUpdateSQL) SameOnUpdateItemID() userItemInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`item_id`"] = sqlla.SetMapRawValue("VALUES(`item_id`)")
+	q.onDuplicateKeyUpdateMap["`item_id`"] = sqlla.SetMapRawValue("VALUES(" + "`item_id`" + ")")
 	return q
 }
 
@@ -887,7 +887,7 @@ func (q userItemInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateIsUsed(v sqlla.Se
 }
 
 func (q userItemInsertOnDuplicateKeyUpdateSQL) SameOnUpdateIsUsed() userItemInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`is_used`"] = sqlla.SetMapRawValue("VALUES(`is_used`)")
+	q.onDuplicateKeyUpdateMap["`is_used`"] = sqlla.SetMapRawValue("VALUES(" + "`is_used`" + ")")
 	return q
 }
 
@@ -902,7 +902,7 @@ func (q userItemInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateHasExtension(v sq
 }
 
 func (q userItemInsertOnDuplicateKeyUpdateSQL) SameOnUpdateHasExtension() userItemInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`has_extension`"] = sqlla.SetMapRawValue("VALUES(`has_extension`)")
+	q.onDuplicateKeyUpdateMap["`has_extension`"] = sqlla.SetMapRawValue("VALUES(" + "`has_extension`" + ")")
 	return q
 }
 
@@ -917,7 +917,7 @@ func (q userItemInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateUsedAt(v sqlla.Se
 }
 
 func (q userItemInsertOnDuplicateKeyUpdateSQL) SameOnUpdateUsedAt() userItemInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`used_at`"] = sqlla.SetMapRawValue("VALUES(`used_at`)")
+	q.onDuplicateKeyUpdateMap["`used_at`"] = sqlla.SetMapRawValue("VALUES(" + "`used_at`" + ")")
 	return q
 }
 
@@ -1018,7 +1018,7 @@ func (q *userItemBulkInsertSQL) userItemInsertSQLToSql() (string, []interface{},
 		return "", []interface{}{}, err
 	}
 
-	return "INSERT INTO `user_item` " + query, vs, nil
+	return "INSERT INTO " + "`user_item`" + " " + query, vs, nil
 }
 
 func (q *userItemBulkInsertSQL) ToSql() (string, []interface{}, error) {
@@ -1169,7 +1169,7 @@ func (q userItemDeleteSQL) ToSql() (string, []interface{}, error) {
 		return "", nil, err
 	}
 
-	query := "DELETE FROM `user_item`"
+	query := "DELETE FROM " + "`user_item`"
 	if wheres != "" {
 		query += " WHERE" + wheres
 	}

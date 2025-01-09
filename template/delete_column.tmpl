@@ -9,7 +9,7 @@ func (q {{ $smallTableName }}DeleteSQL) {{ .MethodName }}(v {{ .TypeName }}, exp
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.{{ .ExprTypeName }}{Value: {{ .ExprValueIdentifier }}, Op: op, Column: "`{{ .Name }}`"}
+	where := sqlla.{{ .ExprTypeName }}{Value: {{ .ExprValueIdentifier }}, Op: op, Column: {{ cquoteby .Name }}}
 	q.where = append(q.where, where)
 	return q
 }
@@ -21,9 +21,9 @@ func (q {{ $smallTableName }}DeleteSQL) {{ .MethodName }}In(vs ...{{ .TypeName }
 	for _, v := range vs {
 		_vs = append(_vs, {{ .BaseTypeName }}(v))
 	}
-	where := sqlla.{{ .ExprMultiTypeName }}{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`{{ .Name }}`"}
+	where := sqlla.{{ .ExprMultiTypeName }}{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: {{ cquoteby .Name }}}
 {{- else }}
-	where := sqlla.{{ .ExprMultiTypeName }}{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`{{ .Name }}`"}
+	where := sqlla.{{ .ExprMultiTypeName }}{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: {{ cquoteby .Name }}}
 {{- end }}
 	q.where = append(q.where, where)
 	return q

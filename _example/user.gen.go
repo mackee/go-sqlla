@@ -92,7 +92,7 @@ func (q userSelectSQL) TableAlias(alias string) userSelectSQL {
 func (q userSelectSQL) SetColumns(columns ...string) userSelectSQL {
 	q.Columns = make([]string, 0, len(columns))
 	for _, column := range columns {
-		if strings.ContainsAny(column, "(.`") {
+		if strings.ContainsAny(column, "(."+"`") {
 			q.Columns = append(q.Columns, column)
 		} else {
 			q.Columns = append(q.Columns, "`"+column+"`")
@@ -122,7 +122,7 @@ func (q userSelectSQL) appendColumnPrefix(column string) string {
 func (q userSelectSQL) GroupBy(columns ...string) userSelectSQL {
 	q.groupByColumns = make([]string, 0, len(columns))
 	for _, column := range columns {
-		if strings.ContainsAny(column, "(.`") {
+		if strings.ContainsAny(column, "(."+"`") {
 			q.groupByColumns = append(q.groupByColumns, column)
 		} else {
 			q.groupByColumns = append(q.groupByColumns, "`"+column+"`")
@@ -720,7 +720,7 @@ func (q userUpdateSQL) ToSql() (string, []interface{}, error) {
 		return "", []interface{}{}, err
 	}
 
-	query := "UPDATE `user` SET" + setColumns
+	query := "UPDATE " + "`user`" + " SET" + setColumns
 	if wheres != "" {
 		query += " WHERE" + wheres
 	}
@@ -833,7 +833,7 @@ func (q userInsertSQL) userInsertSQLToSql() (string, []interface{}, error) {
 		return "", []interface{}{}, err
 	}
 
-	query := "INSERT INTO `user` " + qs
+	query := "INSERT INTO " + "`user`" + " " + qs
 
 	return query, vs, nil
 }
@@ -910,7 +910,7 @@ func (q userInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateID(v sqlla.SetMapRawV
 }
 
 func (q userInsertOnDuplicateKeyUpdateSQL) SameOnUpdateID() userInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`id`"] = sqlla.SetMapRawValue("VALUES(`id`)")
+	q.onDuplicateKeyUpdateMap["`id`"] = sqlla.SetMapRawValue("VALUES(" + "`id`" + ")")
 	return q
 }
 
@@ -925,7 +925,7 @@ func (q userInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateName(v sqlla.SetMapRa
 }
 
 func (q userInsertOnDuplicateKeyUpdateSQL) SameOnUpdateName() userInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`name`"] = sqlla.SetMapRawValue("VALUES(`name`)")
+	q.onDuplicateKeyUpdateMap["`name`"] = sqlla.SetMapRawValue("VALUES(" + "`name`" + ")")
 	return q
 }
 
@@ -940,7 +940,7 @@ func (q userInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateAge(v sqlla.SetMapRaw
 }
 
 func (q userInsertOnDuplicateKeyUpdateSQL) SameOnUpdateAge() userInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`age`"] = sqlla.SetMapRawValue("VALUES(`age`)")
+	q.onDuplicateKeyUpdateMap["`age`"] = sqlla.SetMapRawValue("VALUES(" + "`age`" + ")")
 	return q
 }
 
@@ -955,7 +955,7 @@ func (q userInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateRate(v sqlla.SetMapRa
 }
 
 func (q userInsertOnDuplicateKeyUpdateSQL) SameOnUpdateRate() userInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`rate`"] = sqlla.SetMapRawValue("VALUES(`rate`)")
+	q.onDuplicateKeyUpdateMap["`rate`"] = sqlla.SetMapRawValue("VALUES(" + "`rate`" + ")")
 	return q
 }
 
@@ -970,7 +970,7 @@ func (q userInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateIconImage(v sqlla.Set
 }
 
 func (q userInsertOnDuplicateKeyUpdateSQL) SameOnUpdateIconImage() userInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`icon_image`"] = sqlla.SetMapRawValue("VALUES(`icon_image`)")
+	q.onDuplicateKeyUpdateMap["`icon_image`"] = sqlla.SetMapRawValue("VALUES(" + "`icon_image`" + ")")
 	return q
 }
 
@@ -985,7 +985,7 @@ func (q userInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateCreatedAt(v sqlla.Set
 }
 
 func (q userInsertOnDuplicateKeyUpdateSQL) SameOnUpdateCreatedAt() userInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`created_at`"] = sqlla.SetMapRawValue("VALUES(`created_at`)")
+	q.onDuplicateKeyUpdateMap["`created_at`"] = sqlla.SetMapRawValue("VALUES(" + "`created_at`" + ")")
 	return q
 }
 
@@ -1000,7 +1000,7 @@ func (q userInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateUpdatedAt(v sqlla.Set
 }
 
 func (q userInsertOnDuplicateKeyUpdateSQL) SameOnUpdateUpdatedAt() userInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`updated_at`"] = sqlla.SetMapRawValue("VALUES(`updated_at`)")
+	q.onDuplicateKeyUpdateMap["`updated_at`"] = sqlla.SetMapRawValue("VALUES(" + "`updated_at`" + ")")
 	return q
 }
 
@@ -1101,7 +1101,7 @@ func (q *userBulkInsertSQL) userInsertSQLToSql() (string, []interface{}, error) 
 		return "", []interface{}{}, err
 	}
 
-	return "INSERT INTO `user` " + query, vs, nil
+	return "INSERT INTO " + "`user`" + " " + query, vs, nil
 }
 
 func (q *userBulkInsertSQL) ToSql() (string, []interface{}, error) {
@@ -1274,7 +1274,7 @@ func (q userDeleteSQL) ToSql() (string, []interface{}, error) {
 		return "", nil, err
 	}
 
-	query := "DELETE FROM `user`"
+	query := "DELETE FROM " + "`user`"
 	if wheres != "" {
 		query += " WHERE" + wheres
 	}

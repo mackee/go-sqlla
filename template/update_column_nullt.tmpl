@@ -1,11 +1,11 @@
 {{ define "UpdateColumnNullT" }}{{ $smallTableName := .TableName | toCamel | untitle }}
 func (q {{ $smallTableName }}UpdateSQL) Set{{ .MethodName }}(v {{ .TypeParameter }}) {{ $smallTableName }}UpdateSQL {
-	q.setMap["`{{ .Name }}`"] = sql.Null[{{ .TypeParameter }}]{ V: v, Valid: true }
+	q.setMap[{{ cquoteby .Name }}] = sql.Null[{{ .TypeParameter }}]{ V: v, Valid: true }
 	return q
 }
 
 func (q {{ $smallTableName }}UpdateSQL) Set{{ .MethodName }}ToNull() {{ $smallTableName }}UpdateSQL {
-	q.setMap["`{{ .Name }}`"] = sql.Null[{{ .TypeParameter }}]{ Valid: false }
+	q.setMap[{{ cquoteby .Name }}] = sql.Null[{{ .TypeParameter }}]{ Valid: false }
 	return q
 }
 
@@ -16,19 +16,19 @@ func (q {{ $smallTableName }}UpdateSQL) Where{{ .MethodName }}(v {{ .TypeParamet
 	} else {
 		op = exprs[0]
 	}
-	where := sqlla.ExprNull[{{ .TypeParameter }}]{Value: sql.Null[{{ .TypeParameter }}]{ V: v, Valid: true }, Op: op, Column: "`{{ .Name }}`"}
+	where := sqlla.ExprNull[{{ .TypeParameter }}]{Value: sql.Null[{{ .TypeParameter }}]{ V: v, Valid: true }, Op: op, Column: {{ cquoteby .Name }}}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q {{ $smallTableName }}UpdateSQL) Where{{ .MethodName }}IsNull() {{ $smallTableName }}UpdateSQL {
-	where := sqlla.ExprNull[{{ .TypeParameter }}]{Value: sql.Null[{{ .TypeParameter }}]{ Valid: false }, Op: sqlla.OpEqual, Column: "`{{ .Name }}`"}
+	where := sqlla.ExprNull[{{ .TypeParameter }}]{Value: sql.Null[{{ .TypeParameter }}]{ Valid: false }, Op: sqlla.OpEqual, Column: {{ cquoteby .Name }}}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q {{ $smallTableName }}UpdateSQL) Where{{ .MethodName }}IsNotNull() {{ $smallTableName }}UpdateSQL {
-	where := sqlla.ExprNull[{{ .TypeParameter }}]{Value: sql.Null[{{ .TypeParameter }}]{ Valid: false }, Op: sqlla.OpNot, Column: "`{{ .Name }}`"}
+	where := sqlla.ExprNull[{{ .TypeParameter }}]{Value: sql.Null[{{ .TypeParameter }}]{ Valid: false }, Op: sqlla.OpNot, Column: {{ cquoteby .Name }}}
 	q.where = append(q.where, where)
 	return q
 }
@@ -38,7 +38,7 @@ func (q {{ $smallTableName }}UpdateSQL) Where{{ .MethodName }}In(vs ...{{ .TypeP
 	for _, v := range vs {
 		_vs = append(_vs, sql.Null[{{ .TypeParameter }}]{V: v, Valid: true})
 	}
-	where := sqlla.ExprMultiValue[sql.Null[{{ .TypeParameter }}]]{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`{{ .Name }}`"}
+	where := sqlla.ExprMultiValue[sql.Null[{{ .TypeParameter }}]]{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: {{ cquoteby .Name }}}
 	q.where = append(q.where, where)
 	return q
 }

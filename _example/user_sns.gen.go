@@ -91,7 +91,7 @@ func (q userSNSSelectSQL) TableAlias(alias string) userSNSSelectSQL {
 func (q userSNSSelectSQL) SetColumns(columns ...string) userSNSSelectSQL {
 	q.Columns = make([]string, 0, len(columns))
 	for _, column := range columns {
-		if strings.ContainsAny(column, "(.`") {
+		if strings.ContainsAny(column, "(."+"`") {
 			q.Columns = append(q.Columns, column)
 		} else {
 			q.Columns = append(q.Columns, "`"+column+"`")
@@ -121,7 +121,7 @@ func (q userSNSSelectSQL) appendColumnPrefix(column string) string {
 func (q userSNSSelectSQL) GroupBy(columns ...string) userSNSSelectSQL {
 	q.groupByColumns = make([]string, 0, len(columns))
 	for _, column := range columns {
-		if strings.ContainsAny(column, "(.`") {
+		if strings.ContainsAny(column, "(."+"`") {
 			q.groupByColumns = append(q.groupByColumns, column)
 		} else {
 			q.groupByColumns = append(q.groupByColumns, "`"+column+"`")
@@ -552,7 +552,7 @@ func (q userSNSUpdateSQL) ToSql() (string, []interface{}, error) {
 		return "", []interface{}{}, err
 	}
 
-	query := "UPDATE `user_sns` SET" + setColumns
+	query := "UPDATE " + "`user_sns`" + " SET" + setColumns
 	if wheres != "" {
 		query += " WHERE" + wheres
 	}
@@ -650,7 +650,7 @@ func (q userSNSInsertSQL) userSNSInsertSQLToSql() (string, []interface{}, error)
 		return "", []interface{}{}, err
 	}
 
-	query := "INSERT INTO `user_sns` " + qs
+	query := "INSERT INTO " + "`user_sns`" + " " + qs
 
 	return query, vs, nil
 }
@@ -727,7 +727,7 @@ func (q userSNSInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateID(v sqlla.SetMapR
 }
 
 func (q userSNSInsertOnDuplicateKeyUpdateSQL) SameOnUpdateID() userSNSInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`id`"] = sqlla.SetMapRawValue("VALUES(`id`)")
+	q.onDuplicateKeyUpdateMap["`id`"] = sqlla.SetMapRawValue("VALUES(" + "`id`" + ")")
 	return q
 }
 
@@ -742,7 +742,7 @@ func (q userSNSInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateSNSType(v sqlla.Se
 }
 
 func (q userSNSInsertOnDuplicateKeyUpdateSQL) SameOnUpdateSNSType() userSNSInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`sns_type`"] = sqlla.SetMapRawValue("VALUES(`sns_type`)")
+	q.onDuplicateKeyUpdateMap["`sns_type`"] = sqlla.SetMapRawValue("VALUES(" + "`sns_type`" + ")")
 	return q
 }
 
@@ -757,7 +757,7 @@ func (q userSNSInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateCreatedAt(v sqlla.
 }
 
 func (q userSNSInsertOnDuplicateKeyUpdateSQL) SameOnUpdateCreatedAt() userSNSInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`created_at`"] = sqlla.SetMapRawValue("VALUES(`created_at`)")
+	q.onDuplicateKeyUpdateMap["`created_at`"] = sqlla.SetMapRawValue("VALUES(" + "`created_at`" + ")")
 	return q
 }
 
@@ -772,7 +772,7 @@ func (q userSNSInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateUpdatedAt(v sqlla.
 }
 
 func (q userSNSInsertOnDuplicateKeyUpdateSQL) SameOnUpdateUpdatedAt() userSNSInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`updated_at`"] = sqlla.SetMapRawValue("VALUES(`updated_at`)")
+	q.onDuplicateKeyUpdateMap["`updated_at`"] = sqlla.SetMapRawValue("VALUES(" + "`updated_at`" + ")")
 	return q
 }
 
@@ -873,7 +873,7 @@ func (q *userSNSBulkInsertSQL) userSNSInsertSQLToSql() (string, []interface{}, e
 		return "", []interface{}{}, err
 	}
 
-	return "INSERT INTO `user_sns` " + query, vs, nil
+	return "INSERT INTO " + "`user_sns`" + " " + query, vs, nil
 }
 
 func (q *userSNSBulkInsertSQL) ToSql() (string, []interface{}, error) {
@@ -988,7 +988,7 @@ func (q userSNSDeleteSQL) ToSql() (string, []interface{}, error) {
 		return "", nil, err
 	}
 
-	query := "DELETE FROM `user_sns`"
+	query := "DELETE FROM " + "`user_sns`"
 	if wheres != "" {
 		query += " WHERE" + wheres
 	}

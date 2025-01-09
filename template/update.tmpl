@@ -32,7 +32,7 @@ func (q {{ $camelName }}UpdateSQL) ToSql() (string, []interface{}, error) {
 		return "", []interface{}{}, err
 	}
 
-	query := "UPDATE `{{ .TableName }}` SET" + setColumns
+	query := "UPDATE " + {{ cquoteby .TableName }} + " SET" + setColumns
 	if wheres != "" {
 		query += " WHERE" + wheres
 	}

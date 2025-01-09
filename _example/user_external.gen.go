@@ -91,7 +91,7 @@ func (q userExternalSelectSQL) TableAlias(alias string) userExternalSelectSQL {
 func (q userExternalSelectSQL) SetColumns(columns ...string) userExternalSelectSQL {
 	q.Columns = make([]string, 0, len(columns))
 	for _, column := range columns {
-		if strings.ContainsAny(column, "(.`") {
+		if strings.ContainsAny(column, "(."+"`") {
 			q.Columns = append(q.Columns, column)
 		} else {
 			q.Columns = append(q.Columns, "`"+column+"`")
@@ -121,7 +121,7 @@ func (q userExternalSelectSQL) appendColumnPrefix(column string) string {
 func (q userExternalSelectSQL) GroupBy(columns ...string) userExternalSelectSQL {
 	q.groupByColumns = make([]string, 0, len(columns))
 	for _, column := range columns {
-		if strings.ContainsAny(column, "(.`") {
+		if strings.ContainsAny(column, "(."+"`") {
 			q.groupByColumns = append(q.groupByColumns, column)
 		} else {
 			q.groupByColumns = append(q.groupByColumns, "`"+column+"`")
@@ -605,7 +605,7 @@ func (q userExternalUpdateSQL) ToSql() (string, []interface{}, error) {
 		return "", []interface{}{}, err
 	}
 
-	query := "UPDATE `user_external` SET" + setColumns
+	query := "UPDATE " + "`user_external`" + " SET" + setColumns
 	if wheres != "" {
 		query += " WHERE" + wheres
 	}
@@ -708,7 +708,7 @@ func (q userExternalInsertSQL) userExternalInsertSQLToSql() (string, []interface
 		return "", []interface{}{}, err
 	}
 
-	query := "INSERT INTO `user_external` " + qs
+	query := "INSERT INTO " + "`user_external`" + " " + qs
 
 	return query, vs, nil
 }
@@ -785,7 +785,7 @@ func (q userExternalInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateID(v sqlla.Se
 }
 
 func (q userExternalInsertOnDuplicateKeyUpdateSQL) SameOnUpdateID() userExternalInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`id`"] = sqlla.SetMapRawValue("VALUES(`id`)")
+	q.onDuplicateKeyUpdateMap["`id`"] = sqlla.SetMapRawValue("VALUES(" + "`id`" + ")")
 	return q
 }
 
@@ -800,7 +800,7 @@ func (q userExternalInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateUserID(v sqll
 }
 
 func (q userExternalInsertOnDuplicateKeyUpdateSQL) SameOnUpdateUserID() userExternalInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`user_id`"] = sqlla.SetMapRawValue("VALUES(`user_id`)")
+	q.onDuplicateKeyUpdateMap["`user_id`"] = sqlla.SetMapRawValue("VALUES(" + "`user_id`" + ")")
 	return q
 }
 
@@ -815,7 +815,7 @@ func (q userExternalInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateIconImage(v s
 }
 
 func (q userExternalInsertOnDuplicateKeyUpdateSQL) SameOnUpdateIconImage() userExternalInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`icon_image`"] = sqlla.SetMapRawValue("VALUES(`icon_image`)")
+	q.onDuplicateKeyUpdateMap["`icon_image`"] = sqlla.SetMapRawValue("VALUES(" + "`icon_image`" + ")")
 	return q
 }
 
@@ -830,7 +830,7 @@ func (q userExternalInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateCreatedAt(v s
 }
 
 func (q userExternalInsertOnDuplicateKeyUpdateSQL) SameOnUpdateCreatedAt() userExternalInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`created_at`"] = sqlla.SetMapRawValue("VALUES(`created_at`)")
+	q.onDuplicateKeyUpdateMap["`created_at`"] = sqlla.SetMapRawValue("VALUES(" + "`created_at`" + ")")
 	return q
 }
 
@@ -845,7 +845,7 @@ func (q userExternalInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateUpdatedAt(v s
 }
 
 func (q userExternalInsertOnDuplicateKeyUpdateSQL) SameOnUpdateUpdatedAt() userExternalInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`updated_at`"] = sqlla.SetMapRawValue("VALUES(`updated_at`)")
+	q.onDuplicateKeyUpdateMap["`updated_at`"] = sqlla.SetMapRawValue("VALUES(" + "`updated_at`" + ")")
 	return q
 }
 
@@ -946,7 +946,7 @@ func (q *userExternalBulkInsertSQL) userExternalInsertSQLToSql() (string, []inte
 		return "", []interface{}{}, err
 	}
 
-	return "INSERT INTO `user_external` " + query, vs, nil
+	return "INSERT INTO " + "`user_external`" + " " + query, vs, nil
 }
 
 func (q *userExternalBulkInsertSQL) ToSql() (string, []interface{}, error) {
@@ -1079,7 +1079,7 @@ func (q userExternalDeleteSQL) ToSql() (string, []interface{}, error) {
 		return "", nil, err
 	}
 
-	query := "DELETE FROM `user_external`"
+	query := "DELETE FROM " + "`user_external`"
 	if wheres != "" {
 		query += " WHERE" + wheres
 	}
