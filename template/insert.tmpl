@@ -20,7 +20,11 @@ func (q {{ $camelName }}InsertSQL) ToSql() (string, []interface{}, error) {
 	if err != nil {
 			return "", []interface{}{}, err
 	}
+	{{- if and .HasPk (eq (dialect) "postgresql") }}
+	return query + " RETURNING " + {{ cquoteby .PkColumn.Name }} + ";", vs, nil
+	{{- else }}
 	return query + ";", vs, nil
+	{{- end }}
 }
 
 func (q {{ $camelName }}InsertSQL) {{ $camelName }}InsertSQLToSql() (string, []interface{}, error) {
@@ -42,14 +46,6 @@ func (q {{ $camelName }}InsertSQL) {{ $camelName }}InsertSQLToSql() (string, []i
 	return query, vs, nil
 }
 
-
-func (q {{ $camelName }}InsertSQL) OnDuplicateKeyUpdate() {{ $camelName }}InsertOnDuplicateKeyUpdateSQL {
-	return {{ $camelName }}InsertOnDuplicateKeyUpdateSQL{
-		insertSQL: q,
-		onDuplicateKeyUpdateMap: sqlla.SetMap{},
-	}
-}
-
 {{ if .HasPk -}}
 func (q {{ $camelName }}InsertSQL) Exec(db sqlla.DB) ({{ .StructName }}, error) {
 {{- else -}}
@@ -63,8 +59,12 @@ func (q {{ $camelName }}InsertSQL) Exec(db sqlla.DB) (sql.Result, error) {
 		return nil, err
 		{{- end }}
 	}
+	{{- if not .HasPk }}
 	result, err := db.Exec(query, args...)
-	{{ if .HasPk -}}
+	return result, err
+	{{- else }}
+	{{- if eq (dialect) "mysql" }}
+	result, err := db.Exec(query, args...)
 	if err != nil {
 		return {{ .StructName }}{}, err
 	}
@@ -73,8 +73,15 @@ func (q {{ $camelName }}InsertSQL) Exec(db sqlla.DB) (sql.Result, error) {
 		return {{ .StructName }}{}, err
 	}
 	return {{ $constructor }}().Select().PkColumn(id).Single(db)
-	{{- else -}}
-	return result, err
+	{{- end }}
+	{{- if eq (dialect) "postgresql" }}
+	row := db.QueryRow(query, args...)
+	var pk {{ .PkColumn.TypeName }}
+	if err := row.Scan(&pk); err != nil {
+		return {{ .StructName }}{}, err
+	}
+	return {{ $constructor }}().Select().{{ .PkColumn.MethodName }}(pk).Single(db)
+	{{- end }}
 	{{- end }}
 }
 
@@ -91,8 +98,12 @@ func (q {{ $camelName }}InsertSQL) ExecContext(ctx context.Context, db sqlla.DB)
 		return nil, err
 		{{- end }}
 	}
+	{{- if not .HasPk }}
 	result, err := db.ExecContext(ctx, query, args...)
-	{{ if .HasPk -}}
+	return result, err
+	{{- else }}
+	{{- if eq (dialect) "mysql" }}
+	result, err := db.ExecContext(ctx, query, args...)
 	if err != nil {
 		return {{ .StructName }}{}, err
 	}
@@ -101,8 +112,15 @@ func (q {{ $camelName }}InsertSQL) ExecContext(ctx context.Context, db sqlla.DB)
 		return {{ .StructName }}{}, err
 	}
 	return {{ $constructor }}().Select().PkColumn(id).SingleContext(ctx, db)
-	{{- else -}}
-	return result, err
+	{{- end }}
+	{{- if eq (dialect) "postgresql" }}
+	row := db.QueryRowContext(ctx, query, args...)
+	var pk {{ .PkColumn.TypeName }}
+	if err := row.Scan(&pk); err != nil {
+		return {{ .StructName }}{}, err
+	}
+	return {{ $constructor }}().Select().{{ .PkColumn.MethodName }}(pk).SingleContext(ctx, db)
+	{{- end }}
 	{{- end }}
 }
 
@@ -123,81 +141,6 @@ type {{ $camelName }}DefaultInsertHooker interface {
 
 type {{ $camelName }}InsertSQLToSqler interface {
 	{{ $camelName }}InsertSQLToSql() (string, []interface{}, error)
-}
-
-type {{ $camelName }}InsertOnDuplicateKeyUpdateSQL struct {
-	insertSQL {{ $camelName }}InsertSQLToSqler
-	onDuplicateKeyUpdateMap sqlla.SetMap
-}
-
-{{ range .Columns }}{{ template "InsertOnDuplicateKeyUpdateColumn" . }}{{ end }}
-
-func (q {{ $camelName }}InsertOnDuplicateKeyUpdateSQL) ToSql() (string, []interface{}, error) {
-	var err error
-	var s interface{} = {{ .StructName }}{}
-	if t, ok := s.({{ $camelName }}DefaultInsertOnDuplicateKeyUpdateHooker); ok {
-		q, err = t.DefaultInsertOnDuplicateKeyUpdateHook(q)
-		if err != nil {
-			return "", []interface{}{}, err
-		}
-	}
-
-	query, vs, err := q.insertSQL.{{ $camelName }}InsertSQLToSql()
-	if err != nil {
-			return "", []interface{}{}, err
-	}
-
-	os, ovs, err := q.onDuplicateKeyUpdateMap.ToUpdateSql()
-	if err != nil {
-		return "", []interface{}{}, err
-	}
-	query += " ON DUPLICATE KEY UPDATE" + os
-	vs = append(vs, ovs...)
-
-	return query + ";", vs, nil
-}
-
-{{ if .HasPk -}}
-func (q {{ $camelName }}InsertOnDuplicateKeyUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ({{ .StructName }}, error) {
-{{- else -}}
-func (q {{ $camelName }}InsertOnDuplicateKeyUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
-{{- end }}
-	query, args, err := q.ToSql()
-	if err != nil {
-		{{ if .HasPk -}}
-		return {{ .StructName }}{}, err
-		{{- else }}
-		return nil, err
-		{{- end }}
-	}
-	result, err := db.ExecContext(ctx, query, args...)
-	{{ if .HasPk -}}
-	if err != nil {
-		return {{ .StructName }}{}, err
-	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return {{ .StructName }}{}, err
-	}
-	return {{ $constructor }}().Select().PkColumn(id).SingleContext(ctx, db)
-	{{- else -}}
-	return result, err
-	{{- end }}
-}
-
-{{ if .HasPk -}}
-func (q {{ $camelName }}InsertOnDuplicateKeyUpdateSQL) ExecContextWithoutSelect(ctx context.Context, db sqlla.DB) (sql.Result, error) {
-	query, args, err := q.ToSql()
-	if err != nil {
-		return nil, err
-	}
-	result, err := db.ExecContext(ctx, query, args...)
-	return result, err
-}
-{{- end }}
-
-type {{ $camelName }}DefaultInsertOnDuplicateKeyUpdateHooker interface {
-	DefaultInsertOnDuplicateKeyUpdateHook({{ $camelName }}InsertOnDuplicateKeyUpdateSQL) ({{ $camelName }}InsertOnDuplicateKeyUpdateSQL, error)
 }
 
 type {{ $camelName }}BulkInsertSQL struct {
@@ -251,17 +194,45 @@ func (q *{{ $camelName }}BulkInsertSQL) ToSql() (string, []interface{}, error) {
 	if err != nil {
 			return "", []interface{}{}, err
 	}
+	{{- if and .HasPk (eq (dialect) "postgresql") }}
+	return query + " RETURNING " + {{ cquoteby .PkColumn.Name }} + ";", vs, nil
+	{{- else }}
 	return query + ";", vs, nil
+	{{- end }}
 }
 
-func (q *{{ $camelName }}BulkInsertSQL) OnDuplicateKeyUpdate() {{ $camelName }}InsertOnDuplicateKeyUpdateSQL {
-	return {{ $camelName }}InsertOnDuplicateKeyUpdateSQL{
-		insertSQL: q,
-		onDuplicateKeyUpdateMap: sqlla.SetMap{},
-	}
-}
-
+{{- if and .HasPk (eq (dialect) "postgresql") }}
+func (q *{{ $camelName }}BulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]{{ .StructName }}, error) {
+{{- else }}
 func (q *{{ $camelName }}BulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+{{- end }}
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	{{- if and .HasPk (eq (dialect) "postgresql") }}
+	rows, err := db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	pks := make([]{{ .PkColumn.TypeName }}, 0, len(q.insertSQLs))
+	for rows.Next() {
+		var pk {{ .PkColumn.TypeName }}
+		if err := rows.Scan(&pk); err != nil {
+			return nil, err
+		}
+		pks = append(pks, pk)
+	}
+	return {{ $constructor }}().Select().{{ .PkColumn.MethodName }}In(pks...).AllContext(ctx, db)
+	{{- else }}
+	result, err := db.ExecContext(ctx, query, args...)
+	return result, err
+	{{- end }}
+}
+
+{{- if and .HasPk (eq (dialect) "postgresql") }}
+func (q *{{ $camelName }}BulkInsertSQL) ExecContextWithoutSelect(ctx context.Context, db sqlla.DB) (sql.Result, error) {
 	query, args, err := q.ToSql()
 	if err != nil {
 		return nil, err
@@ -269,5 +240,10 @@ func (q *{{ $camelName }}BulkInsertSQL) ExecContext(ctx context.Context, db sqll
 	result, err := db.ExecContext(ctx, query, args...)
 	return result, err
 }
+{{- end }}
+
+{{- if eq (dialect) "mysql" }}
+{{ template "InsertMySQL" . }}
+{{- end }}
 
 {{ end }}

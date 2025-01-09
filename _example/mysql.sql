@@ -6,8 +6,8 @@ CREATE TABLE `group` (
     `id` BIGINT unsigned NOT NULL PRIMARY KEY AUTO_INCREMENT,
     `name` VARCHAR(191) NOT NULL,
     `leader_user_id` BIGINT unsigned NOT NULL,
-    `sub_leader_user_id` BIGINT unsigned NULL,
-    `child_group_id` BIGINT unsigned NULL,
+    `sub_leader_user_id` BIGINT NULL,
+    `child_group_id` BIGINT NULL,
     `created_at` DATETIME NOT NULL,
     `updated_at` DATETIME NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

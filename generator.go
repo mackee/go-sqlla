@@ -42,6 +42,7 @@ func NewGenerator(dialect Dialect, additionals ...string) (*Generator, error) {
 	fm["singular"] = pc.Singular
 	fm["cquote"] = dialect.CQuote
 	fm["cquoteby"] = dialect.CQuoteBy
+	fm["dialect"] = dialect.Name
 	tmpl = tmpl.Funcs(fm)
 
 	tmpl, err := tmpl.ParseFS(templates, "template/*.tmpl", "template/plugins/*.tmpl")

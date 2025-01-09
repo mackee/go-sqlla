@@ -929,13 +929,6 @@ func (q groupInsertSQL) groupInsertSQLToSql() (string, []interface{}, error) {
 	return query, vs, nil
 }
 
-func (q groupInsertSQL) OnDuplicateKeyUpdate() groupInsertOnDuplicateKeyUpdateSQL {
-	return groupInsertOnDuplicateKeyUpdateSQL{
-		insertSQL:               q,
-		onDuplicateKeyUpdateMap: sqlla.SetMap{},
-	}
-}
-
 func (q groupInsertSQL) Exec(db sqlla.DB) (Group, error) {
 	query, args, err := q.ToSql()
 	if err != nil {
@@ -985,9 +978,78 @@ type groupInsertSQLToSqler interface {
 	groupInsertSQLToSql() (string, []interface{}, error)
 }
 
+type groupBulkInsertSQL struct {
+	insertSQLs []groupInsertSQL
+}
+
+func (q groupSQL) BulkInsert() *groupBulkInsertSQL {
+	return &groupBulkInsertSQL{
+		insertSQLs: []groupInsertSQL{},
+	}
+}
+
+func (q *groupBulkInsertSQL) Append(iqs ...groupInsertSQL) {
+	q.insertSQLs = append(q.insertSQLs, iqs...)
+}
+
+func (q *groupBulkInsertSQL) groupInsertSQLToSql() (string, []interface{}, error) {
+	if len(q.insertSQLs) == 0 {
+		return "", []interface{}{}, fmt.Errorf("sqlla: This groupBulkInsertSQL's InsertSQL was empty")
+	}
+	iqs := make([]groupInsertSQL, len(q.insertSQLs))
+	copy(iqs, q.insertSQLs)
+
+	var s interface{} = Group{}
+	if t, ok := s.(groupDefaultInsertHooker); ok {
+		for i, iq := range iqs {
+			var err error
+			iq, err = t.DefaultInsertHook(iq)
+			if err != nil {
+				return "", []interface{}{}, err
+			}
+			iqs[i] = iq
+		}
+	}
+
+	sms := make(sqlla.SetMaps, 0, len(q.insertSQLs))
+	for _, iq := range q.insertSQLs {
+		sms = append(sms, iq.setMap)
+	}
+
+	query, vs, err := sms.ToInsertSql()
+	if err != nil {
+		return "", []interface{}{}, err
+	}
+
+	return "INSERT INTO " + "`group`" + " " + query, vs, nil
+}
+
+func (q *groupBulkInsertSQL) ToSql() (string, []interface{}, error) {
+	query, vs, err := q.groupInsertSQLToSql()
+	if err != nil {
+		return "", []interface{}{}, err
+	}
+	return query + ";", vs, nil
+}
+func (q *groupBulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	result, err := db.ExecContext(ctx, query, args...)
+	return result, err
+}
+
 type groupInsertOnDuplicateKeyUpdateSQL struct {
 	insertSQL               groupInsertSQLToSqler
 	onDuplicateKeyUpdateMap sqlla.SetMap
+}
+
+func (q groupInsertSQL) OnDuplicateKeyUpdate() groupInsertOnDuplicateKeyUpdateSQL {
+	return groupInsertOnDuplicateKeyUpdateSQL{
+		insertSQL:               q,
+		onDuplicateKeyUpdateMap: sqlla.SetMap{},
+	}
 }
 
 func (q groupInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateID(v GroupID) groupInsertOnDuplicateKeyUpdateSQL {
@@ -1159,74 +1221,11 @@ type groupDefaultInsertOnDuplicateKeyUpdateHooker interface {
 	DefaultInsertOnDuplicateKeyUpdateHook(groupInsertOnDuplicateKeyUpdateSQL) (groupInsertOnDuplicateKeyUpdateSQL, error)
 }
 
-type groupBulkInsertSQL struct {
-	insertSQLs []groupInsertSQL
-}
-
-func (q groupSQL) BulkInsert() *groupBulkInsertSQL {
-	return &groupBulkInsertSQL{
-		insertSQLs: []groupInsertSQL{},
-	}
-}
-
-func (q *groupBulkInsertSQL) Append(iqs ...groupInsertSQL) {
-	q.insertSQLs = append(q.insertSQLs, iqs...)
-}
-
-func (q *groupBulkInsertSQL) groupInsertSQLToSql() (string, []interface{}, error) {
-	if len(q.insertSQLs) == 0 {
-		return "", []interface{}{}, fmt.Errorf("sqlla: This groupBulkInsertSQL's InsertSQL was empty")
-	}
-	iqs := make([]groupInsertSQL, len(q.insertSQLs))
-	copy(iqs, q.insertSQLs)
-
-	var s interface{} = Group{}
-	if t, ok := s.(groupDefaultInsertHooker); ok {
-		for i, iq := range iqs {
-			var err error
-			iq, err = t.DefaultInsertHook(iq)
-			if err != nil {
-				return "", []interface{}{}, err
-			}
-			iqs[i] = iq
-		}
-	}
-
-	sms := make(sqlla.SetMaps, 0, len(q.insertSQLs))
-	for _, iq := range q.insertSQLs {
-		sms = append(sms, iq.setMap)
-	}
-
-	query, vs, err := sms.ToInsertSql()
-	if err != nil {
-		return "", []interface{}{}, err
-	}
-
-	return "INSERT INTO " + "`group`" + " " + query, vs, nil
-}
-
-func (q *groupBulkInsertSQL) ToSql() (string, []interface{}, error) {
-	query, vs, err := q.groupInsertSQLToSql()
-	if err != nil {
-		return "", []interface{}{}, err
-	}
-	return query + ";", vs, nil
-}
-
 func (q *groupBulkInsertSQL) OnDuplicateKeyUpdate() groupInsertOnDuplicateKeyUpdateSQL {
 	return groupInsertOnDuplicateKeyUpdateSQL{
 		insertSQL:               q,
 		onDuplicateKeyUpdateMap: sqlla.SetMap{},
 	}
-}
-
-func (q *groupBulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
-	query, args, err := q.ToSql()
-	if err != nil {
-		return nil, err
-	}
-	result, err := db.ExecContext(ctx, query, args...)
-	return result, err
 }
 
 type groupDeleteSQL struct {

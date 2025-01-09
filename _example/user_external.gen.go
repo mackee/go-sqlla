@@ -713,13 +713,6 @@ func (q userExternalInsertSQL) userExternalInsertSQLToSql() (string, []interface
 	return query, vs, nil
 }
 
-func (q userExternalInsertSQL) OnDuplicateKeyUpdate() userExternalInsertOnDuplicateKeyUpdateSQL {
-	return userExternalInsertOnDuplicateKeyUpdateSQL{
-		insertSQL:               q,
-		onDuplicateKeyUpdateMap: sqlla.SetMap{},
-	}
-}
-
 func (q userExternalInsertSQL) Exec(db sqlla.DB) (UserExternal, error) {
 	query, args, err := q.ToSql()
 	if err != nil {
@@ -769,9 +762,78 @@ type userExternalInsertSQLToSqler interface {
 	userExternalInsertSQLToSql() (string, []interface{}, error)
 }
 
+type userExternalBulkInsertSQL struct {
+	insertSQLs []userExternalInsertSQL
+}
+
+func (q userExternalSQL) BulkInsert() *userExternalBulkInsertSQL {
+	return &userExternalBulkInsertSQL{
+		insertSQLs: []userExternalInsertSQL{},
+	}
+}
+
+func (q *userExternalBulkInsertSQL) Append(iqs ...userExternalInsertSQL) {
+	q.insertSQLs = append(q.insertSQLs, iqs...)
+}
+
+func (q *userExternalBulkInsertSQL) userExternalInsertSQLToSql() (string, []interface{}, error) {
+	if len(q.insertSQLs) == 0 {
+		return "", []interface{}{}, fmt.Errorf("sqlla: This userExternalBulkInsertSQL's InsertSQL was empty")
+	}
+	iqs := make([]userExternalInsertSQL, len(q.insertSQLs))
+	copy(iqs, q.insertSQLs)
+
+	var s interface{} = UserExternal{}
+	if t, ok := s.(userExternalDefaultInsertHooker); ok {
+		for i, iq := range iqs {
+			var err error
+			iq, err = t.DefaultInsertHook(iq)
+			if err != nil {
+				return "", []interface{}{}, err
+			}
+			iqs[i] = iq
+		}
+	}
+
+	sms := make(sqlla.SetMaps, 0, len(q.insertSQLs))
+	for _, iq := range q.insertSQLs {
+		sms = append(sms, iq.setMap)
+	}
+
+	query, vs, err := sms.ToInsertSql()
+	if err != nil {
+		return "", []interface{}{}, err
+	}
+
+	return "INSERT INTO " + "`user_external`" + " " + query, vs, nil
+}
+
+func (q *userExternalBulkInsertSQL) ToSql() (string, []interface{}, error) {
+	query, vs, err := q.userExternalInsertSQLToSql()
+	if err != nil {
+		return "", []interface{}{}, err
+	}
+	return query + ";", vs, nil
+}
+func (q *userExternalBulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	result, err := db.ExecContext(ctx, query, args...)
+	return result, err
+}
+
 type userExternalInsertOnDuplicateKeyUpdateSQL struct {
 	insertSQL               userExternalInsertSQLToSqler
 	onDuplicateKeyUpdateMap sqlla.SetMap
+}
+
+func (q userExternalInsertSQL) OnDuplicateKeyUpdate() userExternalInsertOnDuplicateKeyUpdateSQL {
+	return userExternalInsertOnDuplicateKeyUpdateSQL{
+		insertSQL:               q,
+		onDuplicateKeyUpdateMap: sqlla.SetMap{},
+	}
 }
 
 func (q userExternalInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateID(v uint64) userExternalInsertOnDuplicateKeyUpdateSQL {
@@ -903,74 +965,11 @@ type userExternalDefaultInsertOnDuplicateKeyUpdateHooker interface {
 	DefaultInsertOnDuplicateKeyUpdateHook(userExternalInsertOnDuplicateKeyUpdateSQL) (userExternalInsertOnDuplicateKeyUpdateSQL, error)
 }
 
-type userExternalBulkInsertSQL struct {
-	insertSQLs []userExternalInsertSQL
-}
-
-func (q userExternalSQL) BulkInsert() *userExternalBulkInsertSQL {
-	return &userExternalBulkInsertSQL{
-		insertSQLs: []userExternalInsertSQL{},
-	}
-}
-
-func (q *userExternalBulkInsertSQL) Append(iqs ...userExternalInsertSQL) {
-	q.insertSQLs = append(q.insertSQLs, iqs...)
-}
-
-func (q *userExternalBulkInsertSQL) userExternalInsertSQLToSql() (string, []interface{}, error) {
-	if len(q.insertSQLs) == 0 {
-		return "", []interface{}{}, fmt.Errorf("sqlla: This userExternalBulkInsertSQL's InsertSQL was empty")
-	}
-	iqs := make([]userExternalInsertSQL, len(q.insertSQLs))
-	copy(iqs, q.insertSQLs)
-
-	var s interface{} = UserExternal{}
-	if t, ok := s.(userExternalDefaultInsertHooker); ok {
-		for i, iq := range iqs {
-			var err error
-			iq, err = t.DefaultInsertHook(iq)
-			if err != nil {
-				return "", []interface{}{}, err
-			}
-			iqs[i] = iq
-		}
-	}
-
-	sms := make(sqlla.SetMaps, 0, len(q.insertSQLs))
-	for _, iq := range q.insertSQLs {
-		sms = append(sms, iq.setMap)
-	}
-
-	query, vs, err := sms.ToInsertSql()
-	if err != nil {
-		return "", []interface{}{}, err
-	}
-
-	return "INSERT INTO " + "`user_external`" + " " + query, vs, nil
-}
-
-func (q *userExternalBulkInsertSQL) ToSql() (string, []interface{}, error) {
-	query, vs, err := q.userExternalInsertSQLToSql()
-	if err != nil {
-		return "", []interface{}{}, err
-	}
-	return query + ";", vs, nil
-}
-
 func (q *userExternalBulkInsertSQL) OnDuplicateKeyUpdate() userExternalInsertOnDuplicateKeyUpdateSQL {
 	return userExternalInsertOnDuplicateKeyUpdateSQL{
 		insertSQL:               q,
 		onDuplicateKeyUpdateMap: sqlla.SetMap{},
 	}
-}
-
-func (q *userExternalBulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
-	query, args, err := q.ToSql()
-	if err != nil {
-		return nil, err
-	}
-	result, err := db.ExecContext(ctx, query, args...)
-	return result, err
 }
 
 type userExternalDeleteSQL struct {

@@ -17,11 +17,16 @@ func NewDialect(dialect string) (Dialect, error) {
 }
 
 type Dialect interface {
+	Name() string
 	CQuote() string
 	CQuoteBy(column string) string
 }
 
 type MySQLDialect struct{}
+
+func (MySQLDialect) Name() string {
+	return "mysql"
+}
 
 func (MySQLDialect) CQuote() string {
 	return strconv.Quote("`")
@@ -32,6 +37,10 @@ func (MySQLDialect) CQuoteBy(column string) string {
 }
 
 type PostgreSQLDialect struct{}
+
+func (PostgreSQLDialect) Name() string {
+	return "postgresql"
+}
 
 func (PostgreSQLDialect) CQuote() string {
 	return strconv.Quote(`"`)

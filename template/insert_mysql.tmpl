@@ -1,0 +1,92 @@
+{{ define "InsertMySQL" }}
+{{- $camelName := .Name | toCamel | untitle -}}
+{{- $constructor := printf "New%sSQL" (.Name | toCamel) -}}
+type {{ $camelName }}InsertOnDuplicateKeyUpdateSQL struct {
+	insertSQL {{ $camelName }}InsertSQLToSqler
+	onDuplicateKeyUpdateMap sqlla.SetMap
+}
+
+func (q {{ $camelName }}InsertSQL) OnDuplicateKeyUpdate() {{ $camelName }}InsertOnDuplicateKeyUpdateSQL {
+	return {{ $camelName }}InsertOnDuplicateKeyUpdateSQL{
+		insertSQL: q,
+		onDuplicateKeyUpdateMap: sqlla.SetMap{},
+	}
+}
+
+{{ range .Columns }}{{ template "InsertOnDuplicateKeyUpdateColumn" . }}{{ end }}
+
+func (q {{ $camelName }}InsertOnDuplicateKeyUpdateSQL) ToSql() (string, []interface{}, error) {
+	var err error
+	var s interface{} = {{ .StructName }}{}
+	if t, ok := s.({{ $camelName }}DefaultInsertOnDuplicateKeyUpdateHooker); ok {
+		q, err = t.DefaultInsertOnDuplicateKeyUpdateHook(q)
+		if err != nil {
+			return "", []interface{}{}, err
+		}
+	}
+
+	query, vs, err := q.insertSQL.{{ $camelName }}InsertSQLToSql()
+	if err != nil {
+			return "", []interface{}{}, err
+	}
+
+	os, ovs, err := q.onDuplicateKeyUpdateMap.ToUpdateSql()
+	if err != nil {
+		return "", []interface{}{}, err
+	}
+	query += " ON DUPLICATE KEY UPDATE" + os
+	vs = append(vs, ovs...)
+
+	return query + ";", vs, nil
+}
+
+{{ if .HasPk -}}
+func (q {{ $camelName }}InsertOnDuplicateKeyUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ({{ .StructName }}, error) {
+{{- else -}}
+func (q {{ $camelName }}InsertOnDuplicateKeyUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+{{- end }}
+	query, args, err := q.ToSql()
+	if err != nil {
+		{{ if .HasPk -}}
+		return {{ .StructName }}{}, err
+		{{- else }}
+		return nil, err
+		{{- end }}
+	}
+	result, err := db.ExecContext(ctx, query, args...)
+	{{ if .HasPk -}}
+	if err != nil {
+		return {{ .StructName }}{}, err
+	}
+	id, err := result.LastInsertId()
+	if err != nil {
+		return {{ .StructName }}{}, err
+	}
+	return {{ $constructor }}().Select().PkColumn(id).SingleContext(ctx, db)
+	{{- else -}}
+	return result, err
+	{{- end }}
+}
+
+{{ if .HasPk -}}
+func (q {{ $camelName }}InsertOnDuplicateKeyUpdateSQL) ExecContextWithoutSelect(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	result, err := db.ExecContext(ctx, query, args...)
+	return result, err
+}
+{{- end }}
+
+type {{ $camelName }}DefaultInsertOnDuplicateKeyUpdateHooker interface {
+	DefaultInsertOnDuplicateKeyUpdateHook({{ $camelName }}InsertOnDuplicateKeyUpdateSQL) ({{ $camelName }}InsertOnDuplicateKeyUpdateSQL, error)
+}
+
+func (q *{{ $camelName }}BulkInsertSQL) OnDuplicateKeyUpdate() {{ $camelName }}InsertOnDuplicateKeyUpdateSQL {
+	return {{ $camelName }}InsertOnDuplicateKeyUpdateSQL{
+		insertSQL: q,
+		onDuplicateKeyUpdateMap: sqlla.SetMap{},
+	}
+}
+{{ end }}

@@ -6,7 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"strconv"
@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/go-sql-driver/mysql"
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/mackee/go-sqlla/v2"
 	"github.com/ory/dockertest/v3"
 )
@@ -32,7 +31,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// pulls an image, creates a container based on it and runs it
-	resource, err := pool.Run("mysql", "5.7", []string{
+	resource, err := pool.Run("mysql", "8.0", []string{
 		"MYSQL_ROOT_PASSWORD=secret",
 		"MYSQL_DATABASE=test",
 	})
@@ -57,7 +56,7 @@ func TestMain(m *testing.M) {
 		log.Fatal("cannot open schema file error:", err)
 	}
 
-	b, err := ioutil.ReadAll(schemaFile)
+	b, err := io.ReadAll(schemaFile)
 	if err != nil {
 		log.Fatal("cannot read schema file error:", err)
 	}

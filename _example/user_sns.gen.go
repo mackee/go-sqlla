@@ -655,13 +655,6 @@ func (q userSNSInsertSQL) userSNSInsertSQLToSql() (string, []interface{}, error)
 	return query, vs, nil
 }
 
-func (q userSNSInsertSQL) OnDuplicateKeyUpdate() userSNSInsertOnDuplicateKeyUpdateSQL {
-	return userSNSInsertOnDuplicateKeyUpdateSQL{
-		insertSQL:               q,
-		onDuplicateKeyUpdateMap: sqlla.SetMap{},
-	}
-}
-
 func (q userSNSInsertSQL) Exec(db sqlla.DB) (UserSNS, error) {
 	query, args, err := q.ToSql()
 	if err != nil {
@@ -711,9 +704,78 @@ type userSNSInsertSQLToSqler interface {
 	userSNSInsertSQLToSql() (string, []interface{}, error)
 }
 
+type userSNSBulkInsertSQL struct {
+	insertSQLs []userSNSInsertSQL
+}
+
+func (q userSNSSQL) BulkInsert() *userSNSBulkInsertSQL {
+	return &userSNSBulkInsertSQL{
+		insertSQLs: []userSNSInsertSQL{},
+	}
+}
+
+func (q *userSNSBulkInsertSQL) Append(iqs ...userSNSInsertSQL) {
+	q.insertSQLs = append(q.insertSQLs, iqs...)
+}
+
+func (q *userSNSBulkInsertSQL) userSNSInsertSQLToSql() (string, []interface{}, error) {
+	if len(q.insertSQLs) == 0 {
+		return "", []interface{}{}, fmt.Errorf("sqlla: This userSNSBulkInsertSQL's InsertSQL was empty")
+	}
+	iqs := make([]userSNSInsertSQL, len(q.insertSQLs))
+	copy(iqs, q.insertSQLs)
+
+	var s interface{} = UserSNS{}
+	if t, ok := s.(userSNSDefaultInsertHooker); ok {
+		for i, iq := range iqs {
+			var err error
+			iq, err = t.DefaultInsertHook(iq)
+			if err != nil {
+				return "", []interface{}{}, err
+			}
+			iqs[i] = iq
+		}
+	}
+
+	sms := make(sqlla.SetMaps, 0, len(q.insertSQLs))
+	for _, iq := range q.insertSQLs {
+		sms = append(sms, iq.setMap)
+	}
+
+	query, vs, err := sms.ToInsertSql()
+	if err != nil {
+		return "", []interface{}{}, err
+	}
+
+	return "INSERT INTO " + "`user_sns`" + " " + query, vs, nil
+}
+
+func (q *userSNSBulkInsertSQL) ToSql() (string, []interface{}, error) {
+	query, vs, err := q.userSNSInsertSQLToSql()
+	if err != nil {
+		return "", []interface{}{}, err
+	}
+	return query + ";", vs, nil
+}
+func (q *userSNSBulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	result, err := db.ExecContext(ctx, query, args...)
+	return result, err
+}
+
 type userSNSInsertOnDuplicateKeyUpdateSQL struct {
 	insertSQL               userSNSInsertSQLToSqler
 	onDuplicateKeyUpdateMap sqlla.SetMap
+}
+
+func (q userSNSInsertSQL) OnDuplicateKeyUpdate() userSNSInsertOnDuplicateKeyUpdateSQL {
+	return userSNSInsertOnDuplicateKeyUpdateSQL{
+		insertSQL:               q,
+		onDuplicateKeyUpdateMap: sqlla.SetMap{},
+	}
 }
 
 func (q userSNSInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateID(v uint64) userSNSInsertOnDuplicateKeyUpdateSQL {
@@ -830,74 +892,11 @@ type userSNSDefaultInsertOnDuplicateKeyUpdateHooker interface {
 	DefaultInsertOnDuplicateKeyUpdateHook(userSNSInsertOnDuplicateKeyUpdateSQL) (userSNSInsertOnDuplicateKeyUpdateSQL, error)
 }
 
-type userSNSBulkInsertSQL struct {
-	insertSQLs []userSNSInsertSQL
-}
-
-func (q userSNSSQL) BulkInsert() *userSNSBulkInsertSQL {
-	return &userSNSBulkInsertSQL{
-		insertSQLs: []userSNSInsertSQL{},
-	}
-}
-
-func (q *userSNSBulkInsertSQL) Append(iqs ...userSNSInsertSQL) {
-	q.insertSQLs = append(q.insertSQLs, iqs...)
-}
-
-func (q *userSNSBulkInsertSQL) userSNSInsertSQLToSql() (string, []interface{}, error) {
-	if len(q.insertSQLs) == 0 {
-		return "", []interface{}{}, fmt.Errorf("sqlla: This userSNSBulkInsertSQL's InsertSQL was empty")
-	}
-	iqs := make([]userSNSInsertSQL, len(q.insertSQLs))
-	copy(iqs, q.insertSQLs)
-
-	var s interface{} = UserSNS{}
-	if t, ok := s.(userSNSDefaultInsertHooker); ok {
-		for i, iq := range iqs {
-			var err error
-			iq, err = t.DefaultInsertHook(iq)
-			if err != nil {
-				return "", []interface{}{}, err
-			}
-			iqs[i] = iq
-		}
-	}
-
-	sms := make(sqlla.SetMaps, 0, len(q.insertSQLs))
-	for _, iq := range q.insertSQLs {
-		sms = append(sms, iq.setMap)
-	}
-
-	query, vs, err := sms.ToInsertSql()
-	if err != nil {
-		return "", []interface{}{}, err
-	}
-
-	return "INSERT INTO " + "`user_sns`" + " " + query, vs, nil
-}
-
-func (q *userSNSBulkInsertSQL) ToSql() (string, []interface{}, error) {
-	query, vs, err := q.userSNSInsertSQLToSql()
-	if err != nil {
-		return "", []interface{}{}, err
-	}
-	return query + ";", vs, nil
-}
-
 func (q *userSNSBulkInsertSQL) OnDuplicateKeyUpdate() userSNSInsertOnDuplicateKeyUpdateSQL {
 	return userSNSInsertOnDuplicateKeyUpdateSQL{
 		insertSQL:               q,
 		onDuplicateKeyUpdateMap: sqlla.SetMap{},
 	}
-}
-
-func (q *userSNSBulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
-	query, args, err := q.ToSql()
-	if err != nil {
-		return nil, err
-	}
-	result, err := db.ExecContext(ctx, query, args...)
-	return result, err
 }
 
 type userSNSDeleteSQL struct {
