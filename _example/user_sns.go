@@ -2,7 +2,7 @@ package example
 
 import "time"
 
-//go:generate go run ../cmd/sqlla/main.go
+//go:generate go run github.com/mackee/go-sqlla/v2/cmd/sqlla
 
 // +table: user_sns
 //

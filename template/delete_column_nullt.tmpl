@@ -1,5 +1,5 @@
 {{ define "DeleteColumnNullT" }}
-{{ $smallTableName := .TableName | toCamel | Untitle }}
+{{ $smallTableName := .TableName | toCamel | untitle }}
 func (q {{ $smallTableName }}DeleteSQL) {{ .MethodName }}(v {{ .TypeParameter }}, exprs ...sqlla.Operator) {{ $smallTableName }}DeleteSQL {
 	var op sqlla.Operator
 	if len(exprs) == 0 {

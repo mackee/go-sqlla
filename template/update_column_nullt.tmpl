@@ -1,4 +1,4 @@
-{{ define "UpdateColumnNullT" }}{{ $smallTableName := .TableName | toCamel | Untitle }}
+{{ define "UpdateColumnNullT" }}{{ $smallTableName := .TableName | toCamel | untitle }}
 func (q {{ $smallTableName }}UpdateSQL) Set{{ .MethodName }}(v {{ .TypeParameter }}) {{ $smallTableName }}UpdateSQL {
 	q.setMap["`{{ .Name }}`"] = sql.Null[{{ .TypeParameter }}]{ V: v, Valid: true }
 	return q

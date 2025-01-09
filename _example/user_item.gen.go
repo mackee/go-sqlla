@@ -445,6 +445,49 @@ func (q userItemSelectSQL) Scan(s sqlla.Scanner) (UserItem, error) {
 	return row, err
 }
 
+// IterContext returns iter.Seq2[UserItem, error] and closer.
+//
+// The returned Iter.Seq2 assembles and executes a query in the first iteration.
+// Therefore, the first iteration may return an error in assembling or executing the query.
+// Subsequent iterations read rows. Again, the read may return an error.
+//
+// closer is a function that closes the row reader object. Execution of this function is idempotent.
+// Be sure to call it when you are done using iter.Seq2.
+func (q userItemSelectSQL) IterContext(ctx context.Context, db sqlla.DB) (func(func(UserItem, error) bool), func() error) {
+	var rowClose func() error
+	closer := func() error {
+		if rowClose != nil {
+			err := rowClose()
+			rowClose = nil
+			return err
+		}
+		return nil
+	}
+
+	q.Columns = userItemAllColumns
+	query, args, err := q.ToSql()
+	return func(yield func(UserItem, error) bool) {
+		if err != nil {
+			var r UserItem
+			yield(r, err)
+			return
+		}
+		rows, err := db.QueryContext(ctx, query, args...)
+		if err != nil {
+			var r UserItem
+			yield(r, err)
+			return
+		}
+		rowClose = rows.Close
+		for rows.Next() {
+			r, err := q.Scan(rows)
+			if !yield(r, err) {
+				break
+			}
+		}
+	}, closer
+}
+
 type userItemUpdateSQL struct {
 	userItemSQL
 	setMap  sqlla.SetMap

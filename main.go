@@ -15,27 +15,37 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-func toPackages(dir string) ([]*packages.Package, error) {
-	conf := &packages.Config{
-		Mode: packages.NeedCompiledGoFiles | packages.NeedSyntax | packages.NeedTypes | packages.NeedTypesInfo,
-	}
-	pkgs, err := packages.Load(conf, dir)
-	if err != nil {
-		return nil, fmt.Errorf("error toPackages: %w", err)
-	}
-	return pkgs, nil
+type Options struct {
+	Version bool     `help:"show this version"`
+	From    []string `help:"source file path" env:"GOFILE" arg:"" required:""`
+	Ext     string   `help:"file extension" env:"SQLLA_GENERATE_FILE_EXT" default:".gen.go"`
+	Plugins []string `help:"additional plugin files. allow asterisk(*) and multiple values" name:"plugins" env:"SQLLA_TEMPLATE_FILES"`
 }
 
-func Run(from, ext string) {
+func Run(opts Options) error {
+	g, err := NewGenerator(opts.Plugins...)
+	if err != nil {
+		return fmt.Errorf("failed to NewGenerator: %w", err)
+	}
+
+	for _, from := range opts.From {
+		if err := run(from, opts.Ext, g); err != nil {
+			return fmt.Errorf("failed to run: %w", err)
+		}
+	}
+	return nil
+}
+
+func run(from string, ext string, g *Generator) error {
 	fullpath, err := filepath.Abs(from)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("failed to filepath.Abs: %w", err)
 	}
 	dir := filepath.Dir(fullpath)
 
 	pkgs, err := toPackages(dir)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("failed to toPackages: %w", err)
 	}
 	for _, pkg := range pkgs {
 		files := pkg.Syntax
@@ -46,19 +56,37 @@ func Run(from, ext string) {
 					if errors.Is(err, errNotTargetDecl) {
 						continue
 					}
-					panic(err)
+					return fmt.Errorf("error declToTable: %w", err)
 				}
 				filename := filepath.Join(dir, table.TableName+ext)
 				f, err := os.Create(filename)
 				if err != nil {
-					panic(err)
+					return fmt.Errorf("error create: filename=%s: %w", filename, err)
 				}
-				if err := WriteCode(f, table); err != nil {
-					panic(err)
+				if err := g.WriteCode(f, table); err != nil {
+					return fmt.Errorf("error WriteCode: filename=%s: %w", filename, err)
+				}
+				if err := f.Close(); err != nil {
+					return fmt.Errorf("error close: filename=%s: %w", filename, err)
+				}
+				if err := table.Plugins.WriteCode(g, table.PackageName); err != nil {
+					return fmt.Errorf("error Plugins.WriteCode: %w", err)
 				}
 			}
 		}
 	}
+	return nil
+}
+
+func toPackages(dir string) ([]*packages.Package, error) {
+	conf := &packages.Config{
+		Mode: packages.NeedCompiledGoFiles | packages.NeedSyntax | packages.NeedTypes | packages.NeedTypesInfo,
+	}
+	pkgs, err := packages.Load(conf, dir)
+	if err != nil {
+		return nil, fmt.Errorf("error toPackages: %w", err)
+	}
+	return pkgs, nil
 }
 
 var errNotTargetDecl = fmt.Errorf("not target decl")
@@ -137,6 +165,15 @@ func toTable(tablePkg *types.Package, annotationComment string, gd *ast.GenDecl,
 	} else {
 		table.Name = table.TableName
 	}
+	comments := make([]string, 0, len(gd.Doc.List))
+	for _, comment := range gd.Doc.List {
+		comments = append(comments, comment.Text)
+	}
+	plugins, err := parsePluginsByComments(comments)
+	if err != nil {
+		return nil, fmt.Errorf("toTable: error parsePluginsByComments: table=%s, err=%w", table.TableName, err)
+	}
+	table.SetPlugins(plugins)
 
 	for _, field := range structType.Fields.List {
 		tagText := field.Tag.Value[1 : len(field.Tag.Value)-1]

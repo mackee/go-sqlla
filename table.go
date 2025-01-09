@@ -4,7 +4,6 @@ package sqlla
 
 import (
 	"go/types"
-	"io"
 
 	"github.com/Masterminds/goutils"
 	"github.com/serenize/snaker"
@@ -19,6 +18,7 @@ type Table struct {
 	Columns               Columns
 	PkColumn              *Column
 	additionalPackagesMap map[string]struct{}
+	Plugins               Plugins
 }
 
 func (t *Table) NamingIsStructName() bool {
@@ -58,6 +58,18 @@ func (t *Table) HasPk() bool {
 	return t.PkColumn != nil
 }
 
-func (t Table) Render(w io.Writer) error {
+func (t *Table) SetPlugins(plugins Plugins) {
+	for i := range plugins {
+		plugins[i].Table = t
+	}
+	t.Plugins = plugins
+}
+
+func (t *Table) Lookup(columnFieldName string) *Column {
+	for _, column := range t.Columns {
+		if column.FieldName() == columnFieldName {
+			return &column
+		}
+	}
 	return nil
 }

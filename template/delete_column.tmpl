@@ -1,4 +1,4 @@
-{{ define "DeleteColumn" }}{{ $smallTableName := .TableName | toCamel | Untitle }}
+{{ define "DeleteColumn" }}{{ $smallTableName := .TableName | toCamel | untitle }}
 {{- if .IsNullT }}
 {{- template "DeleteColumnNullT" . }}
 {{- else }}

@@ -1,37 +1,28 @@
 package main
 
 import (
-	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 
+	"github.com/alecthomas/kong"
 	"github.com/mackee/go-sqlla/v2"
 )
 
 var Version string
 
 func main() {
-	var isShowVersion bool
-	flag.BoolVar(&isShowVersion, "version", false, "show this version")
-	flag.Parse()
+	var opts sqlla.Options
+	kong.Parse(&opts)
 
-	if isShowVersion {
+	if opts.Version {
 		fmt.Println("sqlla - Type safe, reflect free, generative SQL Builder + ORM-like methods")
 		fmt.Printf("version %s\n", Version)
 		os.Exit(0)
 	}
 
-	from := os.Getenv("GOFILE")
-	if from == "" {
-		args := os.Args
-		if len(args) == 0 {
-			os.Exit(1)
-		}
-		from = args[0]
+	if err := sqlla.Run(opts); err != nil {
+		slog.Error("occurred error", slog.Any("error", err))
+		os.Exit(1)
 	}
-	ext := os.Getenv("SQLLA_GENERATE_FILE_EXT")
-	if ext == "" {
-		ext = ".gen.go"
-	}
-	sqlla.Run(from, ext)
 }

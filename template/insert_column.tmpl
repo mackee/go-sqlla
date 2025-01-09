@@ -1,4 +1,4 @@
-{{ define "InsertColumn" }}{{ $smallTableName := .TableName | toCamel | Untitle }}
+{{ define "InsertColumn" }}{{ $smallTableName := .TableName | toCamel | untitle }}
 {{- if .IsNullT }}
 func (q {{ $smallTableName }}InsertSQL) Value{{ .MethodName }}(v {{ .TypeParameter }}) {{ $smallTableName }}InsertSQL {
 	q.setMap["`{{ .Name }}`"] = sql.Null[{{ .TypeParameter }}]{ V: v, Valid: true }

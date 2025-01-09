@@ -1,0 +1,15 @@
+{{- define "plugin.count" }}
+{{- $camelName := .Table.Name | toCamel | untitle }}
+func (q {{ $camelName }}SelectSQL) CountContext(ctx context.Context, db sqlla.DB, column string) (int64, error) {
+	query, args, err := q.SetColumns("COUNT(" + column + ")").ToSql()
+	if err != nil {
+		return 0, err
+	}
+	row := db.QueryRowContext(ctx, query, args...)
+	var count int64
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+{{ end }}

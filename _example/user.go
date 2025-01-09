@@ -8,12 +8,16 @@ import (
 	"github.com/mackee/go-genddl/index"
 )
 
-//go:generate go run ../cmd/sqlla/main.go
+//go:generate go run github.com/mackee/go-sqlla/v2/cmd/sqlla
 //go:generate go run github.com/mackee/go-genddl/cmd/genddl -outpath=./sqlite3.sql -driver=sqlite3
 
 type UserId uint64
 
 // +table: user
+//
+//sqlla:plugin count
+//sqlla:plugin timeHooks create=CreatedAt sameOnUpdate=UpdatedAt
+//sqlla:plugin slice columns=Id,Name keyBy=Id groupBy=Name
 type User struct {
 	Id        UserId         `db:"id,primarykey,autoincrement"`
 	Name      string         `db:"name"`
