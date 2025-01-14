@@ -36,7 +36,12 @@ func (q {{ $camelName }}InsertSQL) {{ $camelName }}InsertSQLToSql() (string, []i
 			return "", []interface{}{}, err
 		}
 	}
+	{{- if eq (dialect) "mysql" }}
 	qs, vs, err := q.setMap.ToInsertSql()
+	{{- end }}
+	{{- if eq (dialect) "postgresql" }}
+	qs, _, vs, err := q.setMap.ToInsertSqlPg(0)
+	{{- end }}
 	if err != nil {
 		return "", []interface{}{}, err
 	}
@@ -181,7 +186,12 @@ func (q *{{ $camelName }}BulkInsertSQL) {{ $camelName }}InsertSQLToSql() (string
 		sms = append(sms, iq.setMap)
 	}
 
+	{{ if eq (dialect) "mysql" }}
 	query, vs, err := sms.ToInsertSql()
+	{{ end -}}
+	{{ if eq (dialect) "postgresql" }}
+	query, _, vs, err := sms.ToInsertSqlPg(0)
+	{{ end -}}
 	if err != nil {
 	return "", []interface{}{}, err
 	}

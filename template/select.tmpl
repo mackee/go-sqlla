@@ -14,7 +14,12 @@ type {{ $camelName }}SelectSQL struct {
 	tableAlias  string
 	joinClauses []string
 
+{{ if eq (dialect) "mysql" }}
 	additionalWhereClause string
+{{ end -}}
+{{ if eq (dialect) "postgres" }}
+	additionalWhereClause func (int) string
+{{ end -}}
 	additionalWhereClauseArgs []interface{}
 
 	groupByColumns []string
@@ -84,11 +89,20 @@ func (q {{ $camelName }}SelectSQL) JoinClause(clause string) {{ $camelName }}Sel
 	return q
 }
 
+{{ if eq (dialect) "mysql" }}
 func (q {{ $camelName }}SelectSQL) AdditionalWhereClause(clause string, args ...interface{}) {{ $camelName }}SelectSQL {
 	q.additionalWhereClause = clause
 	q.additionalWhereClauseArgs = args
 	return q
 }
+{{- end }}
+
+{{ if eq (dialect) "postgres" }}
+func (q {{ $camelName }}SelectSQL) AdditionalWhereClause(clause func (int) string) {{ $camelName }}SelectSQL {
+	q.additionalWhereClause = clause
+	return q
+}
+{{- end }}
 
 func (q {{ $camelName }}SelectSQL) appendColumnPrefix(column string) string {
 	if q.tableAlias == "" || strings.ContainsAny(column, "(.") {
@@ -112,7 +126,12 @@ func (q {{ $camelName }}SelectSQL) GroupBy(columns ...string) {{ $camelName }}Se
 {{ range .Columns }}{{ template "SelectColumn" . }}{{ end }}
 func (q {{ $camelName }}SelectSQL) ToSql() (string, []interface{}, error) {
 	columns := strings.Join(q.Columns, ", ")
+	{{- if eq (dialect) "mysql" }}
 	wheres, vs, err := q.where.ToSql()
+	{{- end }}
+	{{- if eq (dialect) "postgres" }}
+	wheres, offset, vs, err := q.where.ToSqlPg(0)
+	{{- end }}
 	if err != nil {
 		return "", nil, err
 	}
@@ -135,7 +154,12 @@ func (q {{ $camelName }}SelectSQL) ToSql() (string, []interface{}, error) {
 		query += " WHERE" + wheres
 	}
 	if q.additionalWhereClause != "" {
+		{{- if eq (dialect) "mysql" }}
 		query += " " + q.additionalWhereClause
+		{{- end }}
+		{{- if eq (dialect) "postgres" }}
+		query += " " + q.additionalWhereClause(offset)
+		{{- end }}
 		if len(q.additionalWhereClauseArgs) > 0 {
 			vs = append(vs, q.additionalWhereClauseArgs...)
 		}

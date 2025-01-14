@@ -1,6 +1,7 @@
 package sqlla
 
 import (
+	"strconv"
 	"strings"
 )
 
@@ -23,6 +24,35 @@ func (op Operator) ToSql() (string, error) {
 	return string(op), nil
 }
 
-func MakeInOperator(n int) Operator {
-	return Operator("IN(?" + strings.Repeat(",?", n-1) + ")")
+type OperatorToSqler interface {
+	ToSql() (string, error)
+}
+
+type OperatorToSQLPger interface {
+	ToSqlPg(offset int) (string, int, error)
+}
+
+type OperatorIn struct {
+	num int
+}
+
+func (o *OperatorIn) ToSql() (string, error) {
+	return "IN(?" + strings.Repeat(",?", o.num-1) + ")", nil
+}
+
+func (o *OperatorIn) ToSqlPg(offset int) (string, int, error) {
+	b := &strings.Builder{}
+	b.WriteString("IN(")
+	for i := range o.num {
+		if i > 0 {
+			b.WriteString(",")
+		}
+		b.WriteString("$" + strconv.Itoa(offset+i+1))
+	}
+	b.WriteString(")")
+	return b.String(), offset + o.num, nil
+}
+
+func MakeInOperator(n int) OperatorToSqler {
+	return &OperatorIn{num: n}
 }

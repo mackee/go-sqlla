@@ -23,11 +23,21 @@ func (q {{ $camelName }}UpdateSQL) ToSql() (string, []interface{}, error) {
 			return "", []interface{}{}, err
 		}
 	}
+	{{- if eq (dialect) "mysql" }}
 	setColumns, svs, err := q.setMap.ToUpdateSql()
+	{{- end }}
+	{{- if eq (dialect) "postgres" }}
+	setColumns, offset, svs, err := q.setMap.ToUpdateSqlPg(0)
+	{{- end }}
 	if err != nil {
 		return "", []interface{}{}, err
 	}
+	{{- if eq (dialect) "mysql" }}
 	wheres, wvs, err := q.where.ToSql()
+	{{- end }}
+	{{- if eq (dialect) "postgres" }}
+	wheres, offset, wvs, err := q.where.ToSqlPg(offset)
+	{{- end }}
 	if err != nil {
 		return "", []interface{}{}, err
 	}
