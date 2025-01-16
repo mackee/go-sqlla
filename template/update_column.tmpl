@@ -3,18 +3,12 @@
 {{- template "UpdateColumnNullT" . }}
 {{- else }}
 func (q {{ $smallTableName }}UpdateSQL) Set{{ .MethodName }}(v {{ .TypeName }}) {{ $smallTableName }}UpdateSQL {
-	q.setMap[{{ cquoteby .Name }}] = v
+	q.setMap[{{ cquoteby .Name }}] = {{ .ExprValueIdentifier }}
 	return q
 }
 
 func (q {{ $smallTableName }}UpdateSQL) Where{{ .MethodName }}(v {{ .TypeName }}, exprs ...sqlla.Operator) {{ $smallTableName }}UpdateSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.{{ .ExprTypeName }}{Value: {{ .ExprValueIdentifier }}, Op: op, Column: {{ cquoteby .Name }}}
+	where := {{ .ExprValue }}{Value: {{ .ExprValueIdentifier }}, Op: sqlla.Operators(exprs), Column: {{ cquoteby .Name }}}
 	q.where = append(q.where, where)
 	return q
 }
@@ -25,9 +19,9 @@ func (q {{ $smallTableName }}UpdateSQL) Where{{ .MethodName }}In(vs ...{{ .TypeN
 	for _, v := range vs {
 		_vs = append(_vs, {{ .BaseTypeName }}(v))
 	}
-	where := sqlla.{{ .ExprMultiTypeName }}{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: {{ cquoteby .Name }}}
+	where := {{ .ExprMultiValue }}{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: {{ cquoteby .Name }}}
 {{- else }}
-	where := sqlla.{{ .ExprMultiTypeName }}{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: {{ cquoteby .Name }}}
+	where := {{ .ExprMultiValue }}{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: {{ cquoteby .Name }}}
 {{- end }}
 	q.where = append(q.where, where)
 	return q

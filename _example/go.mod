@@ -1,6 +1,6 @@
 module github.com/mackee/go-sqlla/_example
 
-go 1.22
+go 1.22.0
 
 toolchain go1.22.4
 
@@ -8,10 +8,12 @@ replace github.com/mackee/go-sqlla/v2 => ../
 
 require (
 	github.com/go-sql-driver/mysql v1.8.1
-	github.com/mackee/go-genddl v0.0.0-20240709095411-bc59661f6bd5
+	github.com/google/go-cmp v0.6.0
+	github.com/mackee/go-genddl v0.0.0-20240912022326-fade26b3e8ea
 	github.com/mackee/go-sqlla/v2 v2.0.0-00010101000000-000000000000
 	github.com/mattn/go-sqlite3 v1.14.9
 	github.com/ory/dockertest/v3 v3.11.0
+	github.com/pgvector/pgvector-go v0.2.2
 )
 
 require (
@@ -45,10 +47,9 @@ require (
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
-	golang.org/x/mod v0.19.0 // indirect
-	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/sys v0.22.0 // indirect
-	golang.org/x/text v0.16.0 // indirect
-	golang.org/x/tools v0.23.0 // indirect
+	golang.org/x/mod v0.21.0 // indirect
+	golang.org/x/sync v0.8.0 // indirect
+	golang.org/x/sys v0.25.0 // indirect
+	golang.org/x/tools v0.25.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

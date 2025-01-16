@@ -19,7 +19,7 @@ func ({{ $receiver }} *{{ $tableTypeName }}) GetBy{{ $methodName }}(ctx context.
 {{- range $index, $columnName := $columnNames -}}
 	c{{ $index }}{{ " " }}
 	{{- $column := $table.Lookup $columnName -}}
-	{{ ternary $column.TypeParameter $column.TypeName $column.IsNullT }},
+	{{  $column.TypeName }},
 {{- end }}) (*{{ $structName }}, error) {
 	row, err := New{{ $structName }}SQL().Select().
 	{{- range $index, $columnName := $columnNames }}
@@ -44,7 +44,7 @@ func ({{ $receiver }} *{{ $tableTypeName }}) ListBy{{ $methodName }}(ctx context
 {{- range $index, $columnName := $columnNames -}}
 	c{{ $index }}{{ " " }}
 	{{- $column := $table.Lookup $columnName -}}
-	{{ ternary $column.TypeParameter $column.TypeName $column.IsNullT }},
+	{{ $column.TypeName }},
 {{- end }}) ({{ $sliceTypeName }}, error) {
 	_rows, err := New{{ $structName }}SQL().Select().
 	{{- range $index, $columnName := $columnNames }}
@@ -75,11 +75,12 @@ type {{ $createInputTypeName }} struct {
 {{- range $index, $columnName := $createColumns }}
 	{{- $column := $table.Lookup $columnName -}}
 	{{- if $column.IsPk }}{{ $hasPk = true }}{{ end }}
-	{{ $column.FieldName }} {{ $column.TypeName }}
 	{{- if $column.IsNullT }}
 	{{- $nullTColumns = append $nullTColumns $column.FieldName }}
+	{{ $column.FieldName }} sql.Null[{{ $column.TypeName }}]
 	{{- else }}
 	{{- $noNullTColumns = append $noNullTColumns $column.FieldName }}
+	{{ $column.FieldName }} {{ $column.TypeName }}
 	{{- end }}
 {{- end }}
 }

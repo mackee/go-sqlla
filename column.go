@@ -6,23 +6,21 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-
-	"github.com/Masterminds/goutils"
 )
 
 type Columns []Column
 
 type Column struct {
-	Field         *ast.Field
-	Name          string
-	MethodName    string
-	typeName      string
-	PkgName       string
-	baseTypeName  string
-	altTypeName   string
-	typeParameter string
-	TableName     string
-	IsPk          bool
+	Field        *ast.Field
+	Name         string
+	MethodName   string
+	typeName     string
+	PkgName      string
+	baseTypeName string
+	altTypeName  string
+	TableName    string
+	IsPk         bool
+	isNullT      bool
 }
 
 func (c Column) HasUnderlyingType() bool {
@@ -31,16 +29,10 @@ func (c Column) HasUnderlyingType() bool {
 
 func (c Column) TypeName() string {
 	tn := c.typeName
-	if c.typeParameter != "" {
-		return tn + "[" + c.typeParameter + "]"
-	}
 	return tn
 }
 
 func (c Column) BaseTypeName() string {
-	if c.typeParameter != "" {
-		return c.baseTypeName + "[" + c.typeParameter + "]"
-	}
 	return c.baseTypeName
 }
 
@@ -48,46 +40,51 @@ func (c Column) AltTypeName() string {
 	if c.altTypeName == "" {
 		return ""
 	}
-	if c.typeParameter != "" {
-		return c.altTypeName + "[" + c.typeParameter + "]"
-	}
 	return c.altTypeName
 }
 
 func (c Column) IsNullT() bool {
-	return c.baseTypeName == "sql.Null" && c.typeParameter != ""
+	return c.isNullT
 }
 
-func (c Column) TypeParameter() string {
-	return c.typeParameter
-}
-
-func (c Column) typeNameForExpr() string {
-	tname := c.BaseTypeName()
-	if atn := c.AltTypeName(); atn != "" {
-		tname = atn
+func (c Column) nullTypeSuffix() string {
+	nv := strings.TrimPrefix(c.baseTypeName, "sql.Null")
+	nv = strings.TrimPrefix(nv, "mysql.Null")
+	if nv == c.baseTypeName {
+		return ""
 	}
-	tname = c.exprize(tname)
-	tname = goutils.Capitalize(tname)
-	return tname
+	return nv
 }
 
-func (c Column) ExprTypeName() string {
-	return "Expr" + c.typeNameForExpr()
+func (c Column) nullBaseType(t string) string {
+	if t == "" {
+		return ""
+	}
+	if t == "Time" {
+		return "time.Time"
+	}
+
+	return strings.ToLower(t)
 }
 
-func (c Column) exprize(s string) string {
-	s = strings.TrimPrefix(s, "sql.")
-	s = strings.TrimPrefix(s, "time.")
-	s = strings.TrimPrefix(s, "mysql.")
-	return s
+func (c Column) ExprValue() string {
+	if nv := c.nullBaseType(c.nullTypeSuffix()); nv != "" {
+		return "sqlla.ExprNull[" + nv + "]"
+	}
+	if c.isNullT {
+		return "sqlla.ExprNull[" + c.baseTypeName + "]"
+	}
+	return "sqlla.ExprValue[" + c.baseTypeName + "]"
 }
 
-func (c Column) ExprMultiTypeName() string {
-	return "ExprMulti" + c.typeNameForExpr()
+func (c Column) ExprMultiValue() string {
+	return "sqlla.ExprMultiValue[" + c.baseTypeName + "]"
 }
 
 func (c Column) ExprValueIdentifier() string {
+	if nt := c.nullTypeSuffix(); nt != "" {
+		return "sql.Null[" + c.nullBaseType(nt) + "]{Valid: v.Valid, V: v." + nt + "}"
+	}
 	if c.typeName != c.baseTypeName {
 		return c.baseTypeName + "(v)"
 	}
@@ -137,28 +134,12 @@ func (wh Where) ToSqlPg(offset int) (string, int, []any, error) {
 	wheres := " "
 	vs := []any{}
 	for i, w := range wh {
-		ev, ok := w.(ExprWithExprValue)
-		var (
-			s   string
-			n   int
-			v   []any
-			err error
-		)
-		if ok {
-			s, n, v, err = ev.ExprValue().ToSqlPg(offset)
-			if err != nil {
-				return "", offset, nil, err
-			}
-			offset = n
-		} else {
-			s, v, err = w.ToSql()
-			if err != nil {
-				return "", offset, nil, err
-			}
+		s, n, v, err := w.ToSqlPg(offset)
+		if err != nil {
+			return "", offset, nil, err
 		}
-		vs = append(vs, v...)
 		offset = n
-
+		vs = append(vs, v...)
 		if i == 0 {
 			wheres += s
 			continue
@@ -233,7 +214,7 @@ func (sm SetMap) ToUpdateSqlPg(offset int) (string, int, []any, error) {
 	var setColumns string
 	vs := []any{}
 	columnCount := 0
-	placeholderNum := offset + 1
+	placeholderNum := offset
 	iter := sm.NewIterator()
 	for iter.Iterate() {
 		k, v := iter.Key(), iter.Value()
@@ -243,8 +224,8 @@ func (sm SetMap) ToUpdateSqlPg(offset int) (string, int, []any, error) {
 		if rv, ok := v.(SetMapRawValue); ok {
 			setColumns += " " + k + " = " + string(rv)
 		} else {
-			setColumns += " " + k + " = $" + strconv.Itoa(placeholderNum)
 			placeholderNum++
+			setColumns += " " + k + " = $" + strconv.Itoa(placeholderNum)
 			vs = append(vs, v)
 		}
 		columnCount++
@@ -280,7 +261,7 @@ func (sm SetMap) ToInsertColumnsAndValuesPg(offset int) (string, string, int, []
 	qs, ps := "(", "("
 	vs := []any{}
 	columnCount := 0
-	placeholderNum := offset + 1
+	placeholderNum := offset
 	iter := sm.NewIterator()
 	for iter.Iterate() {
 		k, v := iter.Key(), iter.Value()
@@ -289,10 +270,10 @@ func (sm SetMap) ToInsertColumnsAndValuesPg(offset int) (string, string, int, []
 			ps += ","
 		}
 		qs += k
+		placeholderNum++
+		columnCount++
 		ps += "$" + strconv.Itoa(placeholderNum)
 		vs = append(vs, v)
-		columnCount++
-		placeholderNum++
 	}
 	qs += ")"
 	ps += ")"
@@ -302,13 +283,13 @@ func (sm SetMap) ToInsertColumnsAndValuesPg(offset int) (string, string, int, []
 // ToInsertSql generates to insert SQL expressions with placeholders.
 func (sm SetMap) ToInsertSql() (string, []any, error) {
 	qs, ps, vs := sm.ToInsertColumnsAndValues()
-	return qs + " VALUES" + ps, vs, nil
+	return qs + " VALUES " + ps, vs, nil
 }
 
 // ToInsertSqlPg generates to insert SQL expressions with numbered placeholders for PostgreSQL.
 func (sm SetMap) ToInsertSqlPg(offset int) (string, int, []any, error) {
 	qs, ps, placeholderNum, vs := sm.ToInsertColumnsAndValuesPg(offset)
-	return qs + " VALUES" + ps, placeholderNum, vs, nil
+	return qs + " VALUES " + ps, placeholderNum, vs, nil
 }
 
 type SetMaps []SetMap

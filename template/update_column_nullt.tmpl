@@ -1,44 +1,38 @@
 {{ define "UpdateColumnNullT" }}{{ $smallTableName := .TableName | toCamel | untitle }}
-func (q {{ $smallTableName }}UpdateSQL) Set{{ .MethodName }}(v {{ .TypeParameter }}) {{ $smallTableName }}UpdateSQL {
-	q.setMap[{{ cquoteby .Name }}] = sql.Null[{{ .TypeParameter }}]{ V: v, Valid: true }
+func (q {{ $smallTableName }}UpdateSQL) Set{{ .MethodName }}(v {{ .TypeName }}) {{ $smallTableName }}UpdateSQL {
+	q.setMap[{{ cquoteby .Name }}] = {{ .ExprValueIdentifier }}
 	return q
 }
 
 func (q {{ $smallTableName }}UpdateSQL) Set{{ .MethodName }}ToNull() {{ $smallTableName }}UpdateSQL {
-	q.setMap[{{ cquoteby .Name }}] = sql.Null[{{ .TypeParameter }}]{ Valid: false }
+	q.setMap[{{ cquoteby .Name }}] = sql.Null[{{ .BaseTypeName }}]{ Valid: false }
 	return q
 }
 
-func (q {{ $smallTableName }}UpdateSQL) Where{{ .MethodName }}(v {{ .TypeParameter }}, exprs ...sqlla.Operator) {{ $smallTableName }}UpdateSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprNull[{{ .TypeParameter }}]{Value: sql.Null[{{ .TypeParameter }}]{ V: v, Valid: true }, Op: op, Column: {{ cquoteby .Name }}}
+func (q {{ $smallTableName }}UpdateSQL) Where{{ .MethodName }}(v {{ .TypeName }}, exprs ...sqlla.Operator) {{ $smallTableName }}UpdateSQL {
+	where := {{ .ExprValue }}{Value: sql.Null[{{ .BaseTypeName }}]{ V: {{ .ExprValueIdentifier }}, Valid: true }, Op: sqlla.Operators(exprs), Column: {{ cquoteby .Name }}}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q {{ $smallTableName }}UpdateSQL) Where{{ .MethodName }}IsNull() {{ $smallTableName }}UpdateSQL {
-	where := sqlla.ExprNull[{{ .TypeParameter }}]{Value: sql.Null[{{ .TypeParameter }}]{ Valid: false }, Op: sqlla.OpEqual, Column: {{ cquoteby .Name }}}
+	where := {{ .ExprValue }}{Value: sql.Null[{{ .BaseTypeName }}]{ Valid: false }, Op: sqlla.Operators([]sqlla.Operator{sqlla.OpEqual}), Column: {{ cquoteby .Name }}}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q {{ $smallTableName }}UpdateSQL) Where{{ .MethodName }}IsNotNull() {{ $smallTableName }}UpdateSQL {
-	where := sqlla.ExprNull[{{ .TypeParameter }}]{Value: sql.Null[{{ .TypeParameter }}]{ Valid: false }, Op: sqlla.OpNot, Column: {{ cquoteby .Name }}}
+	where := {{ .ExprValue }}{Value: sql.Null[{{ .BaseTypeName }}]{ Valid: false }, Op: sqlla.Operators([]sqlla.Operator{sqlla.OpNot}), Column: {{ cquoteby .Name }}}
 	q.where = append(q.where, where)
 	return q
 }
 
-func (q {{ $smallTableName }}UpdateSQL) Where{{ .MethodName }}In(vs ...{{ .TypeParameter }}) {{ $smallTableName }}UpdateSQL {
-	_vs := make([]sql.Null[{{ .TypeParameter }}], 0, len(vs))
+func (q {{ $smallTableName }}UpdateSQL) Where{{ .MethodName }}In(vs ...{{ .TypeName }}) {{ $smallTableName }}UpdateSQL {
+	_vs := make([]{{ .BaseTypeName }}, 0, len(vs))
 	for _, v := range vs {
-		_vs = append(_vs, sql.Null[{{ .TypeParameter }}]{V: v, Valid: true})
+		_vs = append(_vs, {{ .ExprValueIdentifier }})
 	}
-	where := sqlla.ExprMultiValue[sql.Null[{{ .TypeParameter }}]]{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: {{ cquoteby .Name }}}
+	where := {{ .ExprMultiValue }}{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: {{ cquoteby .Name }}}
 	q.where = append(q.where, where)
 	return q
 }

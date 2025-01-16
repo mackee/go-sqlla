@@ -13,7 +13,12 @@ func (q {{ $camelName }}SQL) Delete() {{ $camelName }}DeleteSQL {
 
 {{ range .Columns }}{{ template "DeleteColumn" . }}{{ end }}
 func (q {{ $camelName }}DeleteSQL) ToSql() (string, []interface{}, error) {
+	{{- if eq (dialect) "mysql" }}
 	wheres, vs, err := q.where.ToSql()
+	{{- end }}
+	{{- if eq (dialect) "postgresql" }}
+	wheres, _, vs, err := q.where.ToSqlPg(0)
+	{{- end }}
 	if err != nil {
 		return "", nil, err
 	}
