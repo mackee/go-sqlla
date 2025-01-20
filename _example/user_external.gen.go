@@ -599,30 +599,29 @@ func (q userExternalInsertSQL) ValueUpdatedAt(v time.Time) userExternalInsertSQL
 	return q
 }
 
-func (q userExternalInsertSQL) ToSql() (string, []interface{}, error) {
+func (q userExternalInsertSQL) ToSql() (string, []any, error) {
 	query, vs, err := q.userExternalInsertSQLToSql()
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", []any{}, err
 	}
 	return query + ";", vs, nil
 }
 
-func (q userExternalInsertSQL) userExternalInsertSQLToSql() (string, []interface{}, error) {
+func (q userExternalInsertSQL) userExternalInsertSQLToSql() (string, []any, error) {
 	var err error
 	var s interface{} = UserExternal{}
 	if t, ok := s.(userExternalDefaultInsertHooker); ok {
 		q, err = t.DefaultInsertHook(q)
 		if err != nil {
-			return "", []interface{}{}, err
+			return "", []any{}, err
 		}
 	}
 	qs, vs, err := q.setMap.ToInsertSql()
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", []any{}, err
 	}
 
 	query := "INSERT INTO " + "`user_external`" + " " + qs
-
 	return query, vs, nil
 }
 
@@ -672,7 +671,7 @@ type userExternalDefaultInsertHooker interface {
 }
 
 type userExternalInsertSQLToSqler interface {
-	userExternalInsertSQLToSql() (string, []interface{}, error)
+	userExternalInsertSQLToSql() (string, []any, error)
 }
 
 type userExternalBulkInsertSQL struct {
@@ -689,9 +688,9 @@ func (q *userExternalBulkInsertSQL) Append(iqs ...userExternalInsertSQL) {
 	q.insertSQLs = append(q.insertSQLs, iqs...)
 }
 
-func (q *userExternalBulkInsertSQL) userExternalInsertSQLToSql() (string, []interface{}, error) {
+func (q *userExternalBulkInsertSQL) userExternalInsertSQLToSql() (string, []any, error) {
 	if len(q.insertSQLs) == 0 {
-		return "", []interface{}{}, fmt.Errorf("sqlla: This userExternalBulkInsertSQL's InsertSQL was empty")
+		return "", []any{}, fmt.Errorf("sqlla: This userExternalBulkInsertSQL's InsertSQL was empty")
 	}
 	iqs := make([]userExternalInsertSQL, len(q.insertSQLs))
 	copy(iqs, q.insertSQLs)
@@ -702,7 +701,7 @@ func (q *userExternalBulkInsertSQL) userExternalInsertSQLToSql() (string, []inte
 			var err error
 			iq, err = t.DefaultInsertHook(iq)
 			if err != nil {
-				return "", []interface{}{}, err
+				return "", []any{}, err
 			}
 			iqs[i] = iq
 		}
@@ -715,16 +714,15 @@ func (q *userExternalBulkInsertSQL) userExternalInsertSQLToSql() (string, []inte
 
 	query, vs, err := sms.ToInsertSql()
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", []any{}, err
 	}
-
 	return "INSERT INTO " + "`user_external`" + " " + query, vs, nil
 }
 
-func (q *userExternalBulkInsertSQL) ToSql() (string, []interface{}, error) {
+func (q *userExternalBulkInsertSQL) ToSql() (string, []any, error) {
 	query, vs, err := q.userExternalInsertSQLToSql()
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", []any{}, err
 	}
 	return query + ";", vs, nil
 }

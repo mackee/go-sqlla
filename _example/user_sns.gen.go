@@ -559,30 +559,29 @@ func (q userSNSInsertSQL) ValueUpdatedAt(v time.Time) userSNSInsertSQL {
 	return q
 }
 
-func (q userSNSInsertSQL) ToSql() (string, []interface{}, error) {
+func (q userSNSInsertSQL) ToSql() (string, []any, error) {
 	query, vs, err := q.userSNSInsertSQLToSql()
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", []any{}, err
 	}
 	return query + ";", vs, nil
 }
 
-func (q userSNSInsertSQL) userSNSInsertSQLToSql() (string, []interface{}, error) {
+func (q userSNSInsertSQL) userSNSInsertSQLToSql() (string, []any, error) {
 	var err error
 	var s interface{} = UserSNS{}
 	if t, ok := s.(userSNSDefaultInsertHooker); ok {
 		q, err = t.DefaultInsertHook(q)
 		if err != nil {
-			return "", []interface{}{}, err
+			return "", []any{}, err
 		}
 	}
 	qs, vs, err := q.setMap.ToInsertSql()
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", []any{}, err
 	}
 
 	query := "INSERT INTO " + "`user_sns`" + " " + qs
-
 	return query, vs, nil
 }
 
@@ -632,7 +631,7 @@ type userSNSDefaultInsertHooker interface {
 }
 
 type userSNSInsertSQLToSqler interface {
-	userSNSInsertSQLToSql() (string, []interface{}, error)
+	userSNSInsertSQLToSql() (string, []any, error)
 }
 
 type userSNSBulkInsertSQL struct {
@@ -649,9 +648,9 @@ func (q *userSNSBulkInsertSQL) Append(iqs ...userSNSInsertSQL) {
 	q.insertSQLs = append(q.insertSQLs, iqs...)
 }
 
-func (q *userSNSBulkInsertSQL) userSNSInsertSQLToSql() (string, []interface{}, error) {
+func (q *userSNSBulkInsertSQL) userSNSInsertSQLToSql() (string, []any, error) {
 	if len(q.insertSQLs) == 0 {
-		return "", []interface{}{}, fmt.Errorf("sqlla: This userSNSBulkInsertSQL's InsertSQL was empty")
+		return "", []any{}, fmt.Errorf("sqlla: This userSNSBulkInsertSQL's InsertSQL was empty")
 	}
 	iqs := make([]userSNSInsertSQL, len(q.insertSQLs))
 	copy(iqs, q.insertSQLs)
@@ -662,7 +661,7 @@ func (q *userSNSBulkInsertSQL) userSNSInsertSQLToSql() (string, []interface{}, e
 			var err error
 			iq, err = t.DefaultInsertHook(iq)
 			if err != nil {
-				return "", []interface{}{}, err
+				return "", []any{}, err
 			}
 			iqs[i] = iq
 		}
@@ -675,16 +674,15 @@ func (q *userSNSBulkInsertSQL) userSNSInsertSQLToSql() (string, []interface{}, e
 
 	query, vs, err := sms.ToInsertSql()
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", []any{}, err
 	}
-
 	return "INSERT INTO " + "`user_sns`" + " " + query, vs, nil
 }
 
-func (q *userSNSBulkInsertSQL) ToSql() (string, []interface{}, error) {
+func (q *userSNSBulkInsertSQL) ToSql() (string, []any, error) {
 	query, vs, err := q.userSNSInsertSQLToSql()
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", []any{}, err
 	}
 	return query + ";", vs, nil
 }

@@ -15,10 +15,15 @@ func (q {{ $camelName }}SQL) Insert() {{ $camelName }}InsertSQL {
 }
 
 {{ range .Columns }}{{ template "InsertColumn" . }}{{ end }}
-func (q {{ $camelName }}InsertSQL) ToSql() (string, []interface{}, error) {
+func (q {{ $camelName }}InsertSQL) ToSql() (string, []any, error) {
+	{{- if eq (dialect) "mysql" }}
 	query, vs, err := q.{{ $camelName }}InsertSQLToSql()
+	{{- end }}
+	{{- if eq (dialect) "postgresql" }}
+	query, _, vs, err := q.{{ $camelName }}InsertSQLToSqlPg(0)
+	{{- end }}
 	if err != nil {
-			return "", []interface{}{}, err
+			return "", []any{}, err
 	}
 	{{- if and .HasPk (eq (dialect) "postgresql") }}
 	return query + " RETURNING " + {{ cquoteby .PkColumn.Name }} + ";", vs, nil
@@ -27,28 +32,48 @@ func (q {{ $camelName }}InsertSQL) ToSql() (string, []interface{}, error) {
 	{{- end }}
 }
 
-func (q {{ $camelName }}InsertSQL) {{ $camelName }}InsertSQLToSql() (string, []interface{}, error) {
+{{ if eq (dialect) "mysql" }}
+func (q {{ $camelName }}InsertSQL) {{ $camelName }}InsertSQLToSql() (string, []any, error) {
+{{- end }}
+{{- if eq (dialect) "postgresql" }}
+func (q {{ $camelName }}InsertSQL) {{ $camelName }}InsertSQLToSqlPg(offset int) (string, int, []any, error) {
+{{- end }}
 	var err error
 	var s interface{} = {{ .StructName }}{}
 	if t, ok := s.({{ $camelName }}DefaultInsertHooker); ok {
 		q, err = t.DefaultInsertHook(q)
 		if err != nil {
-			return "", []interface{}{}, err
+			{{- if eq (dialect) "mysql" }}
+			return "", []any{}, err
+			{{- end }}
+			{{- if eq (dialect) "postgresql" }}
+			return "", 0, []any{}, err
+			{{- end }}
 		}
 	}
 	{{- if eq (dialect) "mysql" }}
 	qs, vs, err := q.setMap.ToInsertSql()
 	{{- end }}
 	{{- if eq (dialect) "postgresql" }}
-	qs, _, vs, err := q.setMap.ToInsertSqlPg(0)
+	qs, offset, vs, err := q.setMap.ToInsertSqlPg(offset)
 	{{- end }}
 	if err != nil {
-		return "", []interface{}{}, err
+		{{- if eq (dialect) "mysql" }}
+		return "", []any{}, err
+		{{- end }}
+		{{- if eq (dialect) "postgresql" }}
+		return "", 0, []any{}, err
+		{{- end }}
 	}
 
 	query := "INSERT INTO " + {{ cquoteby .TableName }} + " " + qs
 
+	{{- if eq (dialect) "mysql" }}
 	return query, vs, nil
+	{{- end }}
+	{{- if eq (dialect) "postgresql" }}
+	return query, offset, vs, nil
+	{{- end }}
 }
 
 {{ if .HasPk -}}
@@ -145,7 +170,12 @@ type {{ $camelName }}DefaultInsertHooker interface {
 }
 
 type {{ $camelName }}InsertSQLToSqler interface {
-	{{ $camelName }}InsertSQLToSql() (string, []interface{}, error)
+	{{- if eq (dialect) "mysql" }}
+	{{ $camelName }}InsertSQLToSql() (string, []any, error)
+	{{- end }}
+	{{- if eq (dialect) "postgresql" }}
+	{{ $camelName }}InsertSQLToSqlPg(offset int) (string, int, []any, error)
+	{{- end }}
 }
 
 type {{ $camelName }}BulkInsertSQL struct {
@@ -162,9 +192,19 @@ func (q *{{ $camelName }}BulkInsertSQL) Append(iqs ...{{ $camelName }}InsertSQL)
 	q.insertSQLs = append(q.insertSQLs, iqs...)
 }
 
-func (q *{{ $camelName }}BulkInsertSQL) {{ $camelName }}InsertSQLToSql() (string, []interface{}, error) {
+{{ if eq (dialect) "mysql" }}
+func (q *{{ $camelName }}BulkInsertSQL) {{ $camelName }}InsertSQLToSql() (string, []any, error) {
+{{- end }}
+{{- if eq (dialect) "postgresql" }}
+func (q *{{ $camelName }}BulkInsertSQL) {{ $camelName }}InsertSQLToSqlPg(offset int) (string, int, []any, error) {
+{{- end }}
 	if len(q.insertSQLs) == 0 {
-		return "", []interface{}{}, fmt.Errorf("sqlla: This {{ $camelName }}BulkInsertSQL{{ "'s" }} InsertSQL was empty")
+		{{- if eq (dialect) "mysql" }}
+		return "", []any{}, fmt.Errorf("sqlla: This {{ $camelName }}BulkInsertSQL{{ "'s" }} InsertSQL was empty")
+		{{- end }}
+		{{- if eq (dialect) "postgresql" }}
+		return "", 0, []any{}, fmt.Errorf("sqlla: This {{ $camelName }}BulkInsertSQL{{ "'s" }} InsertSQL was empty")
+		{{- end }}
 	}
 	iqs := make([]{{ $camelName }}InsertSQL, len(q.insertSQLs))
 	copy(iqs, q.insertSQLs)
@@ -175,7 +215,12 @@ func (q *{{ $camelName }}BulkInsertSQL) {{ $camelName }}InsertSQLToSql() (string
 			var err error
 			iq, err = t.DefaultInsertHook(iq)
 			if err != nil {
-				return "", []interface{}{}, err
+				{{- if eq (dialect) "mysql" }}
+				return "", []any{}, err
+				{{- end }}
+				{{- if eq (dialect) "postgresql" }}
+				return "", 0, []any{}, err
+				{{- end }}
 			}
 			iqs[i] = iq
 		}
@@ -190,19 +235,34 @@ func (q *{{ $camelName }}BulkInsertSQL) {{ $camelName }}InsertSQLToSql() (string
 	query, vs, err := sms.ToInsertSql()
 	{{ end -}}
 	{{ if eq (dialect) "postgresql" }}
-	query, _, vs, err := sms.ToInsertSqlPg(0)
+	query, offset, vs, err := sms.ToInsertSqlPg(offset)
 	{{ end -}}
 	if err != nil {
-	return "", []interface{}{}, err
+		{{- if eq (dialect) "mysql" }}
+		return "", []any{}, err
+		{{- end }}
+		{{- if eq (dialect) "postgresql" }}
+		return "", 0, []any{}, err
+		{{- end }}
 	}
 
+	{{- if eq (dialect) "mysql" }}
 	return "INSERT INTO " + {{ cquoteby .TableName }} + " " + query, vs, nil
+	{{- end }}
+	{{- if eq (dialect) "postgresql" }}
+	return "INSERT INTO " + {{ cquoteby .TableName }} + " " + query, offset, vs, nil
+	{{- end }}
 }
 
-func (q *{{ $camelName }}BulkInsertSQL) ToSql() (string, []interface{}, error) {
+func (q *{{ $camelName }}BulkInsertSQL) ToSql() (string, []any, error) {
+	{{- if eq (dialect) "mysql" }}
 	query, vs, err := q.{{ $camelName }}InsertSQLToSql()
+	{{- end }}
+	{{- if eq (dialect) "postgresql" }}
+	query, _, vs, err := q.{{ $camelName }}InsertSQLToSqlPg(0)
+	{{- end }}
 	if err != nil {
-			return "", []interface{}{}, err
+			return "", []any{}, err
 	}
 	{{- if and .HasPk (eq (dialect) "postgresql") }}
 	return query + " RETURNING " + {{ cquoteby .PkColumn.Name }} + ";", vs, nil
@@ -255,5 +315,7 @@ func (q *{{ $camelName }}BulkInsertSQL) ExecContextWithoutSelect(ctx context.Con
 {{- if eq (dialect) "mysql" }}
 {{ template "InsertMySQL" . }}
 {{- end }}
-
+{{- if eq (dialect) "postgresql" }}
+{{ template "InsertPostgreSQL" . }}
+{{- end }}
 {{ end }}

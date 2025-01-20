@@ -613,31 +613,30 @@ func (q identityInsertSQL) ValueUpdatedAt(v time.Time) identityInsertSQL {
 	return q
 }
 
-func (q identityInsertSQL) ToSql() (string, []interface{}, error) {
-	query, vs, err := q.identityInsertSQLToSql()
+func (q identityInsertSQL) ToSql() (string, []any, error) {
+	query, _, vs, err := q.identityInsertSQLToSqlPg(0)
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", []any{}, err
 	}
 	return query + " RETURNING " + "\"id\"" + ";", vs, nil
 }
 
-func (q identityInsertSQL) identityInsertSQLToSql() (string, []interface{}, error) {
+func (q identityInsertSQL) identityInsertSQLToSqlPg(offset int) (string, int, []any, error) {
 	var err error
 	var s interface{} = Identity{}
 	if t, ok := s.(identityDefaultInsertHooker); ok {
 		q, err = t.DefaultInsertHook(q)
 		if err != nil {
-			return "", []interface{}{}, err
+			return "", 0, []any{}, err
 		}
 	}
-	qs, _, vs, err := q.setMap.ToInsertSqlPg(0)
+	qs, offset, vs, err := q.setMap.ToInsertSqlPg(offset)
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", 0, []any{}, err
 	}
 
 	query := "INSERT INTO " + "\"identities\"" + " " + qs
-
-	return query, vs, nil
+	return query, offset, vs, nil
 }
 
 func (q identityInsertSQL) Exec(db sqlla.DB) (Identity, error) {
@@ -680,7 +679,7 @@ type identityDefaultInsertHooker interface {
 }
 
 type identityInsertSQLToSqler interface {
-	identityInsertSQLToSql() (string, []interface{}, error)
+	identityInsertSQLToSqlPg(offset int) (string, int, []any, error)
 }
 
 type identityBulkInsertSQL struct {
@@ -697,9 +696,9 @@ func (q *identityBulkInsertSQL) Append(iqs ...identityInsertSQL) {
 	q.insertSQLs = append(q.insertSQLs, iqs...)
 }
 
-func (q *identityBulkInsertSQL) identityInsertSQLToSql() (string, []interface{}, error) {
+func (q *identityBulkInsertSQL) identityInsertSQLToSqlPg(offset int) (string, int, []any, error) {
 	if len(q.insertSQLs) == 0 {
-		return "", []interface{}{}, fmt.Errorf("sqlla: This identityBulkInsertSQL's InsertSQL was empty")
+		return "", 0, []any{}, fmt.Errorf("sqlla: This identityBulkInsertSQL's InsertSQL was empty")
 	}
 	iqs := make([]identityInsertSQL, len(q.insertSQLs))
 	copy(iqs, q.insertSQLs)
@@ -710,7 +709,7 @@ func (q *identityBulkInsertSQL) identityInsertSQLToSql() (string, []interface{},
 			var err error
 			iq, err = t.DefaultInsertHook(iq)
 			if err != nil {
-				return "", []interface{}{}, err
+				return "", 0, []any{}, err
 			}
 			iqs[i] = iq
 		}
@@ -721,18 +720,17 @@ func (q *identityBulkInsertSQL) identityInsertSQLToSql() (string, []interface{},
 		sms = append(sms, iq.setMap)
 	}
 
-	query, _, vs, err := sms.ToInsertSqlPg(0)
+	query, offset, vs, err := sms.ToInsertSqlPg(offset)
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", 0, []any{}, err
 	}
-
-	return "INSERT INTO " + "\"identities\"" + " " + query, vs, nil
+	return "INSERT INTO " + "\"identities\"" + " " + query, offset, vs, nil
 }
 
-func (q *identityBulkInsertSQL) ToSql() (string, []interface{}, error) {
-	query, vs, err := q.identityInsertSQLToSql()
+func (q *identityBulkInsertSQL) ToSql() (string, []any, error) {
+	query, _, vs, err := q.identityInsertSQLToSqlPg(0)
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", []any{}, err
 	}
 	return query + " RETURNING " + "\"id\"" + ";", vs, nil
 }
@@ -763,6 +761,407 @@ func (q *identityBulkInsertSQL) ExecContextWithoutSelect(ctx context.Context, db
 	}
 	result, err := db.ExecContext(ctx, query, args...)
 	return result, err
+}
+
+type identityInsertOnConflictDoNothingSQL struct {
+	insertSQL identityInsertSQLToSqler
+}
+
+func (q identityInsertSQL) OnConflictDoNothing() identityInsertOnConflictDoNothingSQL {
+	return identityInsertOnConflictDoNothingSQL{
+		insertSQL: q,
+	}
+}
+
+func (q identityInsertOnConflictDoNothingSQL) ToSql() (string, []any, error) {
+	query, _, vs, err := q.insertSQL.identityInsertSQLToSqlPg(0)
+	if err != nil {
+		return "", nil, err
+	}
+	query += " ON CONFLICT DO NOTHING"
+	query += " RETURNING " + "\"id\""
+	return query + ";", vs, nil
+
+}
+
+func (q identityInsertOnConflictDoNothingSQL) ExecContext(ctx context.Context, db sqlla.DB) (Identity, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return Identity{}, err
+	}
+	row := db.QueryRowContext(ctx, query, args...)
+	var pk IdentityID
+	if err := row.Scan(&pk); err != nil {
+		return Identity{}, err
+	}
+	return NewIdentitySQL().Select().ID(pk).SingleContext(ctx, db)
+
+}
+
+func (q identityInsertOnConflictDoNothingSQL) ExecContextWithoutSelect(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	result, err := db.ExecContext(ctx, query, args...)
+	return result, err
+
+}
+
+type identityInsertOnConflictDoUpdateSQL struct {
+	insertSQL             identityInsertSQLToSqler
+	onConflictDoUpdateMap sqlla.SetMap
+	target                string
+}
+
+func (q identityInsertSQL) OnConflictDoUpdate(target string) identityInsertOnConflictDoUpdateSQL {
+	return identityInsertOnConflictDoUpdateSQL{
+		insertSQL:             q,
+		onConflictDoUpdateMap: sqlla.SetMap{},
+		target:                target,
+	}
+}
+
+func (q identityInsertOnConflictDoUpdateSQL) ValueOnUpdateID(v IdentityID) identityInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"id\""] = int64(v)
+	return q
+}
+
+func (q identityInsertOnConflictDoUpdateSQL) RawValueOnUpdateID(v sqlla.SetMapRawValue) identityInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"id\""] = v
+	return q
+}
+
+func (q identityInsertOnConflictDoUpdateSQL) SameOnUpdateID() identityInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"id\""] = sqlla.SetMapRawValue(`"excluded".` + "\"id\"")
+	return q
+}
+
+func (q identityInsertOnConflictDoUpdateSQL) ValueOnUpdateAccountID(v AccountID) identityInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"account_id\""] = int64(v)
+	return q
+}
+
+func (q identityInsertOnConflictDoUpdateSQL) RawValueOnUpdateAccountID(v sqlla.SetMapRawValue) identityInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"account_id\""] = v
+	return q
+}
+
+func (q identityInsertOnConflictDoUpdateSQL) SameOnUpdateAccountID() identityInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"account_id\""] = sqlla.SetMapRawValue(`"excluded".` + "\"account_id\"")
+	return q
+}
+
+func (q identityInsertOnConflictDoUpdateSQL) ValueOnUpdateEmail(v string) identityInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"email\""] = v
+	return q
+}
+
+func (q identityInsertOnConflictDoUpdateSQL) RawValueOnUpdateEmail(v sqlla.SetMapRawValue) identityInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"email\""] = v
+	return q
+}
+
+func (q identityInsertOnConflictDoUpdateSQL) SameOnUpdateEmail() identityInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"email\""] = sqlla.SetMapRawValue(`"excluded".` + "\"email\"")
+	return q
+}
+
+func (q identityInsertOnConflictDoUpdateSQL) ValueOnUpdateCreatedAt(v time.Time) identityInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"created_at\""] = v
+	return q
+}
+
+func (q identityInsertOnConflictDoUpdateSQL) RawValueOnUpdateCreatedAt(v sqlla.SetMapRawValue) identityInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"created_at\""] = v
+	return q
+}
+
+func (q identityInsertOnConflictDoUpdateSQL) SameOnUpdateCreatedAt() identityInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"created_at\""] = sqlla.SetMapRawValue(`"excluded".` + "\"created_at\"")
+	return q
+}
+
+func (q identityInsertOnConflictDoUpdateSQL) ValueOnUpdateUpdatedAt(v time.Time) identityInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"updated_at\""] = v
+	return q
+}
+
+func (q identityInsertOnConflictDoUpdateSQL) RawValueOnUpdateUpdatedAt(v sqlla.SetMapRawValue) identityInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"updated_at\""] = v
+	return q
+}
+
+func (q identityInsertOnConflictDoUpdateSQL) SameOnUpdateUpdatedAt() identityInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"updated_at\""] = sqlla.SetMapRawValue(`"excluded".` + "\"updated_at\"")
+	return q
+}
+
+func (q identityInsertOnConflictDoUpdateSQL) ToSql() (string, []any, error) {
+	var err error
+	var s any = Identity{}
+	if t, ok := s.(identityDefaultInsertOnConflictDoUpdateHooker); ok {
+		q, err = t.DefaultInsertOnConflictDoUpdateHook(q)
+		if err != nil {
+			return "", nil, err
+		}
+	}
+
+	query, offset, vs, err := q.insertSQL.identityInsertSQLToSqlPg(0)
+	if err != nil {
+		return "", nil, err
+	}
+
+	os, _, ovs, err := q.onConflictDoUpdateMap.ToUpdateSqlPg(offset)
+	if err != nil {
+		return "", nil, err
+	}
+	query += " ON CONFLICT (" + q.target + ") DO UPDATE SET" + os
+	vs = append(vs, ovs...)
+	query += " RETURNING " + "\"id\""
+
+	return query + ";", vs, nil
+}
+
+func (q identityInsertOnConflictDoUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) (Identity, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return Identity{}, err
+	}
+	row := db.QueryRowContext(ctx, query, args...)
+	var pk IdentityID
+	if err := row.Scan(&pk); err != nil {
+		return Identity{}, err
+	}
+	return NewIdentitySQL().Select().ID(pk).SingleContext(ctx, db)
+
+}
+
+func (q identityInsertOnConflictDoUpdateSQL) ExecContextWithoutSelect(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	result, err := db.ExecContext(ctx, query, args...)
+	return result, err
+
+}
+
+type identityDefaultInsertOnConflictDoUpdateHooker interface {
+	DefaultInsertOnConflictDoUpdateHook(identityInsertOnConflictDoUpdateSQL) (identityInsertOnConflictDoUpdateSQL, error)
+}
+
+type identityBulkInsertOnConflictDoNothingSQL struct {
+	insertSQL identityInsertSQLToSqler
+}
+
+func (q *identityBulkInsertSQL) OnConflictDoNothing() identityBulkInsertOnConflictDoNothingSQL {
+	return identityBulkInsertOnConflictDoNothingSQL{
+		insertSQL: q,
+	}
+}
+
+func (q identityBulkInsertOnConflictDoNothingSQL) ToSql() (string, []any, error) {
+	query, _, vs, err := q.insertSQL.identityInsertSQLToSqlPg(0)
+	if err != nil {
+		return "", nil, err
+	}
+	query += " ON CONFLICT DO NOTHING"
+	query += " RETURNING " + "\"id\""
+	return query + ";", vs, nil
+
+}
+
+func (q identityBulkInsertOnConflictDoNothingSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Identity, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	rows, err := db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	pks := make([]IdentityID, 0)
+	for rows.Next() {
+		var pk IdentityID
+		if err := rows.Scan(&pk); err != nil {
+			return nil, err
+		}
+		pks = append(pks, pk)
+	}
+
+	return NewIdentitySQL().Select().IDIn(pks...).AllContext(ctx, db)
+
+}
+
+func (q identityBulkInsertOnConflictDoNothingSQL) ExecContextWithoutSelect(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	result, err := db.ExecContext(ctx, query, args...)
+	return result, err
+
+}
+
+type identityBulkInsertOnConflictDoUpdateSQL struct {
+	insertSQL             identityInsertSQLToSqler
+	onConflictDoUpdateMap sqlla.SetMap
+	target                string
+}
+
+func (q *identityBulkInsertSQL) OnConflictDoUpdate(target string) identityBulkInsertOnConflictDoUpdateSQL {
+	return identityBulkInsertOnConflictDoUpdateSQL{
+		insertSQL:             q,
+		onConflictDoUpdateMap: sqlla.SetMap{},
+		target:                target,
+	}
+}
+
+func (q identityBulkInsertOnConflictDoUpdateSQL) ValueOnUpdateID(v IdentityID) identityBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"id\""] = int64(v)
+	return q
+}
+
+func (q identityBulkInsertOnConflictDoUpdateSQL) RawValueOnUpdateID(v sqlla.SetMapRawValue) identityBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"id\""] = v
+	return q
+}
+
+func (q identityBulkInsertOnConflictDoUpdateSQL) SameOnUpdateID() identityBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"id\""] = sqlla.SetMapRawValue(`"excluded".` + "\"id\"")
+	return q
+}
+
+func (q identityBulkInsertOnConflictDoUpdateSQL) ValueOnUpdateAccountID(v AccountID) identityBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"account_id\""] = int64(v)
+	return q
+}
+
+func (q identityBulkInsertOnConflictDoUpdateSQL) RawValueOnUpdateAccountID(v sqlla.SetMapRawValue) identityBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"account_id\""] = v
+	return q
+}
+
+func (q identityBulkInsertOnConflictDoUpdateSQL) SameOnUpdateAccountID() identityBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"account_id\""] = sqlla.SetMapRawValue(`"excluded".` + "\"account_id\"")
+	return q
+}
+
+func (q identityBulkInsertOnConflictDoUpdateSQL) ValueOnUpdateEmail(v string) identityBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"email\""] = v
+	return q
+}
+
+func (q identityBulkInsertOnConflictDoUpdateSQL) RawValueOnUpdateEmail(v sqlla.SetMapRawValue) identityBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"email\""] = v
+	return q
+}
+
+func (q identityBulkInsertOnConflictDoUpdateSQL) SameOnUpdateEmail() identityBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"email\""] = sqlla.SetMapRawValue(`"excluded".` + "\"email\"")
+	return q
+}
+
+func (q identityBulkInsertOnConflictDoUpdateSQL) ValueOnUpdateCreatedAt(v time.Time) identityBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"created_at\""] = v
+	return q
+}
+
+func (q identityBulkInsertOnConflictDoUpdateSQL) RawValueOnUpdateCreatedAt(v sqlla.SetMapRawValue) identityBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"created_at\""] = v
+	return q
+}
+
+func (q identityBulkInsertOnConflictDoUpdateSQL) SameOnUpdateCreatedAt() identityBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"created_at\""] = sqlla.SetMapRawValue(`"excluded".` + "\"created_at\"")
+	return q
+}
+
+func (q identityBulkInsertOnConflictDoUpdateSQL) ValueOnUpdateUpdatedAt(v time.Time) identityBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"updated_at\""] = v
+	return q
+}
+
+func (q identityBulkInsertOnConflictDoUpdateSQL) RawValueOnUpdateUpdatedAt(v sqlla.SetMapRawValue) identityBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"updated_at\""] = v
+	return q
+}
+
+func (q identityBulkInsertOnConflictDoUpdateSQL) SameOnUpdateUpdatedAt() identityBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"updated_at\""] = sqlla.SetMapRawValue(`"excluded".` + "\"updated_at\"")
+	return q
+}
+
+func (q identityBulkInsertOnConflictDoUpdateSQL) ToSql() (string, []any, error) {
+	var s any = Identity{}
+	if t, ok := s.(identityDefaultInsertOnConflictDoUpdateHooker); ok {
+		sq := identityInsertOnConflictDoUpdateSQL{
+			insertSQL:             q.insertSQL,
+			onConflictDoUpdateMap: q.onConflictDoUpdateMap,
+			target:                q.target,
+		}
+		sq, err := t.DefaultInsertOnConflictDoUpdateHook(sq)
+		if err != nil {
+			return "", nil, err
+		}
+		q.insertSQL = sq.insertSQL
+		q.onConflictDoUpdateMap = sq.onConflictDoUpdateMap
+		q.target = sq.target
+	}
+
+	query, offset, vs, err := q.insertSQL.identityInsertSQLToSqlPg(0)
+	if err != nil {
+		return "", nil, err
+	}
+
+	os, _, ovs, err := q.onConflictDoUpdateMap.ToUpdateSqlPg(offset)
+	if err != nil {
+		return "", nil, err
+	}
+	query += " ON CONFLICT (" + q.target + ") DO UPDATE SET" + os
+	vs = append(vs, ovs...)
+	query += " RETURNING " + "\"id\""
+
+	return query + ";", vs, nil
+}
+
+func (q identityBulkInsertOnConflictDoUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Identity, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	rows, err := db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	pks := make([]IdentityID, 0)
+	for rows.Next() {
+		var pk IdentityID
+		if err := rows.Scan(&pk); err != nil {
+			return nil, err
+		}
+		pks = append(pks, pk)
+	}
+
+	return NewIdentitySQL().Select().IDIn(pks...).AllContext(ctx, db)
+
+}
+
+func (q identityBulkInsertOnConflictDoUpdateSQL) ExecContextWithoutSelect(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	result, err := db.ExecContext(ctx, query, args...)
+	return result, err
+
 }
 
 type identityDeleteSQL struct {

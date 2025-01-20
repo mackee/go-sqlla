@@ -639,30 +639,29 @@ func (q userItemInsertSQL) ValueUsedAt(v sql.NullTime) userItemInsertSQL {
 	return q
 }
 
-func (q userItemInsertSQL) ToSql() (string, []interface{}, error) {
+func (q userItemInsertSQL) ToSql() (string, []any, error) {
 	query, vs, err := q.userItemInsertSQLToSql()
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", []any{}, err
 	}
 	return query + ";", vs, nil
 }
 
-func (q userItemInsertSQL) userItemInsertSQLToSql() (string, []interface{}, error) {
+func (q userItemInsertSQL) userItemInsertSQLToSql() (string, []any, error) {
 	var err error
 	var s interface{} = UserItem{}
 	if t, ok := s.(userItemDefaultInsertHooker); ok {
 		q, err = t.DefaultInsertHook(q)
 		if err != nil {
-			return "", []interface{}{}, err
+			return "", []any{}, err
 		}
 	}
 	qs, vs, err := q.setMap.ToInsertSql()
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", []any{}, err
 	}
 
 	query := "INSERT INTO " + "`user_item`" + " " + qs
-
 	return query, vs, nil
 }
 
@@ -712,7 +711,7 @@ type userItemDefaultInsertHooker interface {
 }
 
 type userItemInsertSQLToSqler interface {
-	userItemInsertSQLToSql() (string, []interface{}, error)
+	userItemInsertSQLToSql() (string, []any, error)
 }
 
 type userItemBulkInsertSQL struct {
@@ -729,9 +728,9 @@ func (q *userItemBulkInsertSQL) Append(iqs ...userItemInsertSQL) {
 	q.insertSQLs = append(q.insertSQLs, iqs...)
 }
 
-func (q *userItemBulkInsertSQL) userItemInsertSQLToSql() (string, []interface{}, error) {
+func (q *userItemBulkInsertSQL) userItemInsertSQLToSql() (string, []any, error) {
 	if len(q.insertSQLs) == 0 {
-		return "", []interface{}{}, fmt.Errorf("sqlla: This userItemBulkInsertSQL's InsertSQL was empty")
+		return "", []any{}, fmt.Errorf("sqlla: This userItemBulkInsertSQL's InsertSQL was empty")
 	}
 	iqs := make([]userItemInsertSQL, len(q.insertSQLs))
 	copy(iqs, q.insertSQLs)
@@ -742,7 +741,7 @@ func (q *userItemBulkInsertSQL) userItemInsertSQLToSql() (string, []interface{},
 			var err error
 			iq, err = t.DefaultInsertHook(iq)
 			if err != nil {
-				return "", []interface{}{}, err
+				return "", []any{}, err
 			}
 			iqs[i] = iq
 		}
@@ -755,16 +754,15 @@ func (q *userItemBulkInsertSQL) userItemInsertSQLToSql() (string, []interface{},
 
 	query, vs, err := sms.ToInsertSql()
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", []any{}, err
 	}
-
 	return "INSERT INTO " + "`user_item`" + " " + query, vs, nil
 }
 
-func (q *userItemBulkInsertSQL) ToSql() (string, []interface{}, error) {
+func (q *userItemBulkInsertSQL) ToSql() (string, []any, error) {
 	query, vs, err := q.userItemInsertSQLToSql()
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", []any{}, err
 	}
 	return query + ";", vs, nil
 }

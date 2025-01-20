@@ -779,30 +779,29 @@ func (q groupInsertSQL) ValueUpdatedAt(v sql.NullTime) groupInsertSQL {
 	return q
 }
 
-func (q groupInsertSQL) ToSql() (string, []interface{}, error) {
+func (q groupInsertSQL) ToSql() (string, []any, error) {
 	query, vs, err := q.groupInsertSQLToSql()
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", []any{}, err
 	}
 	return query + ";", vs, nil
 }
 
-func (q groupInsertSQL) groupInsertSQLToSql() (string, []interface{}, error) {
+func (q groupInsertSQL) groupInsertSQLToSql() (string, []any, error) {
 	var err error
 	var s interface{} = Group{}
 	if t, ok := s.(groupDefaultInsertHooker); ok {
 		q, err = t.DefaultInsertHook(q)
 		if err != nil {
-			return "", []interface{}{}, err
+			return "", []any{}, err
 		}
 	}
 	qs, vs, err := q.setMap.ToInsertSql()
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", []any{}, err
 	}
 
 	query := "INSERT INTO " + "`group`" + " " + qs
-
 	return query, vs, nil
 }
 
@@ -852,7 +851,7 @@ type groupDefaultInsertHooker interface {
 }
 
 type groupInsertSQLToSqler interface {
-	groupInsertSQLToSql() (string, []interface{}, error)
+	groupInsertSQLToSql() (string, []any, error)
 }
 
 type groupBulkInsertSQL struct {
@@ -869,9 +868,9 @@ func (q *groupBulkInsertSQL) Append(iqs ...groupInsertSQL) {
 	q.insertSQLs = append(q.insertSQLs, iqs...)
 }
 
-func (q *groupBulkInsertSQL) groupInsertSQLToSql() (string, []interface{}, error) {
+func (q *groupBulkInsertSQL) groupInsertSQLToSql() (string, []any, error) {
 	if len(q.insertSQLs) == 0 {
-		return "", []interface{}{}, fmt.Errorf("sqlla: This groupBulkInsertSQL's InsertSQL was empty")
+		return "", []any{}, fmt.Errorf("sqlla: This groupBulkInsertSQL's InsertSQL was empty")
 	}
 	iqs := make([]groupInsertSQL, len(q.insertSQLs))
 	copy(iqs, q.insertSQLs)
@@ -882,7 +881,7 @@ func (q *groupBulkInsertSQL) groupInsertSQLToSql() (string, []interface{}, error
 			var err error
 			iq, err = t.DefaultInsertHook(iq)
 			if err != nil {
-				return "", []interface{}{}, err
+				return "", []any{}, err
 			}
 			iqs[i] = iq
 		}
@@ -895,16 +894,15 @@ func (q *groupBulkInsertSQL) groupInsertSQLToSql() (string, []interface{}, error
 
 	query, vs, err := sms.ToInsertSql()
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", []any{}, err
 	}
-
 	return "INSERT INTO " + "`group`" + " " + query, vs, nil
 }
 
-func (q *groupBulkInsertSQL) ToSql() (string, []interface{}, error) {
+func (q *groupBulkInsertSQL) ToSql() (string, []any, error) {
 	query, vs, err := q.groupInsertSQLToSql()
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", []any{}, err
 	}
 	return query + ";", vs, nil
 }

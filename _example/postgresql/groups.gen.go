@@ -777,31 +777,30 @@ func (q groupInsertSQL) ValueUpdatedAt(v time.Time) groupInsertSQL {
 	return q
 }
 
-func (q groupInsertSQL) ToSql() (string, []interface{}, error) {
-	query, vs, err := q.groupInsertSQLToSql()
+func (q groupInsertSQL) ToSql() (string, []any, error) {
+	query, _, vs, err := q.groupInsertSQLToSqlPg(0)
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", []any{}, err
 	}
 	return query + " RETURNING " + "\"id\"" + ";", vs, nil
 }
 
-func (q groupInsertSQL) groupInsertSQLToSql() (string, []interface{}, error) {
+func (q groupInsertSQL) groupInsertSQLToSqlPg(offset int) (string, int, []any, error) {
 	var err error
 	var s interface{} = Group{}
 	if t, ok := s.(groupDefaultInsertHooker); ok {
 		q, err = t.DefaultInsertHook(q)
 		if err != nil {
-			return "", []interface{}{}, err
+			return "", 0, []any{}, err
 		}
 	}
-	qs, _, vs, err := q.setMap.ToInsertSqlPg(0)
+	qs, offset, vs, err := q.setMap.ToInsertSqlPg(offset)
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", 0, []any{}, err
 	}
 
 	query := "INSERT INTO " + "\"groups\"" + " " + qs
-
-	return query, vs, nil
+	return query, offset, vs, nil
 }
 
 func (q groupInsertSQL) Exec(db sqlla.DB) (Group, error) {
@@ -844,7 +843,7 @@ type groupDefaultInsertHooker interface {
 }
 
 type groupInsertSQLToSqler interface {
-	groupInsertSQLToSql() (string, []interface{}, error)
+	groupInsertSQLToSqlPg(offset int) (string, int, []any, error)
 }
 
 type groupBulkInsertSQL struct {
@@ -861,9 +860,9 @@ func (q *groupBulkInsertSQL) Append(iqs ...groupInsertSQL) {
 	q.insertSQLs = append(q.insertSQLs, iqs...)
 }
 
-func (q *groupBulkInsertSQL) groupInsertSQLToSql() (string, []interface{}, error) {
+func (q *groupBulkInsertSQL) groupInsertSQLToSqlPg(offset int) (string, int, []any, error) {
 	if len(q.insertSQLs) == 0 {
-		return "", []interface{}{}, fmt.Errorf("sqlla: This groupBulkInsertSQL's InsertSQL was empty")
+		return "", 0, []any{}, fmt.Errorf("sqlla: This groupBulkInsertSQL's InsertSQL was empty")
 	}
 	iqs := make([]groupInsertSQL, len(q.insertSQLs))
 	copy(iqs, q.insertSQLs)
@@ -874,7 +873,7 @@ func (q *groupBulkInsertSQL) groupInsertSQLToSql() (string, []interface{}, error
 			var err error
 			iq, err = t.DefaultInsertHook(iq)
 			if err != nil {
-				return "", []interface{}{}, err
+				return "", 0, []any{}, err
 			}
 			iqs[i] = iq
 		}
@@ -885,18 +884,17 @@ func (q *groupBulkInsertSQL) groupInsertSQLToSql() (string, []interface{}, error
 		sms = append(sms, iq.setMap)
 	}
 
-	query, _, vs, err := sms.ToInsertSqlPg(0)
+	query, offset, vs, err := sms.ToInsertSqlPg(offset)
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", 0, []any{}, err
 	}
-
-	return "INSERT INTO " + "\"groups\"" + " " + query, vs, nil
+	return "INSERT INTO " + "\"groups\"" + " " + query, offset, vs, nil
 }
 
-func (q *groupBulkInsertSQL) ToSql() (string, []interface{}, error) {
-	query, vs, err := q.groupInsertSQLToSql()
+func (q *groupBulkInsertSQL) ToSql() (string, []any, error) {
+	query, _, vs, err := q.groupInsertSQLToSqlPg(0)
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", []any{}, err
 	}
 	return query + " RETURNING " + "\"id\"" + ";", vs, nil
 }
@@ -927,6 +925,487 @@ func (q *groupBulkInsertSQL) ExecContextWithoutSelect(ctx context.Context, db sq
 	}
 	result, err := db.ExecContext(ctx, query, args...)
 	return result, err
+}
+
+type groupInsertOnConflictDoNothingSQL struct {
+	insertSQL groupInsertSQLToSqler
+}
+
+func (q groupInsertSQL) OnConflictDoNothing() groupInsertOnConflictDoNothingSQL {
+	return groupInsertOnConflictDoNothingSQL{
+		insertSQL: q,
+	}
+}
+
+func (q groupInsertOnConflictDoNothingSQL) ToSql() (string, []any, error) {
+	query, _, vs, err := q.insertSQL.groupInsertSQLToSqlPg(0)
+	if err != nil {
+		return "", nil, err
+	}
+	query += " ON CONFLICT DO NOTHING"
+	query += " RETURNING " + "\"id\""
+	return query + ";", vs, nil
+
+}
+
+func (q groupInsertOnConflictDoNothingSQL) ExecContext(ctx context.Context, db sqlla.DB) (Group, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return Group{}, err
+	}
+	row := db.QueryRowContext(ctx, query, args...)
+	var pk GroupID
+	if err := row.Scan(&pk); err != nil {
+		return Group{}, err
+	}
+	return NewGroupSQL().Select().ID(pk).SingleContext(ctx, db)
+
+}
+
+func (q groupInsertOnConflictDoNothingSQL) ExecContextWithoutSelect(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	result, err := db.ExecContext(ctx, query, args...)
+	return result, err
+
+}
+
+type groupInsertOnConflictDoUpdateSQL struct {
+	insertSQL             groupInsertSQLToSqler
+	onConflictDoUpdateMap sqlla.SetMap
+	target                string
+}
+
+func (q groupInsertSQL) OnConflictDoUpdate(target string) groupInsertOnConflictDoUpdateSQL {
+	return groupInsertOnConflictDoUpdateSQL{
+		insertSQL:             q,
+		onConflictDoUpdateMap: sqlla.SetMap{},
+		target:                target,
+	}
+}
+
+func (q groupInsertOnConflictDoUpdateSQL) ValueOnUpdateID(v GroupID) groupInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"id\""] = int64(v)
+	return q
+}
+
+func (q groupInsertOnConflictDoUpdateSQL) RawValueOnUpdateID(v sqlla.SetMapRawValue) groupInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"id\""] = v
+	return q
+}
+
+func (q groupInsertOnConflictDoUpdateSQL) SameOnUpdateID() groupInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"id\""] = sqlla.SetMapRawValue(`"excluded".` + "\"id\"")
+	return q
+}
+
+func (q groupInsertOnConflictDoUpdateSQL) ValueOnUpdateName(v string) groupInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"name\""] = v
+	return q
+}
+
+func (q groupInsertOnConflictDoUpdateSQL) RawValueOnUpdateName(v sqlla.SetMapRawValue) groupInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"name\""] = v
+	return q
+}
+
+func (q groupInsertOnConflictDoUpdateSQL) SameOnUpdateName() groupInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"name\""] = sqlla.SetMapRawValue(`"excluded".` + "\"name\"")
+	return q
+}
+
+func (q groupInsertOnConflictDoUpdateSQL) ValueOnUpdateLeaderAccountID(v AccountID) groupInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"leader_account_id\""] = int64(v)
+	return q
+}
+
+func (q groupInsertOnConflictDoUpdateSQL) RawValueOnUpdateLeaderAccountID(v sqlla.SetMapRawValue) groupInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"leader_account_id\""] = v
+	return q
+}
+
+func (q groupInsertOnConflictDoUpdateSQL) SameOnUpdateLeaderAccountID() groupInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"leader_account_id\""] = sqlla.SetMapRawValue(`"excluded".` + "\"leader_account_id\"")
+	return q
+}
+
+func (q groupInsertOnConflictDoUpdateSQL) ValueOnUpdateSubLeaderAccountID(v AccountID) groupInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"sub_leader_account_id\""] = int64(v)
+	return q
+}
+
+func (q groupInsertOnConflictDoUpdateSQL) ValueOnUpdateSubLeaderAccountIDToNull() groupInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"sub_leader_account_id\""] = sql.Null[int64]{Valid: false}
+	return q
+}
+
+func (q groupInsertOnConflictDoUpdateSQL) RawValueOnUpdateSubLeaderAccountID(v sqlla.SetMapRawValue) groupInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"sub_leader_account_id\""] = v
+	return q
+}
+
+func (q groupInsertOnConflictDoUpdateSQL) SameOnUpdateSubLeaderAccountID() groupInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"sub_leader_account_id\""] = sqlla.SetMapRawValue(`"excluded".` + "\"sub_leader_account_id\"")
+	return q
+}
+
+func (q groupInsertOnConflictDoUpdateSQL) ValueOnUpdateChildGroupID(v GroupID) groupInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"child_group_id\""] = int64(v)
+	return q
+}
+
+func (q groupInsertOnConflictDoUpdateSQL) ValueOnUpdateChildGroupIDToNull() groupInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"child_group_id\""] = sql.Null[int64]{Valid: false}
+	return q
+}
+
+func (q groupInsertOnConflictDoUpdateSQL) RawValueOnUpdateChildGroupID(v sqlla.SetMapRawValue) groupInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"child_group_id\""] = v
+	return q
+}
+
+func (q groupInsertOnConflictDoUpdateSQL) SameOnUpdateChildGroupID() groupInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"child_group_id\""] = sqlla.SetMapRawValue(`"excluded".` + "\"child_group_id\"")
+	return q
+}
+
+func (q groupInsertOnConflictDoUpdateSQL) ValueOnUpdateCreatedAt(v time.Time) groupInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"created_at\""] = v
+	return q
+}
+
+func (q groupInsertOnConflictDoUpdateSQL) RawValueOnUpdateCreatedAt(v sqlla.SetMapRawValue) groupInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"created_at\""] = v
+	return q
+}
+
+func (q groupInsertOnConflictDoUpdateSQL) SameOnUpdateCreatedAt() groupInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"created_at\""] = sqlla.SetMapRawValue(`"excluded".` + "\"created_at\"")
+	return q
+}
+
+func (q groupInsertOnConflictDoUpdateSQL) ValueOnUpdateUpdatedAt(v time.Time) groupInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"updated_at\""] = v
+	return q
+}
+
+func (q groupInsertOnConflictDoUpdateSQL) RawValueOnUpdateUpdatedAt(v sqlla.SetMapRawValue) groupInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"updated_at\""] = v
+	return q
+}
+
+func (q groupInsertOnConflictDoUpdateSQL) SameOnUpdateUpdatedAt() groupInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"updated_at\""] = sqlla.SetMapRawValue(`"excluded".` + "\"updated_at\"")
+	return q
+}
+
+func (q groupInsertOnConflictDoUpdateSQL) ToSql() (string, []any, error) {
+	var err error
+	var s any = Group{}
+	if t, ok := s.(groupDefaultInsertOnConflictDoUpdateHooker); ok {
+		q, err = t.DefaultInsertOnConflictDoUpdateHook(q)
+		if err != nil {
+			return "", nil, err
+		}
+	}
+
+	query, offset, vs, err := q.insertSQL.groupInsertSQLToSqlPg(0)
+	if err != nil {
+		return "", nil, err
+	}
+
+	os, _, ovs, err := q.onConflictDoUpdateMap.ToUpdateSqlPg(offset)
+	if err != nil {
+		return "", nil, err
+	}
+	query += " ON CONFLICT (" + q.target + ") DO UPDATE SET" + os
+	vs = append(vs, ovs...)
+	query += " RETURNING " + "\"id\""
+
+	return query + ";", vs, nil
+}
+
+func (q groupInsertOnConflictDoUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) (Group, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return Group{}, err
+	}
+	row := db.QueryRowContext(ctx, query, args...)
+	var pk GroupID
+	if err := row.Scan(&pk); err != nil {
+		return Group{}, err
+	}
+	return NewGroupSQL().Select().ID(pk).SingleContext(ctx, db)
+
+}
+
+func (q groupInsertOnConflictDoUpdateSQL) ExecContextWithoutSelect(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	result, err := db.ExecContext(ctx, query, args...)
+	return result, err
+
+}
+
+type groupDefaultInsertOnConflictDoUpdateHooker interface {
+	DefaultInsertOnConflictDoUpdateHook(groupInsertOnConflictDoUpdateSQL) (groupInsertOnConflictDoUpdateSQL, error)
+}
+
+type groupBulkInsertOnConflictDoNothingSQL struct {
+	insertSQL groupInsertSQLToSqler
+}
+
+func (q *groupBulkInsertSQL) OnConflictDoNothing() groupBulkInsertOnConflictDoNothingSQL {
+	return groupBulkInsertOnConflictDoNothingSQL{
+		insertSQL: q,
+	}
+}
+
+func (q groupBulkInsertOnConflictDoNothingSQL) ToSql() (string, []any, error) {
+	query, _, vs, err := q.insertSQL.groupInsertSQLToSqlPg(0)
+	if err != nil {
+		return "", nil, err
+	}
+	query += " ON CONFLICT DO NOTHING"
+	query += " RETURNING " + "\"id\""
+	return query + ";", vs, nil
+
+}
+
+func (q groupBulkInsertOnConflictDoNothingSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Group, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	rows, err := db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	pks := make([]GroupID, 0)
+	for rows.Next() {
+		var pk GroupID
+		if err := rows.Scan(&pk); err != nil {
+			return nil, err
+		}
+		pks = append(pks, pk)
+	}
+
+	return NewGroupSQL().Select().IDIn(pks...).AllContext(ctx, db)
+
+}
+
+func (q groupBulkInsertOnConflictDoNothingSQL) ExecContextWithoutSelect(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	result, err := db.ExecContext(ctx, query, args...)
+	return result, err
+
+}
+
+type groupBulkInsertOnConflictDoUpdateSQL struct {
+	insertSQL             groupInsertSQLToSqler
+	onConflictDoUpdateMap sqlla.SetMap
+	target                string
+}
+
+func (q *groupBulkInsertSQL) OnConflictDoUpdate(target string) groupBulkInsertOnConflictDoUpdateSQL {
+	return groupBulkInsertOnConflictDoUpdateSQL{
+		insertSQL:             q,
+		onConflictDoUpdateMap: sqlla.SetMap{},
+		target:                target,
+	}
+}
+
+func (q groupBulkInsertOnConflictDoUpdateSQL) ValueOnUpdateID(v GroupID) groupBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"id\""] = int64(v)
+	return q
+}
+
+func (q groupBulkInsertOnConflictDoUpdateSQL) RawValueOnUpdateID(v sqlla.SetMapRawValue) groupBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"id\""] = v
+	return q
+}
+
+func (q groupBulkInsertOnConflictDoUpdateSQL) SameOnUpdateID() groupBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"id\""] = sqlla.SetMapRawValue(`"excluded".` + "\"id\"")
+	return q
+}
+
+func (q groupBulkInsertOnConflictDoUpdateSQL) ValueOnUpdateName(v string) groupBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"name\""] = v
+	return q
+}
+
+func (q groupBulkInsertOnConflictDoUpdateSQL) RawValueOnUpdateName(v sqlla.SetMapRawValue) groupBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"name\""] = v
+	return q
+}
+
+func (q groupBulkInsertOnConflictDoUpdateSQL) SameOnUpdateName() groupBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"name\""] = sqlla.SetMapRawValue(`"excluded".` + "\"name\"")
+	return q
+}
+
+func (q groupBulkInsertOnConflictDoUpdateSQL) ValueOnUpdateLeaderAccountID(v AccountID) groupBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"leader_account_id\""] = int64(v)
+	return q
+}
+
+func (q groupBulkInsertOnConflictDoUpdateSQL) RawValueOnUpdateLeaderAccountID(v sqlla.SetMapRawValue) groupBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"leader_account_id\""] = v
+	return q
+}
+
+func (q groupBulkInsertOnConflictDoUpdateSQL) SameOnUpdateLeaderAccountID() groupBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"leader_account_id\""] = sqlla.SetMapRawValue(`"excluded".` + "\"leader_account_id\"")
+	return q
+}
+
+func (q groupBulkInsertOnConflictDoUpdateSQL) ValueOnUpdateSubLeaderAccountID(v AccountID) groupBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"sub_leader_account_id\""] = int64(v)
+	return q
+}
+
+func (q groupBulkInsertOnConflictDoUpdateSQL) ValueOnUpdateSubLeaderAccountIDToNull() groupBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"sub_leader_account_id\""] = sql.Null[int64]{Valid: false}
+	return q
+}
+
+func (q groupBulkInsertOnConflictDoUpdateSQL) RawValueOnUpdateSubLeaderAccountID(v sqlla.SetMapRawValue) groupBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"sub_leader_account_id\""] = v
+	return q
+}
+
+func (q groupBulkInsertOnConflictDoUpdateSQL) SameOnUpdateSubLeaderAccountID() groupBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"sub_leader_account_id\""] = sqlla.SetMapRawValue(`"excluded".` + "\"sub_leader_account_id\"")
+	return q
+}
+
+func (q groupBulkInsertOnConflictDoUpdateSQL) ValueOnUpdateChildGroupID(v GroupID) groupBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"child_group_id\""] = int64(v)
+	return q
+}
+
+func (q groupBulkInsertOnConflictDoUpdateSQL) ValueOnUpdateChildGroupIDToNull() groupBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"child_group_id\""] = sql.Null[int64]{Valid: false}
+	return q
+}
+
+func (q groupBulkInsertOnConflictDoUpdateSQL) RawValueOnUpdateChildGroupID(v sqlla.SetMapRawValue) groupBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"child_group_id\""] = v
+	return q
+}
+
+func (q groupBulkInsertOnConflictDoUpdateSQL) SameOnUpdateChildGroupID() groupBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"child_group_id\""] = sqlla.SetMapRawValue(`"excluded".` + "\"child_group_id\"")
+	return q
+}
+
+func (q groupBulkInsertOnConflictDoUpdateSQL) ValueOnUpdateCreatedAt(v time.Time) groupBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"created_at\""] = v
+	return q
+}
+
+func (q groupBulkInsertOnConflictDoUpdateSQL) RawValueOnUpdateCreatedAt(v sqlla.SetMapRawValue) groupBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"created_at\""] = v
+	return q
+}
+
+func (q groupBulkInsertOnConflictDoUpdateSQL) SameOnUpdateCreatedAt() groupBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"created_at\""] = sqlla.SetMapRawValue(`"excluded".` + "\"created_at\"")
+	return q
+}
+
+func (q groupBulkInsertOnConflictDoUpdateSQL) ValueOnUpdateUpdatedAt(v time.Time) groupBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"updated_at\""] = v
+	return q
+}
+
+func (q groupBulkInsertOnConflictDoUpdateSQL) RawValueOnUpdateUpdatedAt(v sqlla.SetMapRawValue) groupBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"updated_at\""] = v
+	return q
+}
+
+func (q groupBulkInsertOnConflictDoUpdateSQL) SameOnUpdateUpdatedAt() groupBulkInsertOnConflictDoUpdateSQL {
+	q.onConflictDoUpdateMap["\"updated_at\""] = sqlla.SetMapRawValue(`"excluded".` + "\"updated_at\"")
+	return q
+}
+
+func (q groupBulkInsertOnConflictDoUpdateSQL) ToSql() (string, []any, error) {
+	var s any = Group{}
+	if t, ok := s.(groupDefaultInsertOnConflictDoUpdateHooker); ok {
+		sq := groupInsertOnConflictDoUpdateSQL{
+			insertSQL:             q.insertSQL,
+			onConflictDoUpdateMap: q.onConflictDoUpdateMap,
+			target:                q.target,
+		}
+		sq, err := t.DefaultInsertOnConflictDoUpdateHook(sq)
+		if err != nil {
+			return "", nil, err
+		}
+		q.insertSQL = sq.insertSQL
+		q.onConflictDoUpdateMap = sq.onConflictDoUpdateMap
+		q.target = sq.target
+	}
+
+	query, offset, vs, err := q.insertSQL.groupInsertSQLToSqlPg(0)
+	if err != nil {
+		return "", nil, err
+	}
+
+	os, _, ovs, err := q.onConflictDoUpdateMap.ToUpdateSqlPg(offset)
+	if err != nil {
+		return "", nil, err
+	}
+	query += " ON CONFLICT (" + q.target + ") DO UPDATE SET" + os
+	vs = append(vs, ovs...)
+	query += " RETURNING " + "\"id\""
+
+	return query + ";", vs, nil
+}
+
+func (q groupBulkInsertOnConflictDoUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Group, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	rows, err := db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	pks := make([]GroupID, 0)
+	for rows.Next() {
+		var pk GroupID
+		if err := rows.Scan(&pk); err != nil {
+			return nil, err
+		}
+		pks = append(pks, pk)
+	}
+
+	return NewGroupSQL().Select().IDIn(pks...).AllContext(ctx, db)
+
+}
+
+func (q groupBulkInsertOnConflictDoUpdateSQL) ExecContextWithoutSelect(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	result, err := db.ExecContext(ctx, query, args...)
+	return result, err
+
 }
 
 type groupDeleteSQL struct {
