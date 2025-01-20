@@ -30,7 +30,7 @@ func TestColumnNullT(t *testing.T) {
 		files := pkg.Syntax
 		for _, f := range files {
 			for _, decl := range f.Decls {
-				_table, err := sqlla.DeclToTable(pkg, decl, fullpath)
+				_table, err := sqlla.DeclToTable(pkg, decl, fullpath, true)
 				if errors.Is(err, sqlla.ErrNotTargetDecl) {
 					continue
 				}
@@ -41,8 +41,15 @@ func TestColumnNullT(t *testing.T) {
 	}
 	require.NotNil(t, table)
 	assert.False(t, table.Columns[0].IsNullT()) // ID
-	assert.True(t, table.Columns[1].IsNullT())  // ModifiedAt
-	assert.Equal(t, table.Columns[1].TypeParameter(), "time.Time")
-	assert.False(t, table.Columns[2].IsNullT())           // FIXME: not supported yet
-	assert.Equal(t, table.Columns[2].TypeParameter(), "") // FIXME: not supported yet
+	assert.Equal(t, table.Columns[0].BaseTypeName(), "uint64")
+	assert.Equal(t, table.Columns[0].ExprValue(), "sqlla.ExprValue[uint64]")
+	assert.Equal(t, table.Columns[0].ExprMultiValue(), "sqlla.ExprMultiValue[uint64]")
+	assert.True(t, table.Columns[1].IsNullT()) // ModifiedAt
+	assert.Equal(t, table.Columns[1].BaseTypeName(), "time.Time")
+	assert.Equal(t, table.Columns[1].ExprValue(), "sqlla.ExprNull[time.Time]")
+	assert.Equal(t, table.Columns[1].ExprMultiValue(), "sqlla.ExprMultiValue[time.Time]")
+	assert.False(t, table.Columns[2].IsNullT())
+	assert.Equal(t, table.Columns[2].BaseTypeName(), "NullableTime")
+	assert.Equal(t, table.Columns[2].ExprValue(), "sqlla.ExprValue[NullableTime]")
+	assert.Equal(t, table.Columns[2].ExprMultiValue(), "sqlla.ExprMultiValue[NullableTime]")
 }

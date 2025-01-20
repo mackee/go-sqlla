@@ -231,6 +231,7 @@ func toTable(tablePkg *types.Package, annotationComment string, gd *ast.GenDecl,
 				}
 				if tnt != nil {
 					nt = tnt
+					baseTypeName = typeName
 				}
 			}
 			if !hasBasicTypeParam {
