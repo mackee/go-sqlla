@@ -28,7 +28,7 @@ type Generator struct {
 	tmpl *template.Template
 }
 
-func NewGenerator(additionals ...string) (*Generator, error) {
+func NewGenerator(dialect Dialect, additionals ...string) (*Generator, error) {
 	tmpl := template.New("table")
 
 	fm := sprig.FuncMap()
@@ -40,6 +40,9 @@ func NewGenerator(additionals ...string) (*Generator, error) {
 	pc := pluralize.NewClient()
 	fm["pluralize"] = pc.Plural
 	fm["singular"] = pc.Singular
+	fm["cquote"] = dialect.CQuote
+	fm["cquoteby"] = dialect.CQuoteBy
+	fm["dialect"] = dialect.Name
 	tmpl = tmpl.Funcs(fm)
 
 	tmpl, err := tmpl.ParseFS(templates, "template/*.tmpl", "template/plugins/*.tmpl")

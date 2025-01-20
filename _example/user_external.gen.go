@@ -29,7 +29,7 @@ var userExternalAllColumns = []string{
 type userExternalSelectSQL struct {
 	userExternalSQL
 	Columns     []string
-	order       string
+	order       sqlla.OrderWithColumn
 	limit       *uint64
 	offset      *uint64
 	tableAlias  string
@@ -37,8 +37,7 @@ type userExternalSelectSQL struct {
 
 	additionalWhereClause     string
 	additionalWhereClauseArgs []interface{}
-
-	groupByColumns []string
+	groupByColumns            []string
 
 	isForUpdate bool
 }
@@ -47,13 +46,14 @@ func (q userExternalSQL) Select() userExternalSelectSQL {
 	return userExternalSelectSQL{
 		q,
 		userExternalAllColumns,
-		"",
 		nil,
 		nil,
-		"",
 		nil,
 		"",
 		nil,
+		"",
+		nil,
+
 		nil,
 		false,
 	}
@@ -91,7 +91,7 @@ func (q userExternalSelectSQL) TableAlias(alias string) userExternalSelectSQL {
 func (q userExternalSelectSQL) SetColumns(columns ...string) userExternalSelectSQL {
 	q.Columns = make([]string, 0, len(columns))
 	for _, column := range columns {
-		if strings.ContainsAny(column, "(.`") {
+		if strings.ContainsAny(column, "(."+"`") {
 			q.Columns = append(q.Columns, column)
 		} else {
 			q.Columns = append(q.Columns, "`"+column+"`")
@@ -121,7 +121,7 @@ func (q userExternalSelectSQL) appendColumnPrefix(column string) string {
 func (q userExternalSelectSQL) GroupBy(columns ...string) userExternalSelectSQL {
 	q.groupByColumns = make([]string, 0, len(columns))
 	for _, column := range columns {
-		if strings.ContainsAny(column, "(.`") {
+		if strings.ContainsAny(column, "(."+"`") {
 			q.groupByColumns = append(q.groupByColumns, column)
 		} else {
 			q.groupByColumns = append(q.groupByColumns, "`"+column+"`")
@@ -131,19 +131,13 @@ func (q userExternalSelectSQL) GroupBy(columns ...string) userExternalSelectSQL 
 }
 
 func (q userExternalSelectSQL) ID(v uint64, exprs ...sqlla.Operator) userExternalSelectSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprUint64{Value: v, Op: op, Column: q.appendColumnPrefix("`id`")}
+	where := sqlla.ExprValue[uint64]{Value: v, Op: sqlla.Operators(exprs), Column: q.appendColumnPrefix("`id`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalSelectSQL) IDIn(vs ...uint64) userExternalSelectSQL {
-	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`id`")}
+	where := sqlla.ExprMultiValue[uint64]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`id`")}
 	q.where = append(q.where, where)
 	return q
 }
@@ -154,129 +148,75 @@ func (q userExternalSelectSQL) PkColumn(pk int64, exprs ...sqlla.Operator) userE
 }
 
 func (q userExternalSelectSQL) OrderByID(order sqlla.Order) userExternalSelectSQL {
-	q.order = " ORDER BY " + q.appendColumnPrefix("`id`")
-	if order == sqlla.Asc {
-		q.order += " ASC"
-	} else {
-		q.order += " DESC"
-	}
-
+	q.order = order.WithColumn(q.appendColumnPrefix("`id`"))
 	return q
 }
 
 func (q userExternalSelectSQL) UserID(v uint64, exprs ...sqlla.Operator) userExternalSelectSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprUint64{Value: v, Op: op, Column: q.appendColumnPrefix("`user_id`")}
+	where := sqlla.ExprValue[uint64]{Value: v, Op: sqlla.Operators(exprs), Column: q.appendColumnPrefix("`user_id`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalSelectSQL) UserIDIn(vs ...uint64) userExternalSelectSQL {
-	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`user_id`")}
+	where := sqlla.ExprMultiValue[uint64]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`user_id`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalSelectSQL) OrderByUserID(order sqlla.Order) userExternalSelectSQL {
-	q.order = " ORDER BY " + q.appendColumnPrefix("`user_id`")
-	if order == sqlla.Asc {
-		q.order += " ASC"
-	} else {
-		q.order += " DESC"
-	}
-
+	q.order = order.WithColumn(q.appendColumnPrefix("`user_id`"))
 	return q
 }
 
 func (q userExternalSelectSQL) IconImage(v []byte, exprs ...sqlla.Operator) userExternalSelectSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprBytes{Value: v, Op: op, Column: q.appendColumnPrefix("`icon_image`")}
+	where := sqlla.ExprValue[[]byte]{Value: v, Op: sqlla.Operators(exprs), Column: q.appendColumnPrefix("`icon_image`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalSelectSQL) IconImageIn(vs ...[]byte) userExternalSelectSQL {
-	where := sqlla.ExprMultiBytes{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`icon_image`")}
+	where := sqlla.ExprMultiValue[[]byte]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`icon_image`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalSelectSQL) OrderByIconImage(order sqlla.Order) userExternalSelectSQL {
-	q.order = " ORDER BY " + q.appendColumnPrefix("`icon_image`")
-	if order == sqlla.Asc {
-		q.order += " ASC"
-	} else {
-		q.order += " DESC"
-	}
-
+	q.order = order.WithColumn(q.appendColumnPrefix("`icon_image`"))
 	return q
 }
 
 func (q userExternalSelectSQL) CreatedAt(v time.Time, exprs ...sqlla.Operator) userExternalSelectSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprTime{Value: v, Op: op, Column: q.appendColumnPrefix("`created_at`")}
+	where := sqlla.ExprValue[time.Time]{Value: v, Op: sqlla.Operators(exprs), Column: q.appendColumnPrefix("`created_at`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalSelectSQL) CreatedAtIn(vs ...time.Time) userExternalSelectSQL {
-	where := sqlla.ExprMultiTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`created_at`")}
+	where := sqlla.ExprMultiValue[time.Time]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`created_at`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalSelectSQL) OrderByCreatedAt(order sqlla.Order) userExternalSelectSQL {
-	q.order = " ORDER BY " + q.appendColumnPrefix("`created_at`")
-	if order == sqlla.Asc {
-		q.order += " ASC"
-	} else {
-		q.order += " DESC"
-	}
-
+	q.order = order.WithColumn(q.appendColumnPrefix("`created_at`"))
 	return q
 }
 
 func (q userExternalSelectSQL) UpdatedAt(v time.Time, exprs ...sqlla.Operator) userExternalSelectSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprTime{Value: v, Op: op, Column: q.appendColumnPrefix("`updated_at`")}
+	where := sqlla.ExprValue[time.Time]{Value: v, Op: sqlla.Operators(exprs), Column: q.appendColumnPrefix("`updated_at`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalSelectSQL) UpdatedAtIn(vs ...time.Time) userExternalSelectSQL {
-	where := sqlla.ExprMultiTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`updated_at`")}
+	where := sqlla.ExprMultiValue[time.Time]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`updated_at`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalSelectSQL) OrderByUpdatedAt(order sqlla.Order) userExternalSelectSQL {
-	q.order = " ORDER BY " + q.appendColumnPrefix("`updated_at`")
-	if order == sqlla.Asc {
-		q.order += " ASC"
-	} else {
-		q.order += " DESC"
-	}
-
+	q.order = order.WithColumn(q.appendColumnPrefix("`updated_at`"))
 	return q
 }
 
@@ -318,7 +258,10 @@ func (q userExternalSelectSQL) ToSql() (string, []interface{}, error) {
 		}
 		query += strings.Join(gbcs, ", ")
 	}
-	query += q.order
+	if q.order != nil {
+		query += " ORDER BY " + q.order.OrderExpr()
+		vs = append(vs, q.order.Values()...)
+	}
 	if q.limit != nil {
 		query += " LIMIT " + strconv.FormatUint(*q.limit, 10)
 	}
@@ -478,19 +421,13 @@ func (q userExternalUpdateSQL) SetID(v uint64) userExternalUpdateSQL {
 }
 
 func (q userExternalUpdateSQL) WhereID(v uint64, exprs ...sqlla.Operator) userExternalUpdateSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`id`"}
+	where := sqlla.ExprValue[uint64]{Value: v, Op: sqlla.Operators(exprs), Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalUpdateSQL) WhereIDIn(vs ...uint64) userExternalUpdateSQL {
-	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`id`"}
+	where := sqlla.ExprMultiValue[uint64]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -501,19 +438,13 @@ func (q userExternalUpdateSQL) SetUserID(v uint64) userExternalUpdateSQL {
 }
 
 func (q userExternalUpdateSQL) WhereUserID(v uint64, exprs ...sqlla.Operator) userExternalUpdateSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`user_id`"}
+	where := sqlla.ExprValue[uint64]{Value: v, Op: sqlla.Operators(exprs), Column: "`user_id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalUpdateSQL) WhereUserIDIn(vs ...uint64) userExternalUpdateSQL {
-	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`user_id`"}
+	where := sqlla.ExprMultiValue[uint64]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`user_id`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -524,19 +455,13 @@ func (q userExternalUpdateSQL) SetIconImage(v []byte) userExternalUpdateSQL {
 }
 
 func (q userExternalUpdateSQL) WhereIconImage(v []byte, exprs ...sqlla.Operator) userExternalUpdateSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprBytes{Value: v, Op: op, Column: "`icon_image`"}
+	where := sqlla.ExprValue[[]byte]{Value: v, Op: sqlla.Operators(exprs), Column: "`icon_image`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalUpdateSQL) WhereIconImageIn(vs ...[]byte) userExternalUpdateSQL {
-	where := sqlla.ExprMultiBytes{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`icon_image`"}
+	where := sqlla.ExprMultiValue[[]byte]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`icon_image`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -547,19 +472,13 @@ func (q userExternalUpdateSQL) SetCreatedAt(v time.Time) userExternalUpdateSQL {
 }
 
 func (q userExternalUpdateSQL) WhereCreatedAt(v time.Time, exprs ...sqlla.Operator) userExternalUpdateSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprTime{Value: v, Op: op, Column: "`created_at`"}
+	where := sqlla.ExprValue[time.Time]{Value: v, Op: sqlla.Operators(exprs), Column: "`created_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalUpdateSQL) WhereCreatedAtIn(vs ...time.Time) userExternalUpdateSQL {
-	where := sqlla.ExprMultiTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`created_at`"}
+	where := sqlla.ExprMultiValue[time.Time]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`created_at`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -570,19 +489,13 @@ func (q userExternalUpdateSQL) SetUpdatedAt(v time.Time) userExternalUpdateSQL {
 }
 
 func (q userExternalUpdateSQL) WhereUpdatedAt(v time.Time, exprs ...sqlla.Operator) userExternalUpdateSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprTime{Value: v, Op: op, Column: "`updated_at`"}
+	where := sqlla.ExprValue[time.Time]{Value: v, Op: sqlla.Operators(exprs), Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalUpdateSQL) WhereUpdatedAtIn(vs ...time.Time) userExternalUpdateSQL {
-	where := sqlla.ExprMultiTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
+	where := sqlla.ExprMultiValue[time.Time]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -605,7 +518,7 @@ func (q userExternalUpdateSQL) ToSql() (string, []interface{}, error) {
 		return "", []interface{}{}, err
 	}
 
-	query := "UPDATE `user_external` SET" + setColumns
+	query := "UPDATE " + "`user_external`" + " SET" + setColumns
 	if wheres != "" {
 		query += " WHERE" + wheres
 	}
@@ -686,38 +599,30 @@ func (q userExternalInsertSQL) ValueUpdatedAt(v time.Time) userExternalInsertSQL
 	return q
 }
 
-func (q userExternalInsertSQL) ToSql() (string, []interface{}, error) {
+func (q userExternalInsertSQL) ToSql() (string, []any, error) {
 	query, vs, err := q.userExternalInsertSQLToSql()
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", []any{}, err
 	}
 	return query + ";", vs, nil
 }
 
-func (q userExternalInsertSQL) userExternalInsertSQLToSql() (string, []interface{}, error) {
+func (q userExternalInsertSQL) userExternalInsertSQLToSql() (string, []any, error) {
 	var err error
 	var s interface{} = UserExternal{}
 	if t, ok := s.(userExternalDefaultInsertHooker); ok {
 		q, err = t.DefaultInsertHook(q)
 		if err != nil {
-			return "", []interface{}{}, err
+			return "", []any{}, err
 		}
 	}
 	qs, vs, err := q.setMap.ToInsertSql()
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", []any{}, err
 	}
 
-	query := "INSERT INTO `user_external` " + qs
-
+	query := "INSERT INTO " + "`user_external`" + " " + qs
 	return query, vs, nil
-}
-
-func (q userExternalInsertSQL) OnDuplicateKeyUpdate() userExternalInsertOnDuplicateKeyUpdateSQL {
-	return userExternalInsertOnDuplicateKeyUpdateSQL{
-		insertSQL:               q,
-		onDuplicateKeyUpdateMap: sqlla.SetMap{},
-	}
 }
 
 func (q userExternalInsertSQL) Exec(db sqlla.DB) (UserExternal, error) {
@@ -766,12 +671,80 @@ type userExternalDefaultInsertHooker interface {
 }
 
 type userExternalInsertSQLToSqler interface {
-	userExternalInsertSQLToSql() (string, []interface{}, error)
+	userExternalInsertSQLToSql() (string, []any, error)
+}
+
+type userExternalBulkInsertSQL struct {
+	insertSQLs []userExternalInsertSQL
+}
+
+func (q userExternalSQL) BulkInsert() *userExternalBulkInsertSQL {
+	return &userExternalBulkInsertSQL{
+		insertSQLs: []userExternalInsertSQL{},
+	}
+}
+
+func (q *userExternalBulkInsertSQL) Append(iqs ...userExternalInsertSQL) {
+	q.insertSQLs = append(q.insertSQLs, iqs...)
+}
+
+func (q *userExternalBulkInsertSQL) userExternalInsertSQLToSql() (string, []any, error) {
+	if len(q.insertSQLs) == 0 {
+		return "", []any{}, fmt.Errorf("sqlla: This userExternalBulkInsertSQL's InsertSQL was empty")
+	}
+	iqs := make([]userExternalInsertSQL, len(q.insertSQLs))
+	copy(iqs, q.insertSQLs)
+
+	var s interface{} = UserExternal{}
+	if t, ok := s.(userExternalDefaultInsertHooker); ok {
+		for i, iq := range iqs {
+			var err error
+			iq, err = t.DefaultInsertHook(iq)
+			if err != nil {
+				return "", []any{}, err
+			}
+			iqs[i] = iq
+		}
+	}
+
+	sms := make(sqlla.SetMaps, 0, len(q.insertSQLs))
+	for _, iq := range q.insertSQLs {
+		sms = append(sms, iq.setMap)
+	}
+
+	query, vs, err := sms.ToInsertSql()
+	if err != nil {
+		return "", []any{}, err
+	}
+	return "INSERT INTO " + "`user_external`" + " " + query, vs, nil
+}
+
+func (q *userExternalBulkInsertSQL) ToSql() (string, []any, error) {
+	query, vs, err := q.userExternalInsertSQLToSql()
+	if err != nil {
+		return "", []any{}, err
+	}
+	return query + ";", vs, nil
+}
+func (q *userExternalBulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	result, err := db.ExecContext(ctx, query, args...)
+	return result, err
 }
 
 type userExternalInsertOnDuplicateKeyUpdateSQL struct {
 	insertSQL               userExternalInsertSQLToSqler
 	onDuplicateKeyUpdateMap sqlla.SetMap
+}
+
+func (q userExternalInsertSQL) OnDuplicateKeyUpdate() userExternalInsertOnDuplicateKeyUpdateSQL {
+	return userExternalInsertOnDuplicateKeyUpdateSQL{
+		insertSQL:               q,
+		onDuplicateKeyUpdateMap: sqlla.SetMap{},
+	}
 }
 
 func (q userExternalInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateID(v uint64) userExternalInsertOnDuplicateKeyUpdateSQL {
@@ -785,7 +758,7 @@ func (q userExternalInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateID(v sqlla.Se
 }
 
 func (q userExternalInsertOnDuplicateKeyUpdateSQL) SameOnUpdateID() userExternalInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`id`"] = sqlla.SetMapRawValue("VALUES(`id`)")
+	q.onDuplicateKeyUpdateMap["`id`"] = sqlla.SetMapRawValue("VALUES(" + "`id`" + ")")
 	return q
 }
 
@@ -800,7 +773,7 @@ func (q userExternalInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateUserID(v sqll
 }
 
 func (q userExternalInsertOnDuplicateKeyUpdateSQL) SameOnUpdateUserID() userExternalInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`user_id`"] = sqlla.SetMapRawValue("VALUES(`user_id`)")
+	q.onDuplicateKeyUpdateMap["`user_id`"] = sqlla.SetMapRawValue("VALUES(" + "`user_id`" + ")")
 	return q
 }
 
@@ -815,7 +788,7 @@ func (q userExternalInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateIconImage(v s
 }
 
 func (q userExternalInsertOnDuplicateKeyUpdateSQL) SameOnUpdateIconImage() userExternalInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`icon_image`"] = sqlla.SetMapRawValue("VALUES(`icon_image`)")
+	q.onDuplicateKeyUpdateMap["`icon_image`"] = sqlla.SetMapRawValue("VALUES(" + "`icon_image`" + ")")
 	return q
 }
 
@@ -830,7 +803,7 @@ func (q userExternalInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateCreatedAt(v s
 }
 
 func (q userExternalInsertOnDuplicateKeyUpdateSQL) SameOnUpdateCreatedAt() userExternalInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`created_at`"] = sqlla.SetMapRawValue("VALUES(`created_at`)")
+	q.onDuplicateKeyUpdateMap["`created_at`"] = sqlla.SetMapRawValue("VALUES(" + "`created_at`" + ")")
 	return q
 }
 
@@ -845,7 +818,7 @@ func (q userExternalInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateUpdatedAt(v s
 }
 
 func (q userExternalInsertOnDuplicateKeyUpdateSQL) SameOnUpdateUpdatedAt() userExternalInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`updated_at`"] = sqlla.SetMapRawValue("VALUES(`updated_at`)")
+	q.onDuplicateKeyUpdateMap["`updated_at`"] = sqlla.SetMapRawValue("VALUES(" + "`updated_at`" + ")")
 	return q
 }
 
@@ -903,74 +876,11 @@ type userExternalDefaultInsertOnDuplicateKeyUpdateHooker interface {
 	DefaultInsertOnDuplicateKeyUpdateHook(userExternalInsertOnDuplicateKeyUpdateSQL) (userExternalInsertOnDuplicateKeyUpdateSQL, error)
 }
 
-type userExternalBulkInsertSQL struct {
-	insertSQLs []userExternalInsertSQL
-}
-
-func (q userExternalSQL) BulkInsert() *userExternalBulkInsertSQL {
-	return &userExternalBulkInsertSQL{
-		insertSQLs: []userExternalInsertSQL{},
-	}
-}
-
-func (q *userExternalBulkInsertSQL) Append(iqs ...userExternalInsertSQL) {
-	q.insertSQLs = append(q.insertSQLs, iqs...)
-}
-
-func (q *userExternalBulkInsertSQL) userExternalInsertSQLToSql() (string, []interface{}, error) {
-	if len(q.insertSQLs) == 0 {
-		return "", []interface{}{}, fmt.Errorf("sqlla: This userExternalBulkInsertSQL's InsertSQL was empty")
-	}
-	iqs := make([]userExternalInsertSQL, len(q.insertSQLs))
-	copy(iqs, q.insertSQLs)
-
-	var s interface{} = UserExternal{}
-	if t, ok := s.(userExternalDefaultInsertHooker); ok {
-		for i, iq := range iqs {
-			var err error
-			iq, err = t.DefaultInsertHook(iq)
-			if err != nil {
-				return "", []interface{}{}, err
-			}
-			iqs[i] = iq
-		}
-	}
-
-	sms := make(sqlla.SetMaps, 0, len(q.insertSQLs))
-	for _, iq := range q.insertSQLs {
-		sms = append(sms, iq.setMap)
-	}
-
-	query, vs, err := sms.ToInsertSql()
-	if err != nil {
-		return "", []interface{}{}, err
-	}
-
-	return "INSERT INTO `user_external` " + query, vs, nil
-}
-
-func (q *userExternalBulkInsertSQL) ToSql() (string, []interface{}, error) {
-	query, vs, err := q.userExternalInsertSQLToSql()
-	if err != nil {
-		return "", []interface{}{}, err
-	}
-	return query + ";", vs, nil
-}
-
 func (q *userExternalBulkInsertSQL) OnDuplicateKeyUpdate() userExternalInsertOnDuplicateKeyUpdateSQL {
 	return userExternalInsertOnDuplicateKeyUpdateSQL{
 		insertSQL:               q,
 		onDuplicateKeyUpdateMap: sqlla.SetMap{},
 	}
-}
-
-func (q *userExternalBulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
-	query, args, err := q.ToSql()
-	if err != nil {
-		return nil, err
-	}
-	result, err := db.ExecContext(ctx, query, args...)
-	return result, err
 }
 
 type userExternalDeleteSQL struct {
@@ -984,91 +894,61 @@ func (q userExternalSQL) Delete() userExternalDeleteSQL {
 }
 
 func (q userExternalDeleteSQL) ID(v uint64, exprs ...sqlla.Operator) userExternalDeleteSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`id`"}
+	where := sqlla.ExprValue[uint64]{Value: v, Op: sqlla.Operators(exprs), Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalDeleteSQL) IDIn(vs ...uint64) userExternalDeleteSQL {
-	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`id`"}
+	where := sqlla.ExprMultiValue[uint64]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalDeleteSQL) UserID(v uint64, exprs ...sqlla.Operator) userExternalDeleteSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`user_id`"}
+	where := sqlla.ExprValue[uint64]{Value: v, Op: sqlla.Operators(exprs), Column: "`user_id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalDeleteSQL) UserIDIn(vs ...uint64) userExternalDeleteSQL {
-	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`user_id`"}
+	where := sqlla.ExprMultiValue[uint64]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`user_id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalDeleteSQL) IconImage(v []byte, exprs ...sqlla.Operator) userExternalDeleteSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprBytes{Value: v, Op: op, Column: "`icon_image`"}
+	where := sqlla.ExprValue[[]byte]{Value: v, Op: sqlla.Operators(exprs), Column: "`icon_image`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalDeleteSQL) IconImageIn(vs ...[]byte) userExternalDeleteSQL {
-	where := sqlla.ExprMultiBytes{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`icon_image`"}
+	where := sqlla.ExprMultiValue[[]byte]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`icon_image`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalDeleteSQL) CreatedAt(v time.Time, exprs ...sqlla.Operator) userExternalDeleteSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprTime{Value: v, Op: op, Column: "`created_at`"}
+	where := sqlla.ExprValue[time.Time]{Value: v, Op: sqlla.Operators(exprs), Column: "`created_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalDeleteSQL) CreatedAtIn(vs ...time.Time) userExternalDeleteSQL {
-	where := sqlla.ExprMultiTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`created_at`"}
+	where := sqlla.ExprMultiValue[time.Time]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`created_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalDeleteSQL) UpdatedAt(v time.Time, exprs ...sqlla.Operator) userExternalDeleteSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprTime{Value: v, Op: op, Column: "`updated_at`"}
+	where := sqlla.ExprValue[time.Time]{Value: v, Op: sqlla.Operators(exprs), Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userExternalDeleteSQL) UpdatedAtIn(vs ...time.Time) userExternalDeleteSQL {
-	where := sqlla.ExprMultiTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
+	where := sqlla.ExprMultiValue[time.Time]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -1079,7 +959,7 @@ func (q userExternalDeleteSQL) ToSql() (string, []interface{}, error) {
 		return "", nil, err
 	}
 
-	query := "DELETE FROM `user_external`"
+	query := "DELETE FROM " + "`user_external`"
 	if wheres != "" {
 		query += " WHERE" + wheres
 	}

@@ -29,7 +29,7 @@ var userSNSAllColumns = []string{
 type userSNSSelectSQL struct {
 	userSNSSQL
 	Columns     []string
-	order       string
+	order       sqlla.OrderWithColumn
 	limit       *uint64
 	offset      *uint64
 	tableAlias  string
@@ -37,8 +37,7 @@ type userSNSSelectSQL struct {
 
 	additionalWhereClause     string
 	additionalWhereClauseArgs []interface{}
-
-	groupByColumns []string
+	groupByColumns            []string
 
 	isForUpdate bool
 }
@@ -47,13 +46,14 @@ func (q userSNSSQL) Select() userSNSSelectSQL {
 	return userSNSSelectSQL{
 		q,
 		userSNSAllColumns,
-		"",
 		nil,
 		nil,
-		"",
 		nil,
 		"",
 		nil,
+		"",
+		nil,
+
 		nil,
 		false,
 	}
@@ -91,7 +91,7 @@ func (q userSNSSelectSQL) TableAlias(alias string) userSNSSelectSQL {
 func (q userSNSSelectSQL) SetColumns(columns ...string) userSNSSelectSQL {
 	q.Columns = make([]string, 0, len(columns))
 	for _, column := range columns {
-		if strings.ContainsAny(column, "(.`") {
+		if strings.ContainsAny(column, "(."+"`") {
 			q.Columns = append(q.Columns, column)
 		} else {
 			q.Columns = append(q.Columns, "`"+column+"`")
@@ -121,7 +121,7 @@ func (q userSNSSelectSQL) appendColumnPrefix(column string) string {
 func (q userSNSSelectSQL) GroupBy(columns ...string) userSNSSelectSQL {
 	q.groupByColumns = make([]string, 0, len(columns))
 	for _, column := range columns {
-		if strings.ContainsAny(column, "(.`") {
+		if strings.ContainsAny(column, "(."+"`") {
 			q.groupByColumns = append(q.groupByColumns, column)
 		} else {
 			q.groupByColumns = append(q.groupByColumns, "`"+column+"`")
@@ -131,19 +131,13 @@ func (q userSNSSelectSQL) GroupBy(columns ...string) userSNSSelectSQL {
 }
 
 func (q userSNSSelectSQL) ID(v uint64, exprs ...sqlla.Operator) userSNSSelectSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprUint64{Value: v, Op: op, Column: q.appendColumnPrefix("`id`")}
+	where := sqlla.ExprValue[uint64]{Value: v, Op: sqlla.Operators(exprs), Column: q.appendColumnPrefix("`id`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSNSSelectSQL) IDIn(vs ...uint64) userSNSSelectSQL {
-	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`id`")}
+	where := sqlla.ExprMultiValue[uint64]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`id`")}
 	q.where = append(q.where, where)
 	return q
 }
@@ -154,100 +148,58 @@ func (q userSNSSelectSQL) PkColumn(pk int64, exprs ...sqlla.Operator) userSNSSel
 }
 
 func (q userSNSSelectSQL) OrderByID(order sqlla.Order) userSNSSelectSQL {
-	q.order = " ORDER BY " + q.appendColumnPrefix("`id`")
-	if order == sqlla.Asc {
-		q.order += " ASC"
-	} else {
-		q.order += " DESC"
-	}
-
+	q.order = order.WithColumn(q.appendColumnPrefix("`id`"))
 	return q
 }
 
 func (q userSNSSelectSQL) SNSType(v string, exprs ...sqlla.Operator) userSNSSelectSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprString{Value: v, Op: op, Column: q.appendColumnPrefix("`sns_type`")}
+	where := sqlla.ExprValue[string]{Value: v, Op: sqlla.Operators(exprs), Column: q.appendColumnPrefix("`sns_type`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSNSSelectSQL) SNSTypeIn(vs ...string) userSNSSelectSQL {
-	where := sqlla.ExprMultiString{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`sns_type`")}
+	where := sqlla.ExprMultiValue[string]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`sns_type`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSNSSelectSQL) OrderBySNSType(order sqlla.Order) userSNSSelectSQL {
-	q.order = " ORDER BY " + q.appendColumnPrefix("`sns_type`")
-	if order == sqlla.Asc {
-		q.order += " ASC"
-	} else {
-		q.order += " DESC"
-	}
-
+	q.order = order.WithColumn(q.appendColumnPrefix("`sns_type`"))
 	return q
 }
 
 func (q userSNSSelectSQL) CreatedAt(v time.Time, exprs ...sqlla.Operator) userSNSSelectSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprTime{Value: v, Op: op, Column: q.appendColumnPrefix("`created_at`")}
+	where := sqlla.ExprValue[time.Time]{Value: v, Op: sqlla.Operators(exprs), Column: q.appendColumnPrefix("`created_at`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSNSSelectSQL) CreatedAtIn(vs ...time.Time) userSNSSelectSQL {
-	where := sqlla.ExprMultiTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`created_at`")}
+	where := sqlla.ExprMultiValue[time.Time]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`created_at`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSNSSelectSQL) OrderByCreatedAt(order sqlla.Order) userSNSSelectSQL {
-	q.order = " ORDER BY " + q.appendColumnPrefix("`created_at`")
-	if order == sqlla.Asc {
-		q.order += " ASC"
-	} else {
-		q.order += " DESC"
-	}
-
+	q.order = order.WithColumn(q.appendColumnPrefix("`created_at`"))
 	return q
 }
 
 func (q userSNSSelectSQL) UpdatedAt(v time.Time, exprs ...sqlla.Operator) userSNSSelectSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprTime{Value: v, Op: op, Column: q.appendColumnPrefix("`updated_at`")}
+	where := sqlla.ExprValue[time.Time]{Value: v, Op: sqlla.Operators(exprs), Column: q.appendColumnPrefix("`updated_at`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSNSSelectSQL) UpdatedAtIn(vs ...time.Time) userSNSSelectSQL {
-	where := sqlla.ExprMultiTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`updated_at`")}
+	where := sqlla.ExprMultiValue[time.Time]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`updated_at`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSNSSelectSQL) OrderByUpdatedAt(order sqlla.Order) userSNSSelectSQL {
-	q.order = " ORDER BY " + q.appendColumnPrefix("`updated_at`")
-	if order == sqlla.Asc {
-		q.order += " ASC"
-	} else {
-		q.order += " DESC"
-	}
-
+	q.order = order.WithColumn(q.appendColumnPrefix("`updated_at`"))
 	return q
 }
 
@@ -289,7 +241,10 @@ func (q userSNSSelectSQL) ToSql() (string, []interface{}, error) {
 		}
 		query += strings.Join(gbcs, ", ")
 	}
-	query += q.order
+	if q.order != nil {
+		query += " ORDER BY " + q.order.OrderExpr()
+		vs = append(vs, q.order.Values()...)
+	}
 	if q.limit != nil {
 		query += " LIMIT " + strconv.FormatUint(*q.limit, 10)
 	}
@@ -448,19 +403,13 @@ func (q userSNSUpdateSQL) SetID(v uint64) userSNSUpdateSQL {
 }
 
 func (q userSNSUpdateSQL) WhereID(v uint64, exprs ...sqlla.Operator) userSNSUpdateSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`id`"}
+	where := sqlla.ExprValue[uint64]{Value: v, Op: sqlla.Operators(exprs), Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSNSUpdateSQL) WhereIDIn(vs ...uint64) userSNSUpdateSQL {
-	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`id`"}
+	where := sqlla.ExprMultiValue[uint64]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -471,19 +420,13 @@ func (q userSNSUpdateSQL) SetSNSType(v string) userSNSUpdateSQL {
 }
 
 func (q userSNSUpdateSQL) WhereSNSType(v string, exprs ...sqlla.Operator) userSNSUpdateSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprString{Value: v, Op: op, Column: "`sns_type`"}
+	where := sqlla.ExprValue[string]{Value: v, Op: sqlla.Operators(exprs), Column: "`sns_type`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSNSUpdateSQL) WhereSNSTypeIn(vs ...string) userSNSUpdateSQL {
-	where := sqlla.ExprMultiString{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`sns_type`"}
+	where := sqlla.ExprMultiValue[string]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`sns_type`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -494,19 +437,13 @@ func (q userSNSUpdateSQL) SetCreatedAt(v time.Time) userSNSUpdateSQL {
 }
 
 func (q userSNSUpdateSQL) WhereCreatedAt(v time.Time, exprs ...sqlla.Operator) userSNSUpdateSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprTime{Value: v, Op: op, Column: "`created_at`"}
+	where := sqlla.ExprValue[time.Time]{Value: v, Op: sqlla.Operators(exprs), Column: "`created_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSNSUpdateSQL) WhereCreatedAtIn(vs ...time.Time) userSNSUpdateSQL {
-	where := sqlla.ExprMultiTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`created_at`"}
+	where := sqlla.ExprMultiValue[time.Time]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`created_at`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -517,19 +454,13 @@ func (q userSNSUpdateSQL) SetUpdatedAt(v time.Time) userSNSUpdateSQL {
 }
 
 func (q userSNSUpdateSQL) WhereUpdatedAt(v time.Time, exprs ...sqlla.Operator) userSNSUpdateSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprTime{Value: v, Op: op, Column: "`updated_at`"}
+	where := sqlla.ExprValue[time.Time]{Value: v, Op: sqlla.Operators(exprs), Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSNSUpdateSQL) WhereUpdatedAtIn(vs ...time.Time) userSNSUpdateSQL {
-	where := sqlla.ExprMultiTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
+	where := sqlla.ExprMultiValue[time.Time]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -552,7 +483,7 @@ func (q userSNSUpdateSQL) ToSql() (string, []interface{}, error) {
 		return "", []interface{}{}, err
 	}
 
-	query := "UPDATE `user_sns` SET" + setColumns
+	query := "UPDATE " + "`user_sns`" + " SET" + setColumns
 	if wheres != "" {
 		query += " WHERE" + wheres
 	}
@@ -628,38 +559,30 @@ func (q userSNSInsertSQL) ValueUpdatedAt(v time.Time) userSNSInsertSQL {
 	return q
 }
 
-func (q userSNSInsertSQL) ToSql() (string, []interface{}, error) {
+func (q userSNSInsertSQL) ToSql() (string, []any, error) {
 	query, vs, err := q.userSNSInsertSQLToSql()
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", []any{}, err
 	}
 	return query + ";", vs, nil
 }
 
-func (q userSNSInsertSQL) userSNSInsertSQLToSql() (string, []interface{}, error) {
+func (q userSNSInsertSQL) userSNSInsertSQLToSql() (string, []any, error) {
 	var err error
 	var s interface{} = UserSNS{}
 	if t, ok := s.(userSNSDefaultInsertHooker); ok {
 		q, err = t.DefaultInsertHook(q)
 		if err != nil {
-			return "", []interface{}{}, err
+			return "", []any{}, err
 		}
 	}
 	qs, vs, err := q.setMap.ToInsertSql()
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", []any{}, err
 	}
 
-	query := "INSERT INTO `user_sns` " + qs
-
+	query := "INSERT INTO " + "`user_sns`" + " " + qs
 	return query, vs, nil
-}
-
-func (q userSNSInsertSQL) OnDuplicateKeyUpdate() userSNSInsertOnDuplicateKeyUpdateSQL {
-	return userSNSInsertOnDuplicateKeyUpdateSQL{
-		insertSQL:               q,
-		onDuplicateKeyUpdateMap: sqlla.SetMap{},
-	}
 }
 
 func (q userSNSInsertSQL) Exec(db sqlla.DB) (UserSNS, error) {
@@ -708,12 +631,80 @@ type userSNSDefaultInsertHooker interface {
 }
 
 type userSNSInsertSQLToSqler interface {
-	userSNSInsertSQLToSql() (string, []interface{}, error)
+	userSNSInsertSQLToSql() (string, []any, error)
+}
+
+type userSNSBulkInsertSQL struct {
+	insertSQLs []userSNSInsertSQL
+}
+
+func (q userSNSSQL) BulkInsert() *userSNSBulkInsertSQL {
+	return &userSNSBulkInsertSQL{
+		insertSQLs: []userSNSInsertSQL{},
+	}
+}
+
+func (q *userSNSBulkInsertSQL) Append(iqs ...userSNSInsertSQL) {
+	q.insertSQLs = append(q.insertSQLs, iqs...)
+}
+
+func (q *userSNSBulkInsertSQL) userSNSInsertSQLToSql() (string, []any, error) {
+	if len(q.insertSQLs) == 0 {
+		return "", []any{}, fmt.Errorf("sqlla: This userSNSBulkInsertSQL's InsertSQL was empty")
+	}
+	iqs := make([]userSNSInsertSQL, len(q.insertSQLs))
+	copy(iqs, q.insertSQLs)
+
+	var s interface{} = UserSNS{}
+	if t, ok := s.(userSNSDefaultInsertHooker); ok {
+		for i, iq := range iqs {
+			var err error
+			iq, err = t.DefaultInsertHook(iq)
+			if err != nil {
+				return "", []any{}, err
+			}
+			iqs[i] = iq
+		}
+	}
+
+	sms := make(sqlla.SetMaps, 0, len(q.insertSQLs))
+	for _, iq := range q.insertSQLs {
+		sms = append(sms, iq.setMap)
+	}
+
+	query, vs, err := sms.ToInsertSql()
+	if err != nil {
+		return "", []any{}, err
+	}
+	return "INSERT INTO " + "`user_sns`" + " " + query, vs, nil
+}
+
+func (q *userSNSBulkInsertSQL) ToSql() (string, []any, error) {
+	query, vs, err := q.userSNSInsertSQLToSql()
+	if err != nil {
+		return "", []any{}, err
+	}
+	return query + ";", vs, nil
+}
+func (q *userSNSBulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	result, err := db.ExecContext(ctx, query, args...)
+	return result, err
 }
 
 type userSNSInsertOnDuplicateKeyUpdateSQL struct {
 	insertSQL               userSNSInsertSQLToSqler
 	onDuplicateKeyUpdateMap sqlla.SetMap
+}
+
+func (q userSNSInsertSQL) OnDuplicateKeyUpdate() userSNSInsertOnDuplicateKeyUpdateSQL {
+	return userSNSInsertOnDuplicateKeyUpdateSQL{
+		insertSQL:               q,
+		onDuplicateKeyUpdateMap: sqlla.SetMap{},
+	}
 }
 
 func (q userSNSInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateID(v uint64) userSNSInsertOnDuplicateKeyUpdateSQL {
@@ -727,7 +718,7 @@ func (q userSNSInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateID(v sqlla.SetMapR
 }
 
 func (q userSNSInsertOnDuplicateKeyUpdateSQL) SameOnUpdateID() userSNSInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`id`"] = sqlla.SetMapRawValue("VALUES(`id`)")
+	q.onDuplicateKeyUpdateMap["`id`"] = sqlla.SetMapRawValue("VALUES(" + "`id`" + ")")
 	return q
 }
 
@@ -742,7 +733,7 @@ func (q userSNSInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateSNSType(v sqlla.Se
 }
 
 func (q userSNSInsertOnDuplicateKeyUpdateSQL) SameOnUpdateSNSType() userSNSInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`sns_type`"] = sqlla.SetMapRawValue("VALUES(`sns_type`)")
+	q.onDuplicateKeyUpdateMap["`sns_type`"] = sqlla.SetMapRawValue("VALUES(" + "`sns_type`" + ")")
 	return q
 }
 
@@ -757,7 +748,7 @@ func (q userSNSInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateCreatedAt(v sqlla.
 }
 
 func (q userSNSInsertOnDuplicateKeyUpdateSQL) SameOnUpdateCreatedAt() userSNSInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`created_at`"] = sqlla.SetMapRawValue("VALUES(`created_at`)")
+	q.onDuplicateKeyUpdateMap["`created_at`"] = sqlla.SetMapRawValue("VALUES(" + "`created_at`" + ")")
 	return q
 }
 
@@ -772,7 +763,7 @@ func (q userSNSInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateUpdatedAt(v sqlla.
 }
 
 func (q userSNSInsertOnDuplicateKeyUpdateSQL) SameOnUpdateUpdatedAt() userSNSInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`updated_at`"] = sqlla.SetMapRawValue("VALUES(`updated_at`)")
+	q.onDuplicateKeyUpdateMap["`updated_at`"] = sqlla.SetMapRawValue("VALUES(" + "`updated_at`" + ")")
 	return q
 }
 
@@ -830,74 +821,11 @@ type userSNSDefaultInsertOnDuplicateKeyUpdateHooker interface {
 	DefaultInsertOnDuplicateKeyUpdateHook(userSNSInsertOnDuplicateKeyUpdateSQL) (userSNSInsertOnDuplicateKeyUpdateSQL, error)
 }
 
-type userSNSBulkInsertSQL struct {
-	insertSQLs []userSNSInsertSQL
-}
-
-func (q userSNSSQL) BulkInsert() *userSNSBulkInsertSQL {
-	return &userSNSBulkInsertSQL{
-		insertSQLs: []userSNSInsertSQL{},
-	}
-}
-
-func (q *userSNSBulkInsertSQL) Append(iqs ...userSNSInsertSQL) {
-	q.insertSQLs = append(q.insertSQLs, iqs...)
-}
-
-func (q *userSNSBulkInsertSQL) userSNSInsertSQLToSql() (string, []interface{}, error) {
-	if len(q.insertSQLs) == 0 {
-		return "", []interface{}{}, fmt.Errorf("sqlla: This userSNSBulkInsertSQL's InsertSQL was empty")
-	}
-	iqs := make([]userSNSInsertSQL, len(q.insertSQLs))
-	copy(iqs, q.insertSQLs)
-
-	var s interface{} = UserSNS{}
-	if t, ok := s.(userSNSDefaultInsertHooker); ok {
-		for i, iq := range iqs {
-			var err error
-			iq, err = t.DefaultInsertHook(iq)
-			if err != nil {
-				return "", []interface{}{}, err
-			}
-			iqs[i] = iq
-		}
-	}
-
-	sms := make(sqlla.SetMaps, 0, len(q.insertSQLs))
-	for _, iq := range q.insertSQLs {
-		sms = append(sms, iq.setMap)
-	}
-
-	query, vs, err := sms.ToInsertSql()
-	if err != nil {
-		return "", []interface{}{}, err
-	}
-
-	return "INSERT INTO `user_sns` " + query, vs, nil
-}
-
-func (q *userSNSBulkInsertSQL) ToSql() (string, []interface{}, error) {
-	query, vs, err := q.userSNSInsertSQLToSql()
-	if err != nil {
-		return "", []interface{}{}, err
-	}
-	return query + ";", vs, nil
-}
-
 func (q *userSNSBulkInsertSQL) OnDuplicateKeyUpdate() userSNSInsertOnDuplicateKeyUpdateSQL {
 	return userSNSInsertOnDuplicateKeyUpdateSQL{
 		insertSQL:               q,
 		onDuplicateKeyUpdateMap: sqlla.SetMap{},
 	}
-}
-
-func (q *userSNSBulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
-	query, args, err := q.ToSql()
-	if err != nil {
-		return nil, err
-	}
-	result, err := db.ExecContext(ctx, query, args...)
-	return result, err
 }
 
 type userSNSDeleteSQL struct {
@@ -911,73 +839,49 @@ func (q userSNSSQL) Delete() userSNSDeleteSQL {
 }
 
 func (q userSNSDeleteSQL) ID(v uint64, exprs ...sqlla.Operator) userSNSDeleteSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`id`"}
+	where := sqlla.ExprValue[uint64]{Value: v, Op: sqlla.Operators(exprs), Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSNSDeleteSQL) IDIn(vs ...uint64) userSNSDeleteSQL {
-	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`id`"}
+	where := sqlla.ExprMultiValue[uint64]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSNSDeleteSQL) SNSType(v string, exprs ...sqlla.Operator) userSNSDeleteSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprString{Value: v, Op: op, Column: "`sns_type`"}
+	where := sqlla.ExprValue[string]{Value: v, Op: sqlla.Operators(exprs), Column: "`sns_type`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSNSDeleteSQL) SNSTypeIn(vs ...string) userSNSDeleteSQL {
-	where := sqlla.ExprMultiString{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`sns_type`"}
+	where := sqlla.ExprMultiValue[string]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`sns_type`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSNSDeleteSQL) CreatedAt(v time.Time, exprs ...sqlla.Operator) userSNSDeleteSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprTime{Value: v, Op: op, Column: "`created_at`"}
+	where := sqlla.ExprValue[time.Time]{Value: v, Op: sqlla.Operators(exprs), Column: "`created_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSNSDeleteSQL) CreatedAtIn(vs ...time.Time) userSNSDeleteSQL {
-	where := sqlla.ExprMultiTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`created_at`"}
+	where := sqlla.ExprMultiValue[time.Time]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`created_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSNSDeleteSQL) UpdatedAt(v time.Time, exprs ...sqlla.Operator) userSNSDeleteSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprTime{Value: v, Op: op, Column: "`updated_at`"}
+	where := sqlla.ExprValue[time.Time]{Value: v, Op: sqlla.Operators(exprs), Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSNSDeleteSQL) UpdatedAtIn(vs ...time.Time) userSNSDeleteSQL {
-	where := sqlla.ExprMultiTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
+	where := sqlla.ExprMultiValue[time.Time]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -988,7 +892,7 @@ func (q userSNSDeleteSQL) ToSql() (string, []interface{}, error) {
 		return "", nil, err
 	}
 
-	query := "DELETE FROM `user_sns`"
+	query := "DELETE FROM " + "`user_sns`"
 	if wheres != "" {
 		query += " WHERE" + wheres
 	}

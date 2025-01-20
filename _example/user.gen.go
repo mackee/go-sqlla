@@ -8,8 +8,9 @@ import (
 	"strings"
 
 	"database/sql"
-	"github.com/go-sql-driver/mysql"
 	"time"
+
+	"github.com/go-sql-driver/mysql"
 
 	"github.com/mackee/go-sqlla/v2"
 )
@@ -30,7 +31,7 @@ var userAllColumns = []string{
 type userSelectSQL struct {
 	userSQL
 	Columns     []string
-	order       string
+	order       sqlla.OrderWithColumn
 	limit       *uint64
 	offset      *uint64
 	tableAlias  string
@@ -38,8 +39,7 @@ type userSelectSQL struct {
 
 	additionalWhereClause     string
 	additionalWhereClauseArgs []interface{}
-
-	groupByColumns []string
+	groupByColumns            []string
 
 	isForUpdate bool
 }
@@ -48,13 +48,14 @@ func (q userSQL) Select() userSelectSQL {
 	return userSelectSQL{
 		q,
 		userAllColumns,
-		"",
 		nil,
 		nil,
-		"",
 		nil,
 		"",
 		nil,
+		"",
+		nil,
+
 		nil,
 		false,
 	}
@@ -92,7 +93,7 @@ func (q userSelectSQL) TableAlias(alias string) userSelectSQL {
 func (q userSelectSQL) SetColumns(columns ...string) userSelectSQL {
 	q.Columns = make([]string, 0, len(columns))
 	for _, column := range columns {
-		if strings.ContainsAny(column, "(.`") {
+		if strings.ContainsAny(column, "(."+"`") {
 			q.Columns = append(q.Columns, column)
 		} else {
 			q.Columns = append(q.Columns, "`"+column+"`")
@@ -122,7 +123,7 @@ func (q userSelectSQL) appendColumnPrefix(column string) string {
 func (q userSelectSQL) GroupBy(columns ...string) userSelectSQL {
 	q.groupByColumns = make([]string, 0, len(columns))
 	for _, column := range columns {
-		if strings.ContainsAny(column, "(.`") {
+		if strings.ContainsAny(column, "(."+"`") {
 			q.groupByColumns = append(q.groupByColumns, column)
 		} else {
 			q.groupByColumns = append(q.groupByColumns, "`"+column+"`")
@@ -132,13 +133,7 @@ func (q userSelectSQL) GroupBy(columns ...string) userSelectSQL {
 }
 
 func (q userSelectSQL) ID(v UserId, exprs ...sqlla.Operator) userSelectSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprUint64{Value: uint64(v), Op: op, Column: q.appendColumnPrefix("`id`")}
+	where := sqlla.ExprValue[uint64]{Value: uint64(v), Op: sqlla.Operators(exprs), Column: q.appendColumnPrefix("`id`")}
 	q.where = append(q.where, where)
 	return q
 }
@@ -148,7 +143,7 @@ func (q userSelectSQL) IDIn(vs ...UserId) userSelectSQL {
 	for _, v := range vs {
 		_vs = append(_vs, uint64(v))
 	}
-	where := sqlla.ExprMultiUint64{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`id`")}
+	where := sqlla.ExprMultiValue[uint64]{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`id`")}
 	q.where = append(q.where, where)
 	return q
 }
@@ -159,187 +154,109 @@ func (q userSelectSQL) PkColumn(pk int64, exprs ...sqlla.Operator) userSelectSQL
 }
 
 func (q userSelectSQL) OrderByID(order sqlla.Order) userSelectSQL {
-	q.order = " ORDER BY " + q.appendColumnPrefix("`id`")
-	if order == sqlla.Asc {
-		q.order += " ASC"
-	} else {
-		q.order += " DESC"
-	}
-
+	q.order = order.WithColumn(q.appendColumnPrefix("`id`"))
 	return q
 }
 
 func (q userSelectSQL) Name(v string, exprs ...sqlla.Operator) userSelectSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprString{Value: v, Op: op, Column: q.appendColumnPrefix("`name`")}
+	where := sqlla.ExprValue[string]{Value: v, Op: sqlla.Operators(exprs), Column: q.appendColumnPrefix("`name`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) NameIn(vs ...string) userSelectSQL {
-	where := sqlla.ExprMultiString{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`name`")}
+	where := sqlla.ExprMultiValue[string]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`name`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) OrderByName(order sqlla.Order) userSelectSQL {
-	q.order = " ORDER BY " + q.appendColumnPrefix("`name`")
-	if order == sqlla.Asc {
-		q.order += " ASC"
-	} else {
-		q.order += " DESC"
-	}
-
+	q.order = order.WithColumn(q.appendColumnPrefix("`name`"))
 	return q
 }
 
 func (q userSelectSQL) Age(v sql.NullInt64, exprs ...sqlla.Operator) userSelectSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprNullInt64{Value: v, Op: op, Column: q.appendColumnPrefix("`age`")}
+	where := sqlla.ExprNull[int64]{Value: sql.Null[int64]{Valid: v.Valid, V: v.Int64}, Op: sqlla.Operators(exprs), Column: q.appendColumnPrefix("`age`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) AgeIn(vs ...sql.NullInt64) userSelectSQL {
-	where := sqlla.ExprMultiNullInt64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`age`")}
+	where := sqlla.ExprMultiValue[sql.NullInt64]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`age`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) OrderByAge(order sqlla.Order) userSelectSQL {
-	q.order = " ORDER BY " + q.appendColumnPrefix("`age`")
-	if order == sqlla.Asc {
-		q.order += " ASC"
-	} else {
-		q.order += " DESC"
-	}
-
+	q.order = order.WithColumn(q.appendColumnPrefix("`age`"))
 	return q
 }
 
 func (q userSelectSQL) Rate(v float64, exprs ...sqlla.Operator) userSelectSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprFloat64{Value: v, Op: op, Column: q.appendColumnPrefix("`rate`")}
+	where := sqlla.ExprValue[float64]{Value: v, Op: sqlla.Operators(exprs), Column: q.appendColumnPrefix("`rate`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) RateIn(vs ...float64) userSelectSQL {
-	where := sqlla.ExprMultiFloat64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`rate`")}
+	where := sqlla.ExprMultiValue[float64]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`rate`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) OrderByRate(order sqlla.Order) userSelectSQL {
-	q.order = " ORDER BY " + q.appendColumnPrefix("`rate`")
-	if order == sqlla.Asc {
-		q.order += " ASC"
-	} else {
-		q.order += " DESC"
-	}
-
+	q.order = order.WithColumn(q.appendColumnPrefix("`rate`"))
 	return q
 }
 
 func (q userSelectSQL) IconImage(v []byte, exprs ...sqlla.Operator) userSelectSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprBytes{Value: v, Op: op, Column: q.appendColumnPrefix("`icon_image`")}
+	where := sqlla.ExprValue[[]byte]{Value: v, Op: sqlla.Operators(exprs), Column: q.appendColumnPrefix("`icon_image`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) IconImageIn(vs ...[]byte) userSelectSQL {
-	where := sqlla.ExprMultiBytes{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`icon_image`")}
+	where := sqlla.ExprMultiValue[[]byte]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`icon_image`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) OrderByIconImage(order sqlla.Order) userSelectSQL {
-	q.order = " ORDER BY " + q.appendColumnPrefix("`icon_image`")
-	if order == sqlla.Asc {
-		q.order += " ASC"
-	} else {
-		q.order += " DESC"
-	}
-
+	q.order = order.WithColumn(q.appendColumnPrefix("`icon_image`"))
 	return q
 }
 
 func (q userSelectSQL) CreatedAt(v time.Time, exprs ...sqlla.Operator) userSelectSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprTime{Value: v, Op: op, Column: q.appendColumnPrefix("`created_at`")}
+	where := sqlla.ExprValue[time.Time]{Value: v, Op: sqlla.Operators(exprs), Column: q.appendColumnPrefix("`created_at`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) CreatedAtIn(vs ...time.Time) userSelectSQL {
-	where := sqlla.ExprMultiTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`created_at`")}
+	where := sqlla.ExprMultiValue[time.Time]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`created_at`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) OrderByCreatedAt(order sqlla.Order) userSelectSQL {
-	q.order = " ORDER BY " + q.appendColumnPrefix("`created_at`")
-	if order == sqlla.Asc {
-		q.order += " ASC"
-	} else {
-		q.order += " DESC"
-	}
-
+	q.order = order.WithColumn(q.appendColumnPrefix("`created_at`"))
 	return q
 }
 
 func (q userSelectSQL) UpdatedAt(v mysql.NullTime, exprs ...sqlla.Operator) userSelectSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprMysqlNullTime{Value: v, Op: op, Column: q.appendColumnPrefix("`updated_at`")}
+	where := sqlla.ExprNull[time.Time]{Value: sql.Null[time.Time]{Valid: v.Valid, V: v.Time}, Op: sqlla.Operators(exprs), Column: q.appendColumnPrefix("`updated_at`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) UpdatedAtIn(vs ...mysql.NullTime) userSelectSQL {
-	where := sqlla.ExprMultiMysqlNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`updated_at`")}
+	where := sqlla.ExprMultiValue[mysql.NullTime]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`updated_at`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userSelectSQL) OrderByUpdatedAt(order sqlla.Order) userSelectSQL {
-	q.order = " ORDER BY " + q.appendColumnPrefix("`updated_at`")
-	if order == sqlla.Asc {
-		q.order += " ASC"
-	} else {
-		q.order += " DESC"
-	}
-
+	q.order = order.WithColumn(q.appendColumnPrefix("`updated_at`"))
 	return q
 }
 
@@ -381,7 +298,10 @@ func (q userSelectSQL) ToSql() (string, []interface{}, error) {
 		}
 		query += strings.Join(gbcs, ", ")
 	}
-	query += q.order
+	if q.order != nil {
+		query += " ORDER BY " + q.order.OrderExpr()
+		vs = append(vs, q.order.Values()...)
+	}
 	if q.limit != nil {
 		query += " LIMIT " + strconv.FormatUint(*q.limit, 10)
 	}
@@ -538,18 +458,12 @@ func (q userSQL) Update() userUpdateSQL {
 }
 
 func (q userUpdateSQL) SetID(v UserId) userUpdateSQL {
-	q.setMap["`id`"] = v
+	q.setMap["`id`"] = uint64(v)
 	return q
 }
 
 func (q userUpdateSQL) WhereID(v UserId, exprs ...sqlla.Operator) userUpdateSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprUint64{Value: uint64(v), Op: op, Column: "`id`"}
+	where := sqlla.ExprValue[uint64]{Value: uint64(v), Op: sqlla.Operators(exprs), Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -559,7 +473,7 @@ func (q userUpdateSQL) WhereIDIn(vs ...UserId) userUpdateSQL {
 	for _, v := range vs {
 		_vs = append(_vs, uint64(v))
 	}
-	where := sqlla.ExprMultiUint64{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`id`"}
+	where := sqlla.ExprMultiValue[uint64]{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -570,42 +484,30 @@ func (q userUpdateSQL) SetName(v string) userUpdateSQL {
 }
 
 func (q userUpdateSQL) WhereName(v string, exprs ...sqlla.Operator) userUpdateSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprString{Value: v, Op: op, Column: "`name`"}
+	where := sqlla.ExprValue[string]{Value: v, Op: sqlla.Operators(exprs), Column: "`name`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userUpdateSQL) WhereNameIn(vs ...string) userUpdateSQL {
-	where := sqlla.ExprMultiString{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`name`"}
+	where := sqlla.ExprMultiValue[string]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`name`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userUpdateSQL) SetAge(v sql.NullInt64) userUpdateSQL {
-	q.setMap["`age`"] = v
+	q.setMap["`age`"] = sql.Null[int64]{Valid: v.Valid, V: v.Int64}
 	return q
 }
 
 func (q userUpdateSQL) WhereAge(v sql.NullInt64, exprs ...sqlla.Operator) userUpdateSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprNullInt64{Value: v, Op: op, Column: "`age`"}
+	where := sqlla.ExprNull[int64]{Value: sql.Null[int64]{Valid: v.Valid, V: v.Int64}, Op: sqlla.Operators(exprs), Column: "`age`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userUpdateSQL) WhereAgeIn(vs ...sql.NullInt64) userUpdateSQL {
-	where := sqlla.ExprMultiNullInt64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`age`"}
+	where := sqlla.ExprMultiValue[sql.NullInt64]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`age`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -616,19 +518,13 @@ func (q userUpdateSQL) SetRate(v float64) userUpdateSQL {
 }
 
 func (q userUpdateSQL) WhereRate(v float64, exprs ...sqlla.Operator) userUpdateSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprFloat64{Value: v, Op: op, Column: "`rate`"}
+	where := sqlla.ExprValue[float64]{Value: v, Op: sqlla.Operators(exprs), Column: "`rate`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userUpdateSQL) WhereRateIn(vs ...float64) userUpdateSQL {
-	where := sqlla.ExprMultiFloat64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`rate`"}
+	where := sqlla.ExprMultiValue[float64]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`rate`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -639,19 +535,13 @@ func (q userUpdateSQL) SetIconImage(v []byte) userUpdateSQL {
 }
 
 func (q userUpdateSQL) WhereIconImage(v []byte, exprs ...sqlla.Operator) userUpdateSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprBytes{Value: v, Op: op, Column: "`icon_image`"}
+	where := sqlla.ExprValue[[]byte]{Value: v, Op: sqlla.Operators(exprs), Column: "`icon_image`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userUpdateSQL) WhereIconImageIn(vs ...[]byte) userUpdateSQL {
-	where := sqlla.ExprMultiBytes{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`icon_image`"}
+	where := sqlla.ExprMultiValue[[]byte]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`icon_image`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -662,42 +552,30 @@ func (q userUpdateSQL) SetCreatedAt(v time.Time) userUpdateSQL {
 }
 
 func (q userUpdateSQL) WhereCreatedAt(v time.Time, exprs ...sqlla.Operator) userUpdateSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprTime{Value: v, Op: op, Column: "`created_at`"}
+	where := sqlla.ExprValue[time.Time]{Value: v, Op: sqlla.Operators(exprs), Column: "`created_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userUpdateSQL) WhereCreatedAtIn(vs ...time.Time) userUpdateSQL {
-	where := sqlla.ExprMultiTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`created_at`"}
+	where := sqlla.ExprMultiValue[time.Time]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`created_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userUpdateSQL) SetUpdatedAt(v mysql.NullTime) userUpdateSQL {
-	q.setMap["`updated_at`"] = v
+	q.setMap["`updated_at`"] = sql.Null[time.Time]{Valid: v.Valid, V: v.Time}
 	return q
 }
 
 func (q userUpdateSQL) WhereUpdatedAt(v mysql.NullTime, exprs ...sqlla.Operator) userUpdateSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprMysqlNullTime{Value: v, Op: op, Column: "`updated_at`"}
+	where := sqlla.ExprNull[time.Time]{Value: sql.Null[time.Time]{Valid: v.Valid, V: v.Time}, Op: sqlla.Operators(exprs), Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userUpdateSQL) WhereUpdatedAtIn(vs ...mysql.NullTime) userUpdateSQL {
-	where := sqlla.ExprMultiMysqlNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
+	where := sqlla.ExprMultiValue[mysql.NullTime]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -720,7 +598,7 @@ func (q userUpdateSQL) ToSql() (string, []interface{}, error) {
 		return "", []interface{}{}, err
 	}
 
-	query := "UPDATE `user` SET" + setColumns
+	query := "UPDATE " + "`user`" + " SET" + setColumns
 	if wheres != "" {
 		query += " WHERE" + wheres
 	}
@@ -777,7 +655,7 @@ func (q userSQL) Insert() userInsertSQL {
 }
 
 func (q userInsertSQL) ValueID(v UserId) userInsertSQL {
-	q.setMap["`id`"] = v
+	q.setMap["`id`"] = uint64(v)
 	return q
 }
 
@@ -787,7 +665,7 @@ func (q userInsertSQL) ValueName(v string) userInsertSQL {
 }
 
 func (q userInsertSQL) ValueAge(v sql.NullInt64) userInsertSQL {
-	q.setMap["`age`"] = v
+	q.setMap["`age`"] = sql.Null[int64]{Valid: v.Valid, V: v.Int64}
 	return q
 }
 
@@ -807,42 +685,34 @@ func (q userInsertSQL) ValueCreatedAt(v time.Time) userInsertSQL {
 }
 
 func (q userInsertSQL) ValueUpdatedAt(v mysql.NullTime) userInsertSQL {
-	q.setMap["`updated_at`"] = v
+	q.setMap["`updated_at`"] = sql.Null[time.Time]{Valid: v.Valid, V: v.Time}
 	return q
 }
 
-func (q userInsertSQL) ToSql() (string, []interface{}, error) {
+func (q userInsertSQL) ToSql() (string, []any, error) {
 	query, vs, err := q.userInsertSQLToSql()
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", []any{}, err
 	}
 	return query + ";", vs, nil
 }
 
-func (q userInsertSQL) userInsertSQLToSql() (string, []interface{}, error) {
+func (q userInsertSQL) userInsertSQLToSql() (string, []any, error) {
 	var err error
 	var s interface{} = User{}
 	if t, ok := s.(userDefaultInsertHooker); ok {
 		q, err = t.DefaultInsertHook(q)
 		if err != nil {
-			return "", []interface{}{}, err
+			return "", []any{}, err
 		}
 	}
 	qs, vs, err := q.setMap.ToInsertSql()
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", []any{}, err
 	}
 
-	query := "INSERT INTO `user` " + qs
-
+	query := "INSERT INTO " + "`user`" + " " + qs
 	return query, vs, nil
-}
-
-func (q userInsertSQL) OnDuplicateKeyUpdate() userInsertOnDuplicateKeyUpdateSQL {
-	return userInsertOnDuplicateKeyUpdateSQL{
-		insertSQL:               q,
-		onDuplicateKeyUpdateMap: sqlla.SetMap{},
-	}
 }
 
 func (q userInsertSQL) Exec(db sqlla.DB) (User, error) {
@@ -891,7 +761,68 @@ type userDefaultInsertHooker interface {
 }
 
 type userInsertSQLToSqler interface {
-	userInsertSQLToSql() (string, []interface{}, error)
+	userInsertSQLToSql() (string, []any, error)
+}
+
+type userBulkInsertSQL struct {
+	insertSQLs []userInsertSQL
+}
+
+func (q userSQL) BulkInsert() *userBulkInsertSQL {
+	return &userBulkInsertSQL{
+		insertSQLs: []userInsertSQL{},
+	}
+}
+
+func (q *userBulkInsertSQL) Append(iqs ...userInsertSQL) {
+	q.insertSQLs = append(q.insertSQLs, iqs...)
+}
+
+func (q *userBulkInsertSQL) userInsertSQLToSql() (string, []any, error) {
+	if len(q.insertSQLs) == 0 {
+		return "", []any{}, fmt.Errorf("sqlla: This userBulkInsertSQL's InsertSQL was empty")
+	}
+	iqs := make([]userInsertSQL, len(q.insertSQLs))
+	copy(iqs, q.insertSQLs)
+
+	var s interface{} = User{}
+	if t, ok := s.(userDefaultInsertHooker); ok {
+		for i, iq := range iqs {
+			var err error
+			iq, err = t.DefaultInsertHook(iq)
+			if err != nil {
+				return "", []any{}, err
+			}
+			iqs[i] = iq
+		}
+	}
+
+	sms := make(sqlla.SetMaps, 0, len(q.insertSQLs))
+	for _, iq := range q.insertSQLs {
+		sms = append(sms, iq.setMap)
+	}
+
+	query, vs, err := sms.ToInsertSql()
+	if err != nil {
+		return "", []any{}, err
+	}
+	return "INSERT INTO " + "`user`" + " " + query, vs, nil
+}
+
+func (q *userBulkInsertSQL) ToSql() (string, []any, error) {
+	query, vs, err := q.userInsertSQLToSql()
+	if err != nil {
+		return "", []any{}, err
+	}
+	return query + ";", vs, nil
+}
+func (q *userBulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	result, err := db.ExecContext(ctx, query, args...)
+	return result, err
 }
 
 type userInsertOnDuplicateKeyUpdateSQL struct {
@@ -899,8 +830,15 @@ type userInsertOnDuplicateKeyUpdateSQL struct {
 	onDuplicateKeyUpdateMap sqlla.SetMap
 }
 
+func (q userInsertSQL) OnDuplicateKeyUpdate() userInsertOnDuplicateKeyUpdateSQL {
+	return userInsertOnDuplicateKeyUpdateSQL{
+		insertSQL:               q,
+		onDuplicateKeyUpdateMap: sqlla.SetMap{},
+	}
+}
+
 func (q userInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateID(v UserId) userInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`id`"] = v
+	q.onDuplicateKeyUpdateMap["`id`"] = uint64(v)
 	return q
 }
 
@@ -910,7 +848,7 @@ func (q userInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateID(v sqlla.SetMapRawV
 }
 
 func (q userInsertOnDuplicateKeyUpdateSQL) SameOnUpdateID() userInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`id`"] = sqlla.SetMapRawValue("VALUES(`id`)")
+	q.onDuplicateKeyUpdateMap["`id`"] = sqlla.SetMapRawValue("VALUES(" + "`id`" + ")")
 	return q
 }
 
@@ -925,12 +863,12 @@ func (q userInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateName(v sqlla.SetMapRa
 }
 
 func (q userInsertOnDuplicateKeyUpdateSQL) SameOnUpdateName() userInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`name`"] = sqlla.SetMapRawValue("VALUES(`name`)")
+	q.onDuplicateKeyUpdateMap["`name`"] = sqlla.SetMapRawValue("VALUES(" + "`name`" + ")")
 	return q
 }
 
 func (q userInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateAge(v sql.NullInt64) userInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`age`"] = v
+	q.onDuplicateKeyUpdateMap["`age`"] = sql.Null[int64]{Valid: v.Valid, V: v.Int64}
 	return q
 }
 
@@ -940,7 +878,7 @@ func (q userInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateAge(v sqlla.SetMapRaw
 }
 
 func (q userInsertOnDuplicateKeyUpdateSQL) SameOnUpdateAge() userInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`age`"] = sqlla.SetMapRawValue("VALUES(`age`)")
+	q.onDuplicateKeyUpdateMap["`age`"] = sqlla.SetMapRawValue("VALUES(" + "`age`" + ")")
 	return q
 }
 
@@ -955,7 +893,7 @@ func (q userInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateRate(v sqlla.SetMapRa
 }
 
 func (q userInsertOnDuplicateKeyUpdateSQL) SameOnUpdateRate() userInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`rate`"] = sqlla.SetMapRawValue("VALUES(`rate`)")
+	q.onDuplicateKeyUpdateMap["`rate`"] = sqlla.SetMapRawValue("VALUES(" + "`rate`" + ")")
 	return q
 }
 
@@ -970,7 +908,7 @@ func (q userInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateIconImage(v sqlla.Set
 }
 
 func (q userInsertOnDuplicateKeyUpdateSQL) SameOnUpdateIconImage() userInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`icon_image`"] = sqlla.SetMapRawValue("VALUES(`icon_image`)")
+	q.onDuplicateKeyUpdateMap["`icon_image`"] = sqlla.SetMapRawValue("VALUES(" + "`icon_image`" + ")")
 	return q
 }
 
@@ -985,12 +923,12 @@ func (q userInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateCreatedAt(v sqlla.Set
 }
 
 func (q userInsertOnDuplicateKeyUpdateSQL) SameOnUpdateCreatedAt() userInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`created_at`"] = sqlla.SetMapRawValue("VALUES(`created_at`)")
+	q.onDuplicateKeyUpdateMap["`created_at`"] = sqlla.SetMapRawValue("VALUES(" + "`created_at`" + ")")
 	return q
 }
 
 func (q userInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateUpdatedAt(v mysql.NullTime) userInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`updated_at`"] = v
+	q.onDuplicateKeyUpdateMap["`updated_at`"] = sql.Null[time.Time]{Valid: v.Valid, V: v.Time}
 	return q
 }
 
@@ -1000,7 +938,7 @@ func (q userInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateUpdatedAt(v sqlla.Set
 }
 
 func (q userInsertOnDuplicateKeyUpdateSQL) SameOnUpdateUpdatedAt() userInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`updated_at`"] = sqlla.SetMapRawValue("VALUES(`updated_at`)")
+	q.onDuplicateKeyUpdateMap["`updated_at`"] = sqlla.SetMapRawValue("VALUES(" + "`updated_at`" + ")")
 	return q
 }
 
@@ -1058,74 +996,11 @@ type userDefaultInsertOnDuplicateKeyUpdateHooker interface {
 	DefaultInsertOnDuplicateKeyUpdateHook(userInsertOnDuplicateKeyUpdateSQL) (userInsertOnDuplicateKeyUpdateSQL, error)
 }
 
-type userBulkInsertSQL struct {
-	insertSQLs []userInsertSQL
-}
-
-func (q userSQL) BulkInsert() *userBulkInsertSQL {
-	return &userBulkInsertSQL{
-		insertSQLs: []userInsertSQL{},
-	}
-}
-
-func (q *userBulkInsertSQL) Append(iqs ...userInsertSQL) {
-	q.insertSQLs = append(q.insertSQLs, iqs...)
-}
-
-func (q *userBulkInsertSQL) userInsertSQLToSql() (string, []interface{}, error) {
-	if len(q.insertSQLs) == 0 {
-		return "", []interface{}{}, fmt.Errorf("sqlla: This userBulkInsertSQL's InsertSQL was empty")
-	}
-	iqs := make([]userInsertSQL, len(q.insertSQLs))
-	copy(iqs, q.insertSQLs)
-
-	var s interface{} = User{}
-	if t, ok := s.(userDefaultInsertHooker); ok {
-		for i, iq := range iqs {
-			var err error
-			iq, err = t.DefaultInsertHook(iq)
-			if err != nil {
-				return "", []interface{}{}, err
-			}
-			iqs[i] = iq
-		}
-	}
-
-	sms := make(sqlla.SetMaps, 0, len(q.insertSQLs))
-	for _, iq := range q.insertSQLs {
-		sms = append(sms, iq.setMap)
-	}
-
-	query, vs, err := sms.ToInsertSql()
-	if err != nil {
-		return "", []interface{}{}, err
-	}
-
-	return "INSERT INTO `user` " + query, vs, nil
-}
-
-func (q *userBulkInsertSQL) ToSql() (string, []interface{}, error) {
-	query, vs, err := q.userInsertSQLToSql()
-	if err != nil {
-		return "", []interface{}{}, err
-	}
-	return query + ";", vs, nil
-}
-
 func (q *userBulkInsertSQL) OnDuplicateKeyUpdate() userInsertOnDuplicateKeyUpdateSQL {
 	return userInsertOnDuplicateKeyUpdateSQL{
 		insertSQL:               q,
 		onDuplicateKeyUpdateMap: sqlla.SetMap{},
 	}
-}
-
-func (q *userBulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
-	query, args, err := q.ToSql()
-	if err != nil {
-		return nil, err
-	}
-	result, err := db.ExecContext(ctx, query, args...)
-	return result, err
 }
 
 type userDeleteSQL struct {
@@ -1139,13 +1014,7 @@ func (q userSQL) Delete() userDeleteSQL {
 }
 
 func (q userDeleteSQL) ID(v UserId, exprs ...sqlla.Operator) userDeleteSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprUint64{Value: uint64(v), Op: op, Column: "`id`"}
+	where := sqlla.ExprValue[uint64]{Value: uint64(v), Op: sqlla.Operators(exprs), Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -1155,115 +1024,79 @@ func (q userDeleteSQL) IDIn(vs ...UserId) userDeleteSQL {
 	for _, v := range vs {
 		_vs = append(_vs, uint64(v))
 	}
-	where := sqlla.ExprMultiUint64{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`id`"}
+	where := sqlla.ExprMultiValue[uint64]{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userDeleteSQL) Name(v string, exprs ...sqlla.Operator) userDeleteSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprString{Value: v, Op: op, Column: "`name`"}
+	where := sqlla.ExprValue[string]{Value: v, Op: sqlla.Operators(exprs), Column: "`name`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userDeleteSQL) NameIn(vs ...string) userDeleteSQL {
-	where := sqlla.ExprMultiString{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`name`"}
+	where := sqlla.ExprMultiValue[string]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`name`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userDeleteSQL) Age(v sql.NullInt64, exprs ...sqlla.Operator) userDeleteSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprNullInt64{Value: v, Op: op, Column: "`age`"}
+	where := sqlla.ExprNull[int64]{Value: sql.Null[int64]{Valid: v.Valid, V: v.Int64}, Op: sqlla.Operators(exprs), Column: "`age`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userDeleteSQL) AgeIn(vs ...sql.NullInt64) userDeleteSQL {
-	where := sqlla.ExprMultiNullInt64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`age`"}
+	where := sqlla.ExprMultiValue[sql.NullInt64]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`age`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userDeleteSQL) Rate(v float64, exprs ...sqlla.Operator) userDeleteSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprFloat64{Value: v, Op: op, Column: "`rate`"}
+	where := sqlla.ExprValue[float64]{Value: v, Op: sqlla.Operators(exprs), Column: "`rate`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userDeleteSQL) RateIn(vs ...float64) userDeleteSQL {
-	where := sqlla.ExprMultiFloat64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`rate`"}
+	where := sqlla.ExprMultiValue[float64]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`rate`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userDeleteSQL) IconImage(v []byte, exprs ...sqlla.Operator) userDeleteSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprBytes{Value: v, Op: op, Column: "`icon_image`"}
+	where := sqlla.ExprValue[[]byte]{Value: v, Op: sqlla.Operators(exprs), Column: "`icon_image`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userDeleteSQL) IconImageIn(vs ...[]byte) userDeleteSQL {
-	where := sqlla.ExprMultiBytes{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`icon_image`"}
+	where := sqlla.ExprMultiValue[[]byte]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`icon_image`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userDeleteSQL) CreatedAt(v time.Time, exprs ...sqlla.Operator) userDeleteSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprTime{Value: v, Op: op, Column: "`created_at`"}
+	where := sqlla.ExprValue[time.Time]{Value: v, Op: sqlla.Operators(exprs), Column: "`created_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userDeleteSQL) CreatedAtIn(vs ...time.Time) userDeleteSQL {
-	where := sqlla.ExprMultiTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`created_at`"}
+	where := sqlla.ExprMultiValue[time.Time]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`created_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userDeleteSQL) UpdatedAt(v mysql.NullTime, exprs ...sqlla.Operator) userDeleteSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprMysqlNullTime{Value: v, Op: op, Column: "`updated_at`"}
+	where := sqlla.ExprNull[time.Time]{Value: sql.Null[time.Time]{Valid: v.Valid, V: v.Time}, Op: sqlla.Operators(exprs), Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userDeleteSQL) UpdatedAtIn(vs ...mysql.NullTime) userDeleteSQL {
-	where := sqlla.ExprMultiMysqlNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
+	where := sqlla.ExprMultiValue[mysql.NullTime]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`updated_at`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -1274,7 +1107,7 @@ func (q userDeleteSQL) ToSql() (string, []interface{}, error) {
 		return "", nil, err
 	}
 
-	query := "DELETE FROM `user`"
+	query := "DELETE FROM " + "`user`"
 	if wheres != "" {
 		query += " WHERE" + wheres
 	}

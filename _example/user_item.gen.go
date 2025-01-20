@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"database/sql"
 
@@ -28,7 +29,7 @@ var userItemAllColumns = []string{
 type userItemSelectSQL struct {
 	userItemSQL
 	Columns     []string
-	order       string
+	order       sqlla.OrderWithColumn
 	limit       *uint64
 	offset      *uint64
 	tableAlias  string
@@ -36,8 +37,7 @@ type userItemSelectSQL struct {
 
 	additionalWhereClause     string
 	additionalWhereClauseArgs []interface{}
-
-	groupByColumns []string
+	groupByColumns            []string
 
 	isForUpdate bool
 }
@@ -46,13 +46,14 @@ func (q userItemSQL) Select() userItemSelectSQL {
 	return userItemSelectSQL{
 		q,
 		userItemAllColumns,
-		"",
 		nil,
 		nil,
-		"",
 		nil,
 		"",
 		nil,
+		"",
+		nil,
+
 		nil,
 		false,
 	}
@@ -90,7 +91,7 @@ func (q userItemSelectSQL) TableAlias(alias string) userItemSelectSQL {
 func (q userItemSelectSQL) SetColumns(columns ...string) userItemSelectSQL {
 	q.Columns = make([]string, 0, len(columns))
 	for _, column := range columns {
-		if strings.ContainsAny(column, "(.`") {
+		if strings.ContainsAny(column, "(."+"`") {
 			q.Columns = append(q.Columns, column)
 		} else {
 			q.Columns = append(q.Columns, "`"+column+"`")
@@ -120,7 +121,7 @@ func (q userItemSelectSQL) appendColumnPrefix(column string) string {
 func (q userItemSelectSQL) GroupBy(columns ...string) userItemSelectSQL {
 	q.groupByColumns = make([]string, 0, len(columns))
 	for _, column := range columns {
-		if strings.ContainsAny(column, "(.`") {
+		if strings.ContainsAny(column, "(."+"`") {
 			q.groupByColumns = append(q.groupByColumns, column)
 		} else {
 			q.groupByColumns = append(q.groupByColumns, "`"+column+"`")
@@ -130,19 +131,13 @@ func (q userItemSelectSQL) GroupBy(columns ...string) userItemSelectSQL {
 }
 
 func (q userItemSelectSQL) ID(v uint64, exprs ...sqlla.Operator) userItemSelectSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprUint64{Value: v, Op: op, Column: q.appendColumnPrefix("`id`")}
+	where := sqlla.ExprValue[uint64]{Value: v, Op: sqlla.Operators(exprs), Column: q.appendColumnPrefix("`id`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemSelectSQL) IDIn(vs ...uint64) userItemSelectSQL {
-	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`id`")}
+	where := sqlla.ExprMultiValue[uint64]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`id`")}
 	q.where = append(q.where, where)
 	return q
 }
@@ -153,158 +148,92 @@ func (q userItemSelectSQL) PkColumn(pk int64, exprs ...sqlla.Operator) userItemS
 }
 
 func (q userItemSelectSQL) OrderByID(order sqlla.Order) userItemSelectSQL {
-	q.order = " ORDER BY " + q.appendColumnPrefix("`id`")
-	if order == sqlla.Asc {
-		q.order += " ASC"
-	} else {
-		q.order += " DESC"
-	}
-
+	q.order = order.WithColumn(q.appendColumnPrefix("`id`"))
 	return q
 }
 
 func (q userItemSelectSQL) UserID(v uint64, exprs ...sqlla.Operator) userItemSelectSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprUint64{Value: v, Op: op, Column: q.appendColumnPrefix("`user_id`")}
+	where := sqlla.ExprValue[uint64]{Value: v, Op: sqlla.Operators(exprs), Column: q.appendColumnPrefix("`user_id`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemSelectSQL) UserIDIn(vs ...uint64) userItemSelectSQL {
-	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`user_id`")}
+	where := sqlla.ExprMultiValue[uint64]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`user_id`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemSelectSQL) OrderByUserID(order sqlla.Order) userItemSelectSQL {
-	q.order = " ORDER BY " + q.appendColumnPrefix("`user_id`")
-	if order == sqlla.Asc {
-		q.order += " ASC"
-	} else {
-		q.order += " DESC"
-	}
-
+	q.order = order.WithColumn(q.appendColumnPrefix("`user_id`"))
 	return q
 }
 
 func (q userItemSelectSQL) ItemID(v string, exprs ...sqlla.Operator) userItemSelectSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprString{Value: v, Op: op, Column: q.appendColumnPrefix("`item_id`")}
+	where := sqlla.ExprValue[string]{Value: v, Op: sqlla.Operators(exprs), Column: q.appendColumnPrefix("`item_id`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemSelectSQL) ItemIDIn(vs ...string) userItemSelectSQL {
-	where := sqlla.ExprMultiString{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`item_id`")}
+	where := sqlla.ExprMultiValue[string]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`item_id`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemSelectSQL) OrderByItemID(order sqlla.Order) userItemSelectSQL {
-	q.order = " ORDER BY " + q.appendColumnPrefix("`item_id`")
-	if order == sqlla.Asc {
-		q.order += " ASC"
-	} else {
-		q.order += " DESC"
-	}
-
+	q.order = order.WithColumn(q.appendColumnPrefix("`item_id`"))
 	return q
 }
 
 func (q userItemSelectSQL) IsUsed(v bool, exprs ...sqlla.Operator) userItemSelectSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprBool{Value: v, Op: op, Column: q.appendColumnPrefix("`is_used`")}
+	where := sqlla.ExprValue[bool]{Value: v, Op: sqlla.Operators(exprs), Column: q.appendColumnPrefix("`is_used`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemSelectSQL) IsUsedIn(vs ...bool) userItemSelectSQL {
-	where := sqlla.ExprMultiBool{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`is_used`")}
+	where := sqlla.ExprMultiValue[bool]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`is_used`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemSelectSQL) OrderByIsUsed(order sqlla.Order) userItemSelectSQL {
-	q.order = " ORDER BY " + q.appendColumnPrefix("`is_used`")
-	if order == sqlla.Asc {
-		q.order += " ASC"
-	} else {
-		q.order += " DESC"
-	}
-
+	q.order = order.WithColumn(q.appendColumnPrefix("`is_used`"))
 	return q
 }
 
 func (q userItemSelectSQL) HasExtension(v sql.NullBool, exprs ...sqlla.Operator) userItemSelectSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprNullBool{Value: v, Op: op, Column: q.appendColumnPrefix("`has_extension`")}
+	where := sqlla.ExprNull[bool]{Value: sql.Null[bool]{Valid: v.Valid, V: v.Bool}, Op: sqlla.Operators(exprs), Column: q.appendColumnPrefix("`has_extension`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemSelectSQL) HasExtensionIn(vs ...sql.NullBool) userItemSelectSQL {
-	where := sqlla.ExprMultiNullBool{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`has_extension`")}
+	where := sqlla.ExprMultiValue[sql.NullBool]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`has_extension`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemSelectSQL) OrderByHasExtension(order sqlla.Order) userItemSelectSQL {
-	q.order = " ORDER BY " + q.appendColumnPrefix("`has_extension`")
-	if order == sqlla.Asc {
-		q.order += " ASC"
-	} else {
-		q.order += " DESC"
-	}
-
+	q.order = order.WithColumn(q.appendColumnPrefix("`has_extension`"))
 	return q
 }
 
 func (q userItemSelectSQL) UsedAt(v sql.NullTime, exprs ...sqlla.Operator) userItemSelectSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprNullTime{Value: v, Op: op, Column: q.appendColumnPrefix("`used_at`")}
+	where := sqlla.ExprNull[time.Time]{Value: sql.Null[time.Time]{Valid: v.Valid, V: v.Time}, Op: sqlla.Operators(exprs), Column: q.appendColumnPrefix("`used_at`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemSelectSQL) UsedAtIn(vs ...sql.NullTime) userItemSelectSQL {
-	where := sqlla.ExprMultiNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`used_at`")}
+	where := sqlla.ExprMultiValue[sql.NullTime]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`used_at`")}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemSelectSQL) OrderByUsedAt(order sqlla.Order) userItemSelectSQL {
-	q.order = " ORDER BY " + q.appendColumnPrefix("`used_at`")
-	if order == sqlla.Asc {
-		q.order += " ASC"
-	} else {
-		q.order += " DESC"
-	}
-
+	q.order = order.WithColumn(q.appendColumnPrefix("`used_at`"))
 	return q
 }
 
@@ -346,7 +275,10 @@ func (q userItemSelectSQL) ToSql() (string, []interface{}, error) {
 		}
 		query += strings.Join(gbcs, ", ")
 	}
-	query += q.order
+	if q.order != nil {
+		query += " ORDER BY " + q.order.OrderExpr()
+		vs = append(vs, q.order.Values()...)
+	}
 	if q.limit != nil {
 		query += " LIMIT " + strconv.FormatUint(*q.limit, 10)
 	}
@@ -507,19 +439,13 @@ func (q userItemUpdateSQL) SetID(v uint64) userItemUpdateSQL {
 }
 
 func (q userItemUpdateSQL) WhereID(v uint64, exprs ...sqlla.Operator) userItemUpdateSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`id`"}
+	where := sqlla.ExprValue[uint64]{Value: v, Op: sqlla.Operators(exprs), Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemUpdateSQL) WhereIDIn(vs ...uint64) userItemUpdateSQL {
-	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`id`"}
+	where := sqlla.ExprMultiValue[uint64]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -530,19 +456,13 @@ func (q userItemUpdateSQL) SetUserID(v uint64) userItemUpdateSQL {
 }
 
 func (q userItemUpdateSQL) WhereUserID(v uint64, exprs ...sqlla.Operator) userItemUpdateSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`user_id`"}
+	where := sqlla.ExprValue[uint64]{Value: v, Op: sqlla.Operators(exprs), Column: "`user_id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemUpdateSQL) WhereUserIDIn(vs ...uint64) userItemUpdateSQL {
-	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`user_id`"}
+	where := sqlla.ExprMultiValue[uint64]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`user_id`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -553,19 +473,13 @@ func (q userItemUpdateSQL) SetItemID(v string) userItemUpdateSQL {
 }
 
 func (q userItemUpdateSQL) WhereItemID(v string, exprs ...sqlla.Operator) userItemUpdateSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprString{Value: v, Op: op, Column: "`item_id`"}
+	where := sqlla.ExprValue[string]{Value: v, Op: sqlla.Operators(exprs), Column: "`item_id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemUpdateSQL) WhereItemIDIn(vs ...string) userItemUpdateSQL {
-	where := sqlla.ExprMultiString{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`item_id`"}
+	where := sqlla.ExprMultiValue[string]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`item_id`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -576,65 +490,47 @@ func (q userItemUpdateSQL) SetIsUsed(v bool) userItemUpdateSQL {
 }
 
 func (q userItemUpdateSQL) WhereIsUsed(v bool, exprs ...sqlla.Operator) userItemUpdateSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprBool{Value: v, Op: op, Column: "`is_used`"}
+	where := sqlla.ExprValue[bool]{Value: v, Op: sqlla.Operators(exprs), Column: "`is_used`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemUpdateSQL) WhereIsUsedIn(vs ...bool) userItemUpdateSQL {
-	where := sqlla.ExprMultiBool{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`is_used`"}
+	where := sqlla.ExprMultiValue[bool]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`is_used`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemUpdateSQL) SetHasExtension(v sql.NullBool) userItemUpdateSQL {
-	q.setMap["`has_extension`"] = v
+	q.setMap["`has_extension`"] = sql.Null[bool]{Valid: v.Valid, V: v.Bool}
 	return q
 }
 
 func (q userItemUpdateSQL) WhereHasExtension(v sql.NullBool, exprs ...sqlla.Operator) userItemUpdateSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprNullBool{Value: v, Op: op, Column: "`has_extension`"}
+	where := sqlla.ExprNull[bool]{Value: sql.Null[bool]{Valid: v.Valid, V: v.Bool}, Op: sqlla.Operators(exprs), Column: "`has_extension`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemUpdateSQL) WhereHasExtensionIn(vs ...sql.NullBool) userItemUpdateSQL {
-	where := sqlla.ExprMultiNullBool{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`has_extension`"}
+	where := sqlla.ExprMultiValue[sql.NullBool]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`has_extension`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemUpdateSQL) SetUsedAt(v sql.NullTime) userItemUpdateSQL {
-	q.setMap["`used_at`"] = v
+	q.setMap["`used_at`"] = sql.Null[time.Time]{Valid: v.Valid, V: v.Time}
 	return q
 }
 
 func (q userItemUpdateSQL) WhereUsedAt(v sql.NullTime, exprs ...sqlla.Operator) userItemUpdateSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprNullTime{Value: v, Op: op, Column: "`used_at`"}
+	where := sqlla.ExprNull[time.Time]{Value: sql.Null[time.Time]{Valid: v.Valid, V: v.Time}, Op: sqlla.Operators(exprs), Column: "`used_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemUpdateSQL) WhereUsedAtIn(vs ...sql.NullTime) userItemUpdateSQL {
-	where := sqlla.ExprMultiNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`used_at`"}
+	where := sqlla.ExprMultiValue[sql.NullTime]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`used_at`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -657,7 +553,7 @@ func (q userItemUpdateSQL) ToSql() (string, []interface{}, error) {
 		return "", []interface{}{}, err
 	}
 
-	query := "UPDATE `user_item` SET" + setColumns
+	query := "UPDATE " + "`user_item`" + " SET" + setColumns
 	if wheres != "" {
 		query += " WHERE" + wheres
 	}
@@ -734,47 +630,39 @@ func (q userItemInsertSQL) ValueIsUsed(v bool) userItemInsertSQL {
 }
 
 func (q userItemInsertSQL) ValueHasExtension(v sql.NullBool) userItemInsertSQL {
-	q.setMap["`has_extension`"] = v
+	q.setMap["`has_extension`"] = sql.Null[bool]{Valid: v.Valid, V: v.Bool}
 	return q
 }
 
 func (q userItemInsertSQL) ValueUsedAt(v sql.NullTime) userItemInsertSQL {
-	q.setMap["`used_at`"] = v
+	q.setMap["`used_at`"] = sql.Null[time.Time]{Valid: v.Valid, V: v.Time}
 	return q
 }
 
-func (q userItemInsertSQL) ToSql() (string, []interface{}, error) {
+func (q userItemInsertSQL) ToSql() (string, []any, error) {
 	query, vs, err := q.userItemInsertSQLToSql()
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", []any{}, err
 	}
 	return query + ";", vs, nil
 }
 
-func (q userItemInsertSQL) userItemInsertSQLToSql() (string, []interface{}, error) {
+func (q userItemInsertSQL) userItemInsertSQLToSql() (string, []any, error) {
 	var err error
 	var s interface{} = UserItem{}
 	if t, ok := s.(userItemDefaultInsertHooker); ok {
 		q, err = t.DefaultInsertHook(q)
 		if err != nil {
-			return "", []interface{}{}, err
+			return "", []any{}, err
 		}
 	}
 	qs, vs, err := q.setMap.ToInsertSql()
 	if err != nil {
-		return "", []interface{}{}, err
+		return "", []any{}, err
 	}
 
-	query := "INSERT INTO `user_item` " + qs
-
+	query := "INSERT INTO " + "`user_item`" + " " + qs
 	return query, vs, nil
-}
-
-func (q userItemInsertSQL) OnDuplicateKeyUpdate() userItemInsertOnDuplicateKeyUpdateSQL {
-	return userItemInsertOnDuplicateKeyUpdateSQL{
-		insertSQL:               q,
-		onDuplicateKeyUpdateMap: sqlla.SetMap{},
-	}
 }
 
 func (q userItemInsertSQL) Exec(db sqlla.DB) (UserItem, error) {
@@ -823,12 +711,80 @@ type userItemDefaultInsertHooker interface {
 }
 
 type userItemInsertSQLToSqler interface {
-	userItemInsertSQLToSql() (string, []interface{}, error)
+	userItemInsertSQLToSql() (string, []any, error)
+}
+
+type userItemBulkInsertSQL struct {
+	insertSQLs []userItemInsertSQL
+}
+
+func (q userItemSQL) BulkInsert() *userItemBulkInsertSQL {
+	return &userItemBulkInsertSQL{
+		insertSQLs: []userItemInsertSQL{},
+	}
+}
+
+func (q *userItemBulkInsertSQL) Append(iqs ...userItemInsertSQL) {
+	q.insertSQLs = append(q.insertSQLs, iqs...)
+}
+
+func (q *userItemBulkInsertSQL) userItemInsertSQLToSql() (string, []any, error) {
+	if len(q.insertSQLs) == 0 {
+		return "", []any{}, fmt.Errorf("sqlla: This userItemBulkInsertSQL's InsertSQL was empty")
+	}
+	iqs := make([]userItemInsertSQL, len(q.insertSQLs))
+	copy(iqs, q.insertSQLs)
+
+	var s interface{} = UserItem{}
+	if t, ok := s.(userItemDefaultInsertHooker); ok {
+		for i, iq := range iqs {
+			var err error
+			iq, err = t.DefaultInsertHook(iq)
+			if err != nil {
+				return "", []any{}, err
+			}
+			iqs[i] = iq
+		}
+	}
+
+	sms := make(sqlla.SetMaps, 0, len(q.insertSQLs))
+	for _, iq := range q.insertSQLs {
+		sms = append(sms, iq.setMap)
+	}
+
+	query, vs, err := sms.ToInsertSql()
+	if err != nil {
+		return "", []any{}, err
+	}
+	return "INSERT INTO " + "`user_item`" + " " + query, vs, nil
+}
+
+func (q *userItemBulkInsertSQL) ToSql() (string, []any, error) {
+	query, vs, err := q.userItemInsertSQLToSql()
+	if err != nil {
+		return "", []any{}, err
+	}
+	return query + ";", vs, nil
+}
+func (q *userItemBulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	result, err := db.ExecContext(ctx, query, args...)
+	return result, err
 }
 
 type userItemInsertOnDuplicateKeyUpdateSQL struct {
 	insertSQL               userItemInsertSQLToSqler
 	onDuplicateKeyUpdateMap sqlla.SetMap
+}
+
+func (q userItemInsertSQL) OnDuplicateKeyUpdate() userItemInsertOnDuplicateKeyUpdateSQL {
+	return userItemInsertOnDuplicateKeyUpdateSQL{
+		insertSQL:               q,
+		onDuplicateKeyUpdateMap: sqlla.SetMap{},
+	}
 }
 
 func (q userItemInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateID(v uint64) userItemInsertOnDuplicateKeyUpdateSQL {
@@ -842,7 +798,7 @@ func (q userItemInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateID(v sqlla.SetMap
 }
 
 func (q userItemInsertOnDuplicateKeyUpdateSQL) SameOnUpdateID() userItemInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`id`"] = sqlla.SetMapRawValue("VALUES(`id`)")
+	q.onDuplicateKeyUpdateMap["`id`"] = sqlla.SetMapRawValue("VALUES(" + "`id`" + ")")
 	return q
 }
 
@@ -857,7 +813,7 @@ func (q userItemInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateUserID(v sqlla.Se
 }
 
 func (q userItemInsertOnDuplicateKeyUpdateSQL) SameOnUpdateUserID() userItemInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`user_id`"] = sqlla.SetMapRawValue("VALUES(`user_id`)")
+	q.onDuplicateKeyUpdateMap["`user_id`"] = sqlla.SetMapRawValue("VALUES(" + "`user_id`" + ")")
 	return q
 }
 
@@ -872,7 +828,7 @@ func (q userItemInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateItemID(v sqlla.Se
 }
 
 func (q userItemInsertOnDuplicateKeyUpdateSQL) SameOnUpdateItemID() userItemInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`item_id`"] = sqlla.SetMapRawValue("VALUES(`item_id`)")
+	q.onDuplicateKeyUpdateMap["`item_id`"] = sqlla.SetMapRawValue("VALUES(" + "`item_id`" + ")")
 	return q
 }
 
@@ -887,12 +843,12 @@ func (q userItemInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateIsUsed(v sqlla.Se
 }
 
 func (q userItemInsertOnDuplicateKeyUpdateSQL) SameOnUpdateIsUsed() userItemInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`is_used`"] = sqlla.SetMapRawValue("VALUES(`is_used`)")
+	q.onDuplicateKeyUpdateMap["`is_used`"] = sqlla.SetMapRawValue("VALUES(" + "`is_used`" + ")")
 	return q
 }
 
 func (q userItemInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateHasExtension(v sql.NullBool) userItemInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`has_extension`"] = v
+	q.onDuplicateKeyUpdateMap["`has_extension`"] = sql.Null[bool]{Valid: v.Valid, V: v.Bool}
 	return q
 }
 
@@ -902,12 +858,12 @@ func (q userItemInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateHasExtension(v sq
 }
 
 func (q userItemInsertOnDuplicateKeyUpdateSQL) SameOnUpdateHasExtension() userItemInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`has_extension`"] = sqlla.SetMapRawValue("VALUES(`has_extension`)")
+	q.onDuplicateKeyUpdateMap["`has_extension`"] = sqlla.SetMapRawValue("VALUES(" + "`has_extension`" + ")")
 	return q
 }
 
 func (q userItemInsertOnDuplicateKeyUpdateSQL) ValueOnUpdateUsedAt(v sql.NullTime) userItemInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`used_at`"] = v
+	q.onDuplicateKeyUpdateMap["`used_at`"] = sql.Null[time.Time]{Valid: v.Valid, V: v.Time}
 	return q
 }
 
@@ -917,7 +873,7 @@ func (q userItemInsertOnDuplicateKeyUpdateSQL) RawValueOnUpdateUsedAt(v sqlla.Se
 }
 
 func (q userItemInsertOnDuplicateKeyUpdateSQL) SameOnUpdateUsedAt() userItemInsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`used_at`"] = sqlla.SetMapRawValue("VALUES(`used_at`)")
+	q.onDuplicateKeyUpdateMap["`used_at`"] = sqlla.SetMapRawValue("VALUES(" + "`used_at`" + ")")
 	return q
 }
 
@@ -975,74 +931,11 @@ type userItemDefaultInsertOnDuplicateKeyUpdateHooker interface {
 	DefaultInsertOnDuplicateKeyUpdateHook(userItemInsertOnDuplicateKeyUpdateSQL) (userItemInsertOnDuplicateKeyUpdateSQL, error)
 }
 
-type userItemBulkInsertSQL struct {
-	insertSQLs []userItemInsertSQL
-}
-
-func (q userItemSQL) BulkInsert() *userItemBulkInsertSQL {
-	return &userItemBulkInsertSQL{
-		insertSQLs: []userItemInsertSQL{},
-	}
-}
-
-func (q *userItemBulkInsertSQL) Append(iqs ...userItemInsertSQL) {
-	q.insertSQLs = append(q.insertSQLs, iqs...)
-}
-
-func (q *userItemBulkInsertSQL) userItemInsertSQLToSql() (string, []interface{}, error) {
-	if len(q.insertSQLs) == 0 {
-		return "", []interface{}{}, fmt.Errorf("sqlla: This userItemBulkInsertSQL's InsertSQL was empty")
-	}
-	iqs := make([]userItemInsertSQL, len(q.insertSQLs))
-	copy(iqs, q.insertSQLs)
-
-	var s interface{} = UserItem{}
-	if t, ok := s.(userItemDefaultInsertHooker); ok {
-		for i, iq := range iqs {
-			var err error
-			iq, err = t.DefaultInsertHook(iq)
-			if err != nil {
-				return "", []interface{}{}, err
-			}
-			iqs[i] = iq
-		}
-	}
-
-	sms := make(sqlla.SetMaps, 0, len(q.insertSQLs))
-	for _, iq := range q.insertSQLs {
-		sms = append(sms, iq.setMap)
-	}
-
-	query, vs, err := sms.ToInsertSql()
-	if err != nil {
-		return "", []interface{}{}, err
-	}
-
-	return "INSERT INTO `user_item` " + query, vs, nil
-}
-
-func (q *userItemBulkInsertSQL) ToSql() (string, []interface{}, error) {
-	query, vs, err := q.userItemInsertSQLToSql()
-	if err != nil {
-		return "", []interface{}{}, err
-	}
-	return query + ";", vs, nil
-}
-
 func (q *userItemBulkInsertSQL) OnDuplicateKeyUpdate() userItemInsertOnDuplicateKeyUpdateSQL {
 	return userItemInsertOnDuplicateKeyUpdateSQL{
 		insertSQL:               q,
 		onDuplicateKeyUpdateMap: sqlla.SetMap{},
 	}
-}
-
-func (q *userItemBulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
-	query, args, err := q.ToSql()
-	if err != nil {
-		return nil, err
-	}
-	result, err := db.ExecContext(ctx, query, args...)
-	return result, err
 }
 
 type userItemDeleteSQL struct {
@@ -1056,109 +949,73 @@ func (q userItemSQL) Delete() userItemDeleteSQL {
 }
 
 func (q userItemDeleteSQL) ID(v uint64, exprs ...sqlla.Operator) userItemDeleteSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`id`"}
+	where := sqlla.ExprValue[uint64]{Value: v, Op: sqlla.Operators(exprs), Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemDeleteSQL) IDIn(vs ...uint64) userItemDeleteSQL {
-	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`id`"}
+	where := sqlla.ExprMultiValue[uint64]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemDeleteSQL) UserID(v uint64, exprs ...sqlla.Operator) userItemDeleteSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprUint64{Value: v, Op: op, Column: "`user_id`"}
+	where := sqlla.ExprValue[uint64]{Value: v, Op: sqlla.Operators(exprs), Column: "`user_id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemDeleteSQL) UserIDIn(vs ...uint64) userItemDeleteSQL {
-	where := sqlla.ExprMultiUint64{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`user_id`"}
+	where := sqlla.ExprMultiValue[uint64]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`user_id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemDeleteSQL) ItemID(v string, exprs ...sqlla.Operator) userItemDeleteSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprString{Value: v, Op: op, Column: "`item_id`"}
+	where := sqlla.ExprValue[string]{Value: v, Op: sqlla.Operators(exprs), Column: "`item_id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemDeleteSQL) ItemIDIn(vs ...string) userItemDeleteSQL {
-	where := sqlla.ExprMultiString{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`item_id`"}
+	where := sqlla.ExprMultiValue[string]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`item_id`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemDeleteSQL) IsUsed(v bool, exprs ...sqlla.Operator) userItemDeleteSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprBool{Value: v, Op: op, Column: "`is_used`"}
+	where := sqlla.ExprValue[bool]{Value: v, Op: sqlla.Operators(exprs), Column: "`is_used`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemDeleteSQL) IsUsedIn(vs ...bool) userItemDeleteSQL {
-	where := sqlla.ExprMultiBool{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`is_used`"}
+	where := sqlla.ExprMultiValue[bool]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`is_used`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemDeleteSQL) HasExtension(v sql.NullBool, exprs ...sqlla.Operator) userItemDeleteSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprNullBool{Value: v, Op: op, Column: "`has_extension`"}
+	where := sqlla.ExprNull[bool]{Value: sql.Null[bool]{Valid: v.Valid, V: v.Bool}, Op: sqlla.Operators(exprs), Column: "`has_extension`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemDeleteSQL) HasExtensionIn(vs ...sql.NullBool) userItemDeleteSQL {
-	where := sqlla.ExprMultiNullBool{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`has_extension`"}
+	where := sqlla.ExprMultiValue[sql.NullBool]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`has_extension`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemDeleteSQL) UsedAt(v sql.NullTime, exprs ...sqlla.Operator) userItemDeleteSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprNullTime{Value: v, Op: op, Column: "`used_at`"}
+	where := sqlla.ExprNull[time.Time]{Value: sql.Null[time.Time]{Valid: v.Valid, V: v.Time}, Op: sqlla.Operators(exprs), Column: "`used_at`"}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q userItemDeleteSQL) UsedAtIn(vs ...sql.NullTime) userItemDeleteSQL {
-	where := sqlla.ExprMultiNullTime{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`used_at`"}
+	where := sqlla.ExprMultiValue[sql.NullTime]{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`used_at`"}
 	q.where = append(q.where, where)
 	return q
 }
@@ -1169,7 +1026,7 @@ func (q userItemDeleteSQL) ToSql() (string, []interface{}, error) {
 		return "", nil, err
 	}
 
-	query := "DELETE FROM `user_item`"
+	query := "DELETE FROM " + "`user_item`"
 	if wheres != "" {
 		query += " WHERE" + wheres
 	}

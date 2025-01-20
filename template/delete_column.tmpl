@@ -3,13 +3,7 @@
 {{- template "DeleteColumnNullT" . }}
 {{- else }}
 func (q {{ $smallTableName }}DeleteSQL) {{ .MethodName }}(v {{ .TypeName }}, exprs ...sqlla.Operator) {{ $smallTableName }}DeleteSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.{{ .ExprTypeName }}{Value: {{ .ExprValueIdentifier }}, Op: op, Column: "`{{ .Name }}`"}
+	where := {{ .ExprValue }}{Value: {{ .ExprValueIdentifier }}, Op: sqlla.Operators(exprs), Column: {{ cquoteby .Name }}}
 	q.where = append(q.where, where)
 	return q
 }
@@ -19,11 +13,11 @@ func (q {{ $smallTableName }}DeleteSQL) {{ .MethodName }}In(vs ...{{ .TypeName }
 {{- if .HasUnderlyingType }}
 	_vs := make([]{{ .BaseTypeName }}, 0, len(vs))
 	for _, v := range vs {
-		_vs = append(_vs, {{ .BaseTypeName }}(v))
+		_vs = append(_vs, {{ .ExprValueIdentifier }})
 	}
-	where := sqlla.{{ .ExprMultiTypeName }}{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`{{ .Name }}`"}
+	where := {{ .ExprMultiValue }}{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: {{ cquoteby .Name }}}
 {{- else }}
-	where := sqlla.{{ .ExprMultiTypeName }}{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: "`{{ .Name }}`"}
+	where := {{ .ExprMultiValue }}{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: {{ cquoteby .Name }}}
 {{- end }}
 	q.where = append(q.where, where)
 	return q

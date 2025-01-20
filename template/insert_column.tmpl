@@ -1,18 +1,18 @@
 {{ define "InsertColumn" }}{{ $smallTableName := .TableName | toCamel | untitle }}
 {{- if .IsNullT }}
-func (q {{ $smallTableName }}InsertSQL) Value{{ .MethodName }}(v {{ .TypeParameter }}) {{ $smallTableName }}InsertSQL {
-	q.setMap["`{{ .Name }}`"] = sql.Null[{{ .TypeParameter }}]{ V: v, Valid: true }
+func (q {{ $smallTableName }}InsertSQL) Value{{ .MethodName }}(v {{ .TypeName }}) {{ $smallTableName }}InsertSQL {
+	q.setMap[{{ cquoteby .Name }}] = {{ .ExprValueIdentifier }}
 	return q
 }
 
 func (q {{ $smallTableName }}InsertSQL) Value{{ .MethodName }}IsNull() {{ $smallTableName }}InsertSQL {
-	q.setMap["`{{ .Name }}`"] = sql.Null[{{ .TypeParameter }}]{ Valid: false }
+	q.setMap[{{ cquoteby .Name }}] = sql.Null[{{ .BaseTypeName }}]{ Valid: false }
 	return q
 }
 
 {{- else }}
 func (q {{ $smallTableName }}InsertSQL) Value{{ .MethodName }}(v {{ .TypeName }}) {{ $smallTableName }}InsertSQL {
-	q.setMap["`{{ .Name }}`"] = v
+	q.setMap[{{ cquoteby .Name }}] = {{ .ExprValueIdentifier }}
 	return q
 }
 {{- end }}

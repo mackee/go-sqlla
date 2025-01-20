@@ -1,0 +1,272 @@
+{{ define "InsertPostgreSQL.ExecContextHasPkSingle" }}
+{{- $constructor := printf "New%sSQL" (.Name | toCamel) -}}
+	query, args, err := q.ToSql()
+	if err != nil {
+		return {{ .StructName }}{}, err
+	}
+	row := db.QueryRowContext(ctx, query, args...)
+	var pk {{ .PkColumn.TypeName }}
+	if err := row.Scan(&pk); err != nil {
+		return {{ .StructName }}{}, err
+	}
+	return {{ $constructor }}().Select().{{ .PkColumn.MethodName }}(pk).SingleContext(ctx, db)
+{{ end }}
+{{ define "InsertPostgreSQL.ExecContextHasPkAll" }}
+{{- $constructor := printf "New%sSQL" (.Name | toCamel) -}}
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	rows, err := db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	pks := make([]{{ .PkColumn.TypeName }}, 0)
+	for rows.Next() {
+		var pk {{ .PkColumn.TypeName }}
+		if err := rows.Scan(&pk); err != nil {
+			return nil, err
+		}
+		pks = append(pks, pk)
+	}
+
+	return {{ $constructor }}().Select().{{ .PkColumn.MethodName }}In(pks...).AllContext(ctx, db)
+{{ end }}
+{{ define "InsertPostgreSQL.ExecContextWithoutSelect" }}
+	query, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	result, err := db.ExecContext(ctx, query, args...)
+	return result, err
+{{ end }}
+{{ define "InsertPostgreSQL.DoNothingToSql" }}
+{{- $camelName := .Name | toCamel | untitle -}}
+	query, _, vs, err := q.insertSQL.{{ $camelName }}InsertSQLToSqlPg(0)
+	if err != nil {
+		return "", nil, err
+	}
+	query += " ON CONFLICT DO NOTHING"
+	{{- if .HasPk }}
+	query += " RETURNING " + {{ cquoteby .PkColumn.Name }}
+	{{- end }}
+	return query + ";", vs, nil
+{{ end }}
+{{ define "InsertPostgreSQL.DoUpdateToSql" }}
+{{- $camelName := .Name | toCamel | untitle -}}
+	var s any = {{ .StructName }}{}
+	if t, ok := s.({{ $camelName }}DefaultInsertOnConflictDoUpdateHooker); ok {
+		_q, err := t.DefaultInsertOnConflictDoUpdateHook(q)
+		if err != nil {
+			return "", nil, err
+		}
+		q = _q
+	}
+
+	query, offset, vs, err := q.insertSQL.{{ $camelName }}InsertSQLToSqlPg(0)
+	if err != nil {
+			return "", nil, err
+	}
+
+	os, _, ovs, err := q.onConflictDoUpdateMap.ToUpdateSqlPg(offset)
+	if err != nil {
+		return "", nil, err
+	}
+	query += " ON CONFLICT (" + q.target + ") DO UPDATE SET" + os
+	vs = append(vs, ovs...)
+	{{- if .HasPk }}
+	query += " RETURNING " + {{ cquoteby .PkColumn.Name }}
+	{{- end }}
+
+	return query + ";", vs, nil
+{{ end }}
+
+{{ define "InsertPostgreSQL" }}
+{{- $camelName := .Name | toCamel | untitle -}}
+{{- $constructor := printf "New%sSQL" (.Name | toCamel) -}}
+
+type {{ $camelName }}InsertOnConflictDoNothingSQL struct {
+	insertSQL {{ $camelName }}InsertSQLToSqler
+}
+
+func (q {{ $camelName }}InsertSQL) OnConflictDoNothing() {{ $camelName }}InsertOnConflictDoNothingSQL {
+	return {{ $camelName }}InsertOnConflictDoNothingSQL{
+		insertSQL: q,
+	}
+}
+
+func (q {{ $camelName }}InsertOnConflictDoNothingSQL) ToSql() (string, []any, error) {
+{{ template "InsertPostgreSQL.DoNothingToSql" . }}
+}
+
+{{ if .HasPk -}}
+func (q {{ $camelName }}InsertOnConflictDoNothingSQL) ExecContext(ctx context.Context, db sqlla.DB) ({{ .StructName }}, error) {
+{{ template "InsertPostgreSQL.ExecContextHasPkSingle" . }}
+}
+
+func (q {{ $camelName }}InsertOnConflictDoNothingSQL) ExecContextWithoutSelect(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+{{ template "InsertPostgreSQL.ExecContextWithoutSelect" . }}
+}
+{{- else -}}
+func (q {{ $camelName }}InsertOnConflictDoNothingSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+{{ template "InsertPostgreSQL.ExecContextWithoutSelect" . }}
+}
+{{- end }}
+
+type {{ $camelName }}InsertOnConflictDoUpdateSQL struct {
+	insertSQL {{ $camelName }}InsertSQLToSqler
+	onConflictDoUpdateMap sqlla.SetMap
+	target string
+}
+
+func (q {{ $camelName }}InsertSQL) OnConflictDoUpdate(target string) {{ $camelName }}InsertOnConflictDoUpdateSQL {
+	return {{ $camelName }}InsertOnConflictDoUpdateSQL{
+		insertSQL: q,
+		onConflictDoUpdateMap: sqlla.SetMap{},
+		target: target,
+	}
+}
+
+{{ range .Columns }}{{ template "InsertOnConflictDoUpdateColumn" . }}{{ end }}
+
+func (q {{ $camelName }}InsertOnConflictDoUpdateSQL) ToSql() (string, []any, error) {
+	var err error
+	var s any = {{ .StructName }}{}
+	if t, ok := s.({{ $camelName }}DefaultInsertOnConflictDoUpdateHooker); ok {
+		q, err = t.DefaultInsertOnConflictDoUpdateHook(q)
+		if err != nil {
+			return "", nil, err
+		}
+	}
+
+	query, offset, vs, err := q.insertSQL.{{ $camelName }}InsertSQLToSqlPg(0)
+	if err != nil {
+			return "", nil, err
+	}
+
+	os, _, ovs, err := q.onConflictDoUpdateMap.ToUpdateSqlPg(offset)
+	if err != nil {
+		return "", nil, err
+	}
+	query += " ON CONFLICT (" + q.target + ") DO UPDATE SET" + os
+	vs = append(vs, ovs...)
+	{{- if .HasPk }}
+	query += " RETURNING " + {{ cquoteby .PkColumn.Name }}
+	{{- end }}
+
+	return query + ";", vs, nil
+}
+
+{{ if .HasPk -}}
+func (q {{ $camelName }}InsertOnConflictDoUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ({{ .StructName }}, error) {
+{{ template "InsertPostgreSQL.ExecContextHasPkSingle" . }}
+}
+
+func (q {{ $camelName }}InsertOnConflictDoUpdateSQL) ExecContextWithoutSelect(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+{{ template "InsertPostgreSQL.ExecContextWithoutSelect" . }}
+}
+{{- else -}}
+func (q {{ $camelName }}InsertOnConflictDoUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+{{ template "InsertPostgreSQL.ExecContextWithoutSelect" . }}
+}
+{{- end }}
+
+type {{ $camelName }}DefaultInsertOnConflictDoUpdateHooker interface {
+	DefaultInsertOnConflictDoUpdateHook({{ $camelName }}InsertOnConflictDoUpdateSQL) ({{ $camelName }}InsertOnConflictDoUpdateSQL, error)
+}
+
+type {{ $camelName }}BulkInsertOnConflictDoNothingSQL struct {
+	insertSQL {{ $camelName }}InsertSQLToSqler
+}
+
+func (q *{{ $camelName }}BulkInsertSQL) OnConflictDoNothing() {{ $camelName }}BulkInsertOnConflictDoNothingSQL {
+	return {{ $camelName }}BulkInsertOnConflictDoNothingSQL{
+		insertSQL: q,
+	}
+}
+
+func (q {{ $camelName }}BulkInsertOnConflictDoNothingSQL) ToSql() (string, []any, error) {
+{{ template "InsertPostgreSQL.DoNothingToSql" . }}
+}
+
+{{ if .HasPk -}}
+func (q {{ $camelName }}BulkInsertOnConflictDoNothingSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]{{ .StructName }}, error) {
+{{ template "InsertPostgreSQL.ExecContextHasPkAll" . }}
+}
+
+func (q {{ $camelName }}BulkInsertOnConflictDoNothingSQL) ExecContextWithoutSelect(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+{{ template "InsertPostgreSQL.ExecContextWithoutSelect" . }}
+}
+{{- else -}}
+func (q {{ $camelName }}BulkInsertOnConflictDoNothingSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+{{ template "InsertPostgreSQL.ExecContextWithoutSelect" . }}
+}
+{{- end }}
+
+type {{ $camelName }}BulkInsertOnConflictDoUpdateSQL struct {
+	insertSQL {{ $camelName }}InsertSQLToSqler
+	onConflictDoUpdateMap sqlla.SetMap
+	target string
+}
+
+func (q *{{ $camelName }}BulkInsertSQL) OnConflictDoUpdate(target string) {{ $camelName }}BulkInsertOnConflictDoUpdateSQL {
+	return {{ $camelName }}BulkInsertOnConflictDoUpdateSQL{
+		insertSQL: q,
+		onConflictDoUpdateMap: sqlla.SetMap{},
+		target: target,
+	}
+}
+
+{{ range .Columns }}{{ template "BulkInsertOnConflictDoUpdateColumn" . }}{{ end }}
+
+func (q {{ $camelName }}BulkInsertOnConflictDoUpdateSQL) ToSql() (string, []any, error) {
+	var s any = {{ .StructName }}{}
+	if t, ok := s.({{ $camelName }}DefaultInsertOnConflictDoUpdateHooker); ok {
+		sq := {{ $camelName }}InsertOnConflictDoUpdateSQL{
+			insertSQL: q.insertSQL,
+			onConflictDoUpdateMap: q.onConflictDoUpdateMap,
+			target: q.target,
+		}
+		sq, err := t.DefaultInsertOnConflictDoUpdateHook(sq)
+		if err != nil {
+			return "", nil, err
+		}
+		q.insertSQL = sq.insertSQL
+		q.onConflictDoUpdateMap = sq.onConflictDoUpdateMap
+		q.target = sq.target
+	}
+
+	query, offset, vs, err := q.insertSQL.{{ $camelName }}InsertSQLToSqlPg(0)
+	if err != nil {
+			return "", nil, err
+	}
+
+	os, _, ovs, err := q.onConflictDoUpdateMap.ToUpdateSqlPg(offset)
+	if err != nil {
+		return "", nil, err
+	}
+	query += " ON CONFLICT (" + q.target + ") DO UPDATE SET" + os
+	vs = append(vs, ovs...)
+	{{- if .HasPk }}
+	query += " RETURNING " + {{ cquoteby .PkColumn.Name }}
+	{{- end }}
+
+	return query + ";", vs, nil
+}
+
+{{ if .HasPk -}}
+func (q {{ $camelName }}BulkInsertOnConflictDoUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]{{ .StructName }}, error) {
+{{ template "InsertPostgreSQL.ExecContextHasPkAll" . }}
+}
+
+func (q {{ $camelName }}BulkInsertOnConflictDoUpdateSQL) ExecContextWithoutSelect(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+{{ template "InsertPostgreSQL.ExecContextWithoutSelect" . }}
+}
+{{- else -}}
+func (q {{ $camelName }}BulkInsertOnConflictDoUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
+{{ template "InsertPostgreSQL.ExecContextWithoutSelect" . }}
+}
+{{- end }}
+
+{{ end }}

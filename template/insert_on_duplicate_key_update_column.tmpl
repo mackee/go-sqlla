@@ -1,28 +1,28 @@
 {{ define "InsertOnDuplicateKeyUpdateColumn" }}{{ $smallTableName := .TableName | toCamel | untitle }}
 {{- if .IsNullT }}
-func (q {{ $smallTableName }}InsertOnDuplicateKeyUpdateSQL) ValueOnUpdate{{ .MethodName }} (v {{ .TypeParameter }}) {{ $smallTableName }}InsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`{{ .Name }}`"] = sql.Null[{{ .TypeParameter }}]{ V: v, Valid: true }
+func (q {{ $smallTableName }}InsertOnDuplicateKeyUpdateSQL) ValueOnUpdate{{ .MethodName }} (v {{ .TypeName }}) {{ $smallTableName }}InsertOnDuplicateKeyUpdateSQL {
+	q.onDuplicateKeyUpdateMap[{{ cquoteby .Name }}] = {{ .ExprValueIdentifier }}
 	return q
 }
 
 func (q {{ $smallTableName }}InsertOnDuplicateKeyUpdateSQL) ValueOnUpdate{{ .MethodName }}ToNull () {{ $smallTableName }}InsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`{{ .Name }}`"] = sql.Null[{{ .TypeParameter }}]{ Valid: false }
+	q.onDuplicateKeyUpdateMap[{{ cquoteby .Name }}] = sql.Null[{{ .BaseTypeName }}]{ Valid: false }
 	return q
 }
 {{- else }}
 func (q {{ $smallTableName }}InsertOnDuplicateKeyUpdateSQL) ValueOnUpdate{{ .MethodName }} (v {{ .TypeName }}) {{ $smallTableName }}InsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`{{ .Name }}`"] = v
+	q.onDuplicateKeyUpdateMap[{{ cquoteby .Name }}] = {{ .ExprValueIdentifier }}
 	return q
 }
 {{- end }}
 
 func (q {{ $smallTableName }}InsertOnDuplicateKeyUpdateSQL) RawValueOnUpdate{{ .MethodName }} (v sqlla.SetMapRawValue) {{ $smallTableName }}InsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`{{ .Name }}`"] = v
+	q.onDuplicateKeyUpdateMap[{{ cquoteby .Name }}] = v
 	return q
 }
 
 func (q {{ $smallTableName }}InsertOnDuplicateKeyUpdateSQL) SameOnUpdate{{ .MethodName }} () {{ $smallTableName }}InsertOnDuplicateKeyUpdateSQL {
-	q.onDuplicateKeyUpdateMap["`{{ .Name }}`"] = sqlla.SetMapRawValue("VALUES(`{{ .Name }}`)")
+	q.onDuplicateKeyUpdateMap[{{ cquoteby .Name }}] = sqlla.SetMapRawValue("VALUES(" + {{ cquoteby .Name }} + ")")
 	return q
 }
 {{ end }}

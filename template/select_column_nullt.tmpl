@@ -1,35 +1,29 @@
 {{ define "SelectColumnNullT" }}
 {{ $smallTableName := .TableName | toCamel | untitle }}
-func (q {{ $smallTableName }}SelectSQL) {{ .MethodName }}(v {{ .TypeParameter }}, exprs ...sqlla.Operator) {{ $smallTableName }}SelectSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.ExprNull[{{ .TypeParameter }}]{Value: sql.Null[{{ .TypeParameter }}]{ V: v, Valid: true }, Op: op, Column: q.appendColumnPrefix("`{{ .Name }}`")}
+func (q {{ $smallTableName }}SelectSQL) {{ .MethodName }}(v {{ .TypeName }}, exprs ...sqlla.Operator) {{ $smallTableName }}SelectSQL {
+	where := {{ .ExprValue }}{Value: sql.Null[{{ .BaseTypeName }}]{ V: {{ .ExprValueIdentifier }}, Valid: true }, Op: sqlla.Operators(exprs), Column: q.appendColumnPrefix({{ cquoteby .Name }})}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q {{ $smallTableName }}SelectSQL) {{ .MethodName }}IsNull() {{ $smallTableName }}SelectSQL {
-	where := sqlla.ExprNull[{{ .TypeParameter }}]{Value: sql.Null[{{ .TypeParameter }}]{ Valid: false }, Op: sqlla.OpEqual, Column: q.appendColumnPrefix("`{{ .Name }}`")}
+	where := {{ .ExprValue }}{Value: sql.Null[{{ .BaseTypeName }}]{ Valid: false }, Op: sqlla.Operators{sqlla.OpEqual}, Column: q.appendColumnPrefix({{ cquoteby .Name }})}
 	q.where = append(q.where, where)
 	return q
 }
 
 func (q {{ $smallTableName }}SelectSQL) {{ .MethodName }}IsNotNull() {{ $smallTableName }}SelectSQL {
-	where := sqlla.ExprNull[{{ .TypeParameter }}]{Value: sql.Null[{{ .TypeParameter }}]{ Valid: false }, Op: sqlla.OpNot, Column: q.appendColumnPrefix("`{{ .Name }}`")}
+	where := {{ .ExprValue }}{Value: sql.Null[{{ .BaseTypeName }}]{ Valid: false }, Op: sqlla.Operators{sqlla.OpNot}, Column: q.appendColumnPrefix({{ cquoteby .Name }})}
 	q.where = append(q.where, where)
 	return q
 }
 
-func (q {{ $smallTableName }}SelectSQL) {{ .MethodName }}In(vs ...{{ .TypeParameter }}) {{ $smallTableName }}SelectSQL {
-	_vs := make([]sql.Null[{{ .TypeParameter }}], 0, len(vs))
+func (q {{ $smallTableName }}SelectSQL) {{ .MethodName }}In(vs ...{{ .TypeName }}) {{ $smallTableName }}SelectSQL {
+	_vs := make([]{{ .BaseTypeName }}, 0, len(vs))
 	for _, v := range vs {
-		_vs = append(_vs, sql.Null[{{ .TypeParameter }}]{V: v, Valid: true})
+		_vs = append(_vs, {{ .ExprValueIdentifier }})
 	}
-	where := sqlla.ExprMultiValue[sql.Null[{{ .TypeParameter }}]]{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`{{ .Name }}`")}
+	where := {{ .ExprMultiValue }}{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix({{ cquoteby .Name }})}
 	q.where = append(q.where, where)
 	return q
 }

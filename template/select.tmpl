@@ -2,20 +2,25 @@
 {{- $camelName := .Name | toCamel | untitle -}}
 {{- $constructor := printf "New%sSQL" (.Name | toCamel | title) -}}
 var {{ $camelName }}AllColumns = []string{
-	{{ range .Columns }}"`{{ .Name }}`",{{ end }}
+	{{ range .Columns }}{{ cquoteby .Name }},{{ end }}
 }
 
 type {{ $camelName }}SelectSQL struct {
 	{{ $camelName }}SQL
 	Columns     []string
-	order       string
+	order       sqlla.OrderWithColumn
 	limit       *uint64
 	offset      *uint64
 	tableAlias  string
 	joinClauses []string
 
+{{ if eq (dialect) "mysql" }}
 	additionalWhereClause string
 	additionalWhereClauseArgs []interface{}
+{{ end -}}
+{{ if eq (dialect) "postgresql" }}
+	additionalWhereClause func (int) (string, int, []any)
+{{ end -}}
 
 	groupByColumns []string
 
@@ -26,13 +31,16 @@ func (q {{ $camelName }}SQL) Select() {{ $camelName }}SelectSQL {
 	return {{ $camelName }}SelectSQL{
 		q,
 		{{ $camelName }}AllColumns,
-		"",
 		nil,
 		nil,
-		"",
 		nil,
 		"",
 		nil,
+		{{- if eq (dialect) "mysql" }}
+		"",
+		nil,
+		{{ end -}}
+		{{- if eq (dialect) "postgresql" }}nil,{{ end }}
 		nil,
 		false,
 	}
@@ -63,17 +71,17 @@ func (q {{ $camelName }}SelectSQL) ForUpdate() {{ $camelName }}SelectSQL {
 }
 
 func (q {{ $camelName }}SelectSQL) TableAlias(alias string) {{ $camelName }}SelectSQL {
-	q.tableAlias = "`" + alias + "`"
+	q.tableAlias = {{ cquote }} + alias + {{ cquote }}
 	return q
 }
 
 func (q {{ $camelName }}SelectSQL) SetColumns(columns ...string) {{ $camelName }}SelectSQL {
 	q.Columns = make([]string, 0, len(columns))
 	for _, column := range columns {
-		if strings.ContainsAny(column, "(.`") {
+		if strings.ContainsAny(column, "(." + {{ cquote }}) {
 			q.Columns = append(q.Columns, column)
 		} else {
-			q.Columns = append(q.Columns, "`" + column + "`")
+			q.Columns = append(q.Columns, {{ cquote }} + column + {{ cquote }})
 		}
 	}
 	return q
@@ -84,11 +92,20 @@ func (q {{ $camelName }}SelectSQL) JoinClause(clause string) {{ $camelName }}Sel
 	return q
 }
 
+{{ if eq (dialect) "mysql" }}
 func (q {{ $camelName }}SelectSQL) AdditionalWhereClause(clause string, args ...interface{}) {{ $camelName }}SelectSQL {
 	q.additionalWhereClause = clause
 	q.additionalWhereClauseArgs = args
 	return q
 }
+{{- end }}
+
+{{ if eq (dialect) "postgresql" }}
+func (q {{ $camelName }}SelectSQL) AdditionalWhereClause(clause func (int) (string, int, []any)) {{ $camelName }}SelectSQL {
+	q.additionalWhereClause = clause
+	return q
+}
+{{- end }}
 
 func (q {{ $camelName }}SelectSQL) appendColumnPrefix(column string) string {
 	if q.tableAlias == "" || strings.ContainsAny(column, "(.") {
@@ -100,10 +117,10 @@ func (q {{ $camelName }}SelectSQL) appendColumnPrefix(column string) string {
 func (q {{ $camelName }}SelectSQL) GroupBy(columns ...string) {{ $camelName }}SelectSQL {
 	q.groupByColumns = make([]string, 0, len(columns))
 	for _, column := range columns {
-		if strings.ContainsAny(column, "(.`") {
+		if strings.ContainsAny(column, "(." + {{ cquote }}) {
 			q.groupByColumns = append(q.groupByColumns, column)
 		} else {
-			q.groupByColumns = append(q.groupByColumns, "`" + column + "`")
+			q.groupByColumns = append(q.groupByColumns, {{ cquote }} + column + {{ cquote }})
 		}
 	}
 	return q
@@ -112,12 +129,17 @@ func (q {{ $camelName }}SelectSQL) GroupBy(columns ...string) {{ $camelName }}Se
 {{ range .Columns }}{{ template "SelectColumn" . }}{{ end }}
 func (q {{ $camelName }}SelectSQL) ToSql() (string, []interface{}, error) {
 	columns := strings.Join(q.Columns, ", ")
+	{{- if eq (dialect) "mysql" }}
 	wheres, vs, err := q.where.ToSql()
+	{{- end }}
+	{{- if eq (dialect) "postgresql" }}
+	wheres, offset, vs, err := q.where.ToSqlPg(0)
+	{{- end }}
 	if err != nil {
 		return "", nil, err
 	}
 
-	tableName := "`{{ .TableName }}`"
+	tableName := {{ cquoteby .TableName }}
 	if q.tableAlias != "" {
 		tableName = tableName + " AS " + q.tableAlias
 		pcs := make([]string, 0, len(q.Columns))
@@ -134,11 +156,22 @@ func (q {{ $camelName }}SelectSQL) ToSql() (string, []interface{}, error) {
 	if wheres != "" {
 		query += " WHERE" + wheres
 	}
+	{{- if eq (dialect) "mysql" }}
 	if q.additionalWhereClause != "" {
 		query += " " + q.additionalWhereClause
 		if len(q.additionalWhereClauseArgs) > 0 {
 			vs = append(vs, q.additionalWhereClauseArgs...)
 		}
+	{{- end }}
+	{{- if eq (dialect) "postgresql" }}
+	if q.additionalWhereClause != nil {
+		_query, _offset, _args := q.additionalWhereClause(offset)
+		query += " " + _query
+		if len(_args) > 0 {
+			vs = append(vs, _args...)
+		}
+		offset = _offset
+	{{- end }}
 	}
 	if len(q.groupByColumns) > 0 {
 		query += " GROUP BY "
@@ -148,7 +181,16 @@ func (q {{ $camelName }}SelectSQL) ToSql() (string, []interface{}, error) {
 		}
 		query += strings.Join(gbcs, ", ")
 	}
-	query += q.order
+	if q.order != nil {
+		{{- if eq (dialect) "mysql" }}
+		query += " ORDER BY " + q.order.OrderExpr()
+		{{- end }}
+		{{- if eq (dialect) "postgresql" }}
+		_query, _ := q.order.OrderExprPg(offset)
+		query += " ORDER BY " + _query
+		{{- end }}
+		vs = append(vs, q.order.Values()...)
+	}
 	if q.limit != nil {
 		query += " LIMIT " + strconv.FormatUint(*q.limit, 10)
 	}

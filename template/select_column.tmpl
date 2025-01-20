@@ -4,13 +4,7 @@
 {{- template "SelectColumnNullT" . }}
 {{- else }}
 func (q {{ $smallTableName }}SelectSQL) {{ .MethodName }}(v {{ .TypeName }}, exprs ...sqlla.Operator) {{ $smallTableName }}SelectSQL {
-	var op sqlla.Operator
-	if len(exprs) == 0 {
-		op = sqlla.OpEqual
-	} else {
-		op = exprs[0]
-	}
-	where := sqlla.{{ .ExprTypeName }}{Value: {{ .ExprValueIdentifier }}, Op: op, Column: q.appendColumnPrefix("`{{ .Name }}`")}
+	where := {{ .ExprValue }}{Value: {{ .ExprValueIdentifier }}, Op: sqlla.Operators(exprs), Column: q.appendColumnPrefix({{ cquoteby .Name }})}
 	q.where = append(q.where, where)
 	return q
 }
@@ -19,11 +13,11 @@ func (q {{ $smallTableName }}SelectSQL) {{ .MethodName }}In(vs ...{{ .TypeName }
 {{- if .HasUnderlyingType }}
 	_vs := make([]{{ .BaseTypeName }}, 0, len(vs))
 	for _, v := range vs {
-		_vs = append(_vs, {{ .BaseTypeName }}(v))
+		_vs = append(_vs, {{ .ExprValueIdentifier }})
 	}
-	where := sqlla.{{ .ExprMultiTypeName }}{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`{{ .Name }}`")}
+	where := {{ .ExprMultiValue }}{Values: _vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix({{ cquoteby .Name }})}
 {{- else }}
-	where := sqlla.{{ .ExprMultiTypeName }}{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix("`{{ .Name }}`")}
+	where := {{ .ExprMultiValue }}{Values: vs, Op: sqlla.MakeInOperator(len(vs)), Column: q.appendColumnPrefix({{ cquoteby .Name }})}
 {{- end }}
 	q.where = append(q.where, where)
 	return q
@@ -38,13 +32,7 @@ func (q {{ $smallTableName }}SelectSQL) PkColumn(pk int64, exprs ...sqlla.Operat
 {{- end }}
 
 func (q {{ $smallTableName }}SelectSQL) OrderBy{{ .MethodName }}(order sqlla.Order) {{ $smallTableName }}SelectSQL {
-	q.order = " ORDER BY " + q.appendColumnPrefix("`{{ .Name }}`")
-	if order == sqlla.Asc {
-		q.order += " ASC"
-	} else {
-		q.order += " DESC"
-	}
-
+	q.order = order.WithColumn(q.appendColumnPrefix({{ cquoteby .Name }}))
 	return q
 }
 {{ end }}

@@ -3,6 +3,7 @@
 package sqlla
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"go/ast"
@@ -18,25 +19,31 @@ import (
 type Options struct {
 	Version bool     `help:"show this version"`
 	From    []string `help:"source file path" env:"GOFILE" arg:"" required:""`
+	DirAll  bool     `help:"generate all files in the directory" env:"SQLLA_GENERATE_DIR_ALL" default:"false"`
 	Ext     string   `help:"file extension" env:"SQLLA_GENERATE_FILE_EXT" default:".gen.go"`
 	Plugins []string `help:"additional plugin files. allow asterisk(*) and multiple values" name:"plugins" env:"SQLLA_TEMPLATE_FILES"`
+	Dialect string   `help:"SQL Dialect" env:"SQLLA_DIALECT" enum:"mysql,sqlite,postgresql" default:"mysql"`
 }
 
 func Run(opts Options) error {
-	g, err := NewGenerator(opts.Plugins...)
+	dialect, err := NewDialect(opts.Dialect)
+	if err != nil {
+		return fmt.Errorf("failed to NewDialect: %w", err)
+	}
+	g, err := NewGenerator(dialect, opts.Plugins...)
 	if err != nil {
 		return fmt.Errorf("failed to NewGenerator: %w", err)
 	}
 
 	for _, from := range opts.From {
-		if err := run(from, opts.Ext, g); err != nil {
+		if err := run(from, opts.Ext, opts.DirAll, g); err != nil {
 			return fmt.Errorf("failed to run: %w", err)
 		}
 	}
 	return nil
 }
 
-func run(from string, ext string, g *Generator) error {
+func run(from string, ext string, dirAll bool, g *Generator) error {
 	fullpath, err := filepath.Abs(from)
 	if err != nil {
 		return fmt.Errorf("failed to filepath.Abs: %w", err)
@@ -51,7 +58,7 @@ func run(from string, ext string, g *Generator) error {
 		files := pkg.Syntax
 		for _, f := range files {
 			for _, decl := range f.Decls {
-				table, err := declToTable(pkg, decl, fullpath)
+				table, err := declToTable(pkg, decl, fullpath, dirAll)
 				if err != nil {
 					if errors.Is(err, errNotTargetDecl) {
 						continue
@@ -59,12 +66,20 @@ func run(from string, ext string, g *Generator) error {
 					return fmt.Errorf("error declToTable: %w", err)
 				}
 				filename := filepath.Join(dir, table.TableName+ext)
+				bs := &bytes.Buffer{}
+				if err := g.WriteCode(bs, table); err != nil {
+					return fmt.Errorf("error WriteCode: filename=%s: %w", filename, err)
+				}
+				formatted, err := g.Format(bs.Bytes(), filename)
+				if err != nil {
+					return fmt.Errorf("error Format: filename=%s: %w", filename, err)
+				}
 				f, err := os.Create(filename)
 				if err != nil {
 					return fmt.Errorf("error create: filename=%s: %w", filename, err)
 				}
-				if err := g.WriteCode(f, table); err != nil {
-					return fmt.Errorf("error WriteCode: filename=%s: %w", filename, err)
+				if _, err := f.Write(formatted); err != nil {
+					return fmt.Errorf("error WriteTo: filename=%s: %w", filename, err)
 				}
 				if err := f.Close(); err != nil {
 					return fmt.Errorf("error close: filename=%s: %w", filename, err)
@@ -91,9 +106,9 @@ func toPackages(dir string) ([]*packages.Package, error) {
 
 var errNotTargetDecl = fmt.Errorf("not target decl")
 
-func declToTable(pkg *packages.Package, decl ast.Decl, fullpath string) (*Table, error) {
+func declToTable(pkg *packages.Package, decl ast.Decl, fullpath string, dirAll bool) (*Table, error) {
 	pos := pkg.Fset.Position(decl.Pos())
-	if pos.Filename != fullpath {
+	if !dirAll && pos.Filename != fullpath {
 		return nil, errNotTargetDecl
 	}
 	genDecl, ok := decl.(*ast.GenDecl)
@@ -119,25 +134,6 @@ func declToTable(pkg *packages.Package, decl ast.Decl, fullpath string) (*Table,
 		return nil, fmt.Errorf("error toTable: %w", err)
 	}
 	return table, nil
-}
-
-var supportedNonPrimitiveTypes = map[string]struct{}{
-	"time.Time":       {},
-	"mysql.NullTime":  {},
-	"sql.NullTime":    {},
-	"sql.NullInt64":   {},
-	"sql.NullString":  {},
-	"sql.NullFloat64": {},
-	"sql.NullBool":    {},
-}
-
-var supportedGenericsTypes = map[string]struct{}{
-	"sql.Null": {},
-}
-
-var altTypeNames = map[string]string{
-	"[]byte":         "Bytes",
-	"mysql.NullTime": "MysqlNullTime",
 }
 
 func toTable(tablePkg *types.Package, annotationComment string, gd *ast.GenDecl, ti *types.Info) (*Table, error) {
@@ -189,7 +185,8 @@ func toTable(tablePkg *types.Package, annotationComment string, gd *ast.GenDecl,
 			}
 		}
 		t := ti.TypeOf(field.Type)
-		var typeName, pkgName, typeParameter string
+		var typeName, pkgName string
+		var isNull bool
 		baseTypeName := t.String()
 		nt, ok := t.(*types.Named)
 		if ok {
@@ -200,12 +197,15 @@ func toTable(tablePkg *types.Package, annotationComment string, gd *ast.GenDecl,
 				typeName = nt.Obj().Name()
 			}
 			baseTypeName = typeName
-			if _, ok := supportedGenericsTypes[typeName]; ok {
+			var hasBasicTypeParam bool
+			if typeName == "sql.Null" {
+				isNull = true
 				tas := nt.TypeArgs()
 				if tas == nil {
 					return nil, fmt.Errorf("toTable: has not type params: table=%s, field=%s", table.TableName, columnName)
 				}
 				tpsStr := make([]string, tas.Len())
+				var tnt *types.Named
 				for i := 0; i < tas.Len(); i++ {
 					ta := tas.At(i)
 					switch ata := ta.(type) {
@@ -216,33 +216,53 @@ func toTable(tablePkg *types.Package, annotationComment string, gd *ast.GenDecl,
 							tpsStr[i] = tn.Pkg().Name() + "." + tn.Id()
 							table.additionalPackagesMap[tn.Pkg().Path()] = struct{}{}
 						}
+						if tnt == nil {
+							tnt = ata
+							typeName = tpsStr[i]
+						}
 					case *types.Basic:
 						tpsStr[i] = ata.Name()
+						typeName = tpsStr[i]
+						baseTypeName = typeName
+						hasBasicTypeParam = true
 					default:
 						return nil, fmt.Errorf("toTable: unsupported type param: table=%s, field=%s, type=%s", table.TableName, columnName, ta.String())
 					}
 				}
-				typeParameter = strings.Join(tpsStr, ",")
-			} else if _, ok := supportedNonPrimitiveTypes[typeName]; !ok {
-				bt := nt.Underlying()
-				for _, ok := bt.Underlying().(*types.Named); ok; bt = bt.Underlying() {
+				if tnt != nil {
+					nt = tnt
+					baseTypeName = typeName
 				}
-				baseTypeName = bt.String()
+			}
+			if !hasBasicTypeParam {
+				var rt types.Type = nt
+				bt := nt.Underlying()
+				for {
+					switch btt := bt.(type) {
+					case *types.Named:
+						rt = btt
+						bt = btt.Underlying()
+						continue
+					case *types.Basic:
+						rt = btt
+					}
+					break
+				}
+				if rt != nt {
+					baseTypeName = rt.String()
+				}
 			}
 		} else {
 			typeName = t.String()
 		}
 		column := Column{
-			Field:         field,
-			Name:          columnName,
-			IsPk:          isPk,
-			typeName:      typeName,
-			baseTypeName:  baseTypeName,
-			PkgName:       pkgName,
-			typeParameter: typeParameter,
-		}
-		if alt, ok := altTypeNames[baseTypeName]; ok {
-			column.altTypeName = alt
+			Field:        field,
+			Name:         columnName,
+			IsPk:         isPk,
+			typeName:     typeName,
+			baseTypeName: baseTypeName,
+			PkgName:      pkgName,
+			isNullT:      isNull,
 		}
 		table.AddColumn(column)
 	}
