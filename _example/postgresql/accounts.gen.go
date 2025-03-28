@@ -143,11 +143,6 @@ func (q accountSelectSQL) IDIn(vs ...AccountID) accountSelectSQL {
 	return q
 }
 
-func (q accountSelectSQL) PkColumn(pk int64, exprs ...sqlla.Operator) accountSelectSQL {
-	v := AccountID(pk)
-	return q.ID(v, exprs...)
-}
-
 func (q accountSelectSQL) OrderByID(order sqlla.Order) accountSelectSQL {
 	q.order = order.WithColumn(q.appendColumnPrefix("\"id\""))
 	return q

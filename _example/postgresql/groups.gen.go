@@ -141,11 +141,6 @@ func (q groupSelectSQL) IDIn(vs ...GroupID) groupSelectSQL {
 	return q
 }
 
-func (q groupSelectSQL) PkColumn(pk int64, exprs ...sqlla.Operator) groupSelectSQL {
-	v := GroupID(pk)
-	return q.ID(v, exprs...)
-}
-
 func (q groupSelectSQL) OrderByID(order sqlla.Order) groupSelectSQL {
 	q.order = order.WithColumn(q.appendColumnPrefix("\"id\""))
 	return q

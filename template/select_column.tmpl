@@ -24,7 +24,7 @@ func (q {{ $smallTableName }}SelectSQL) {{ .MethodName }}In(vs ...{{ .TypeName }
 }
 {{- end }}
 
-{{ if .IsPk -}}
+{{ if and .IsPk (eq (dialect) "mysql") -}}
 func (q {{ $smallTableName }}SelectSQL) PkColumn(pk int64, exprs ...sqlla.Operator) {{ $smallTableName }}SelectSQL {
 	v := {{ .TypeName }}(pk)
 	return q.{{ .MethodName }}(v, exprs...)
