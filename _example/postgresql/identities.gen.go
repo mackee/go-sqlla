@@ -141,11 +141,6 @@ func (q identitySelectSQL) IDIn(vs ...IdentityID) identitySelectSQL {
 	return q
 }
 
-func (q identitySelectSQL) PkColumn(pk int64, exprs ...sqlla.Operator) identitySelectSQL {
-	v := IdentityID(pk)
-	return q.ID(v, exprs...)
-}
-
 func (q identitySelectSQL) OrderByID(order sqlla.Order) identitySelectSQL {
 	q.order = order.WithColumn(q.appendColumnPrefix("\"id\""))
 	return q
