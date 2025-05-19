@@ -37,6 +37,30 @@ func (g *GroupTable) GetByIDAndLeaderUserID(ctx context.Context, db sqlla.DB, c0
 	return &row, nil
 }
 
+func (g *GroupTable) GetByID(ctx context.Context, db sqlla.DB, c0 GroupID) (*Group, error) {
+	row, err := NewGroupSQL().Select().
+		ID(c0).
+		SingleContext(ctx, db)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Group by ID: %w", err)
+	}
+	return &row, nil
+}
+
+func (g *GroupTable) ListByIDS(ctx context.Context, db sqlla.DB, cs []GroupID) (Groups, error) {
+	_rows, err := NewGroupSQL().Select().
+		IDIn(cs...).
+		AllContext(ctx, db)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list Groups by IDS: %w", err)
+	}
+	rows := make(Groups, len(_rows))
+	for i := range _rows {
+		rows[i] = &_rows[i]
+	}
+	return rows, nil
+}
+
 func (g *GroupTable) ListByLeaderUserIDAndSubLeaderUserID(ctx context.Context, db sqlla.DB, c0 UserId, c1 int64) (Groups, error) {
 	_rows, err := NewGroupSQL().Select().
 		LeaderUserID(c0).

@@ -32,6 +32,24 @@ func ({{ $receiver }} *{{ $tableTypeName }}) GetBy{{ $methodName }}(ctx context.
 	}
 	return &row, nil
 }
+{{- if eq (len $columnNames) 1 }}
+{{ $columnName := index $columnNames 0 }}
+{{ $listColumnName := $columnName | pluralize }}
+func ({{ $receiver }} *{{ $tableTypeName }}) ListBy{{ $listColumnName }}(ctx context.Context, db sqlla.DB, cs []{{ ($table.Lookup $columnName).TypeName }}) ({{ $sliceTypeName }}, error) {
+	_rows, err := New{{ $structName }}SQL().Select().
+		{{ $column := $table.Lookup $columnName }}
+		{{ $column.MethodName }}In(cs...).
+		AllContext(ctx, db)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list {{ $structName | pluralize }} by {{ $listColumnName }}: %w", err)
+	}
+	rows := make({{ $sliceTypeName }}, len(_rows))
+	for i := range _rows {
+		rows[i] = &_rows[i]
+	}
+	return rows, nil
+}
+{{- end }}
 {{- end }}
 {{- end }}
 

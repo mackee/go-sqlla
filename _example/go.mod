@@ -1,7 +1,6 @@
 module github.com/mackee/go-sqlla/_example
 
-go 1.22.0
-toolchain go1.24.1
+go 1.24.2
 
 replace github.com/mackee/go-sqlla/v2 => ../
 
