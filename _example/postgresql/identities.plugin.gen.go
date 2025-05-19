@@ -3,15 +3,15 @@ package postgresql
 
 import "time"
 
-func (i Identity) DefaultInsertHook(q identityInsertSQL) (identityInsertSQL, error) {
+func (i Identity) DefaultInsertHook(_q identityInsertSQL) (identityInsertSQL, error) {
 	now := time.Now()
-	return q.
+	return _q.
 		ValueCreatedAt(now).
 		ValueUpdatedAt(now), nil
 }
 
-func (i Identity) DefaultUpdateHook(q identityUpdateSQL) (identityUpdateSQL, error) {
+func (i Identity) DefaultUpdateHook(_q identityUpdateSQL) (identityUpdateSQL, error) {
 	now := time.Now()
-	return q.
+	return _q.
 		SetUpdatedAt(now), nil
 }
