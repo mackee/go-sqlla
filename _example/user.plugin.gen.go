@@ -21,14 +21,14 @@ func (q userSelectSQL) CountContext(ctx context.Context, db sqlla.DB, column str
 	return count, nil
 }
 
-func (u User) DefaultInsertHook(q userInsertSQL) (userInsertSQL, error) {
+func (u User) DefaultInsertHook(_q userInsertSQL) (userInsertSQL, error) {
 	now := time.Now()
-	return q.
+	return _q.
 		ValueCreatedAt(now), nil
 }
 
-func (u User) DefaultInsertOnDuplicateKeyUpdateHook(q userInsertOnDuplicateKeyUpdateSQL) (userInsertOnDuplicateKeyUpdateSQL, error) {
-	return q.
+func (u User) DefaultInsertOnDuplicateKeyUpdateHook(_q userInsertOnDuplicateKeyUpdateSQL) (userInsertOnDuplicateKeyUpdateSQL, error) {
+	return _q.
 		SameOnUpdateUpdatedAt(), nil
 }
 
@@ -36,32 +36,32 @@ type Users []*User
 
 func (u Users) Ids() []UserId {
 	vs := make([]UserId, len(u))
-	for i := range u {
-		vs[i] = u[i].Id
+	for _i := range u {
+		vs[_i] = u[_i].Id
 	}
 	return vs
 }
 
 func (u Users) Names() []string {
 	vs := make([]string, len(u))
-	for i := range u {
-		vs[i] = u[i].Name
+	for _i := range u {
+		vs[_i] = u[_i].Name
 	}
 	return vs
 }
 
 func (u Users) AssociateByIds() map[UserId]*User {
-	m := make(map[UserId]*User, len(u))
-	for _, v := range u {
-		m[v.Id] = v
+	_m := make(map[UserId]*User, len(u))
+	for _, _v := range u {
+		_m[_v.Id] = _v
 	}
-	return m
+	return _m
 }
 
 func (u Users) GroupByNames() map[string]Users {
-	m := make(map[string]Users, len(u))
-	for _, v := range u {
-		m[v.Name] = append(m[v.Name], v)
+	_m := make(map[string]Users, len(u))
+	for _, _v := range u {
+		_m[_v.Name] = append(_m[_v.Name], _v)
 	}
-	return m
+	return _m
 }
