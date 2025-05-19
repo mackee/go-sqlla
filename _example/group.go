@@ -13,7 +13,7 @@ type GroupID uint64
 //genddl:table group
 //sqlla:plugin myrelations key=LeaderUserID:User.ID method=Leader
 //sqlla:plugin slice
-//sqlla:plugin table get=ID&LeaderUserID list=LeaderUserID&SubLeaderUserID create=Name,LeaderUserID,SubLeaderUserID,ChildGroupID,CreatedAt
+//sqlla:plugin table get=ID&LeaderUserID,ID list=LeaderUserID&SubLeaderUserID create=Name,LeaderUserID,SubLeaderUserID,ChildGroupID,CreatedAt
 type Group struct {
 	ID              GroupID         `db:"id,primarykey,autoincrement"`
 	Name            string          `db:"name"`
