@@ -11,8 +11,8 @@ type {{ $sliceTypeName }} []*{{ $structName }}
 {{- $methodName := pluralize $column.FieldName }}
 func ({{ $receiver }} {{ $sliceTypeName }}) {{ $methodName }}() []{{ $column.TypeName }} {
 	vs := make([]{{ $column.TypeName }}, len({{ $receiver }}))
-	for i := range {{ $receiver }} {
-		vs[i] = {{ $receiver }}[i].{{ $column.FieldName }}
+	for _i := range {{ $receiver }} {
+		vs[_i] = {{ $receiver }}[_i].{{ $column.FieldName }}
 	}
 	return vs
 }
@@ -25,11 +25,11 @@ func ({{ $receiver }} {{ $sliceTypeName }}) {{ $methodName }}() []{{ $column.Typ
 {{- $column := $table.Lookup $columnName }}
 {{- $fieldName := pluralize $column.FieldName }}
 func ( {{ $receiver }} {{ $sliceTypeName }}) AssociateBy{{ $fieldName }}() map[{{ $column.TypeName }}]*{{ $structName }} {
-	m := make(map[{{ $column.TypeName }}]*{{ $structName }}, len({{ $receiver }}))
-	for _, v := range {{ $receiver }} {
-		m[v.{{ $column.FieldName }}] = v
+	_m := make(map[{{ $column.TypeName }}]*{{ $structName }}, len({{ $receiver }}))
+	for _, _v := range {{ $receiver }} {
+		_m[_v.{{ $column.FieldName }}] = _v
 	}
-	return m
+	return _m
 }
 {{ end }}
 {{- end }}
@@ -40,11 +40,11 @@ func ( {{ $receiver }} {{ $sliceTypeName }}) AssociateBy{{ $fieldName }}() map[{
 {{- $column := $table.Lookup $columnName }}
 {{- $fieldName := pluralize $column.FieldName }}
 func ( {{ $receiver }} {{ $sliceTypeName }}) GroupBy{{ $fieldName }}() map[{{ $column.TypeName }}]{{ $sliceTypeName }} {
-	m := make(map[{{ $column.TypeName }}]{{ $sliceTypeName }}, len({{ $receiver }}))
-	for _, v := range {{ $receiver }} {
-		m[v.{{ $column.FieldName }}] = append(m[v.{{ $column.FieldName }}], v)
+	_m := make(map[{{ $column.TypeName }}]{{ $sliceTypeName }}, len({{ $receiver }}))
+	for _, _v := range {{ $receiver }} {
+		_m[_v.{{ $column.FieldName }}] = append(_m[_v.{{ $column.FieldName }}], _v)
 	}
-	return m
+	return _m
 }
 {{ end }}
 {{- end }}
