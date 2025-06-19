@@ -413,7 +413,7 @@ func testCases() []testCaseWithToQueryTestCase {
 			query: postgresql.NewAccountSQL().Insert().
 				ValueName("foo").
 				ValueEmbedding(sampleVector),
-			expected: `INSERT INTO "accounts" ("created_at","embedding","name","updated_at") VALUES ($1,$2,$3,$4) RETURNING "id";`,
+			expected: `INSERT INTO "accounts" ("created_at","embedding","name","updated_at") VALUES ($1,$2,$3,$4) RETURNING "id", "name", "embedding", "created_at", "updated_at";`,
 			vs:       []any{sampleDate, sampleVector, "foo", sampleDate},
 			expectedResult: postgresql.Account{
 				ID:        1,
@@ -432,7 +432,7 @@ func testCases() []testCaseWithToQueryTestCase {
 				ValueChildGroupIDIsNull().
 				ValueCreatedAt(sampleDate).
 				ValueUpdatedAt(sampleDate),
-			expected: `INSERT INTO "groups" ("child_group_id","created_at","leader_account_id","name","sub_leader_account_id","updated_at") VALUES ($1,$2,$3,$4,$5,$6) RETURNING "id";`,
+			expected: `INSERT INTO "groups" ("child_group_id","created_at","leader_account_id","name","sub_leader_account_id","updated_at") VALUES ($1,$2,$3,$4,$5,$6) RETURNING "id", "name", "leader_account_id", "sub_leader_account_id", "child_group_id", "created_at", "updated_at";`,
 			vs:       []any{sql.Null[int64]{}, sampleDate, int64(42), "foo", int64(28), sampleDate},
 			expectedResult: postgresql.Group{
 				ID:                 1,
@@ -450,7 +450,7 @@ func testCases() []testCaseWithToQueryTestCase {
 				ValueName("foo").
 				ValueEmbedding(sampleVector).
 				OnConflictDoNothing(),
-			expected: `INSERT INTO "accounts" ("created_at","embedding","name","updated_at") VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING RETURNING "id";`,
+			expected: `INSERT INTO "accounts" ("created_at","embedding","name","updated_at") VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING RETURNING "id", "name", "embedding", "created_at", "updated_at";`,
 			vs:       []any{sampleDate, sampleVector, "foo", sampleDate},
 			expectedResult: postgresql.Account{
 				ID:        1,
@@ -468,7 +468,7 @@ func testCases() []testCaseWithToQueryTestCase {
 				OnConflictDoUpdate("id").
 				ValueOnUpdateName("powawa").
 				SameOnUpdateEmbedding(),
-			expected: `INSERT INTO "accounts" ("created_at","embedding","name","updated_at") VALUES ($1,$2,$3,$4) ON CONFLICT (id) DO UPDATE SET "embedding" = "excluded"."embedding", "name" = $5 RETURNING "id";`,
+			expected: `INSERT INTO "accounts" ("created_at","embedding","name","updated_at") VALUES ($1,$2,$3,$4) ON CONFLICT (id) DO UPDATE SET "embedding" = "excluded"."embedding", "name" = $5 RETURNING "id", "name", "embedding", "created_at", "updated_at";`,
 			vs:       []any{sampleDate, sampleVector, "foo", sampleDate, "powawa"},
 			expectedResult: postgresql.Account{
 				ID:        1,
@@ -490,7 +490,7 @@ func testCases() []testCaseWithToQueryTestCase {
 				}
 				return bi
 			}(),
-			expected: `INSERT INTO "accounts" ("created_at","embedding","name","updated_at") VALUES ($1,$2,$3,$4),($5,$6,$7,$8),($9,$10,$11,$12) RETURNING "id";`,
+			expected: `INSERT INTO "accounts" ("created_at","embedding","name","updated_at") VALUES ($1,$2,$3,$4),($5,$6,$7,$8),($9,$10,$11,$12) RETURNING "id", "name", "embedding", "created_at", "updated_at";`,
 			vs: []any{
 				sampleDate,
 				sampleVector,
@@ -523,7 +523,7 @@ func testCases() []testCaseWithToQueryTestCase {
 				}
 				return bi.OnConflictDoNothing()
 			}(),
-			expected: `INSERT INTO "accounts" ("created_at","embedding","name","updated_at") VALUES ($1,$2,$3,$4),($5,$6,$7,$8),($9,$10,$11,$12) ON CONFLICT DO NOTHING RETURNING "id";`,
+			expected: `INSERT INTO "accounts" ("created_at","embedding","name","updated_at") VALUES ($1,$2,$3,$4),($5,$6,$7,$8),($9,$10,$11,$12) ON CONFLICT DO NOTHING RETURNING "id", "name", "embedding", "created_at", "updated_at";`,
 			vs: []any{
 				sampleDate,
 				sampleVector,
@@ -559,7 +559,7 @@ func testCases() []testCaseWithToQueryTestCase {
 					ValueOnUpdateName("powawa").
 					SameOnUpdateEmbedding()
 			}(),
-			expected: `INSERT INTO "accounts" ("created_at","embedding","id","name","updated_at") VALUES ($1,$2,$3,$4,$5),($6,$7,$8,$9,$10),($11,$12,$13,$14,$15) ON CONFLICT (id) DO UPDATE SET "embedding" = "excluded"."embedding", "name" = $16 RETURNING "id";`,
+			expected: `INSERT INTO "accounts" ("created_at","embedding","id","name","updated_at") VALUES ($1,$2,$3,$4,$5),($6,$7,$8,$9,$10),($11,$12,$13,$14,$15) ON CONFLICT (id) DO UPDATE SET "embedding" = "excluded"."embedding", "name" = $16 RETURNING "id", "name", "embedding", "created_at", "updated_at";`,
 			vs: []any{
 				sampleDate,
 				sampleVector,

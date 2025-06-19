@@ -647,6 +647,10 @@ func (q userItemInsertSQL) ToSql() (string, []any, error) {
 	return query + ";", vs, nil
 }
 
+func (q userItemInsertSQL) rowsNum() int {
+	return 1
+}
+
 func (q userItemInsertSQL) userItemInsertSQLToSql() (string, []any, error) {
 	var err error
 	var s interface{} = UserItem{}
@@ -666,19 +670,7 @@ func (q userItemInsertSQL) userItemInsertSQLToSql() (string, []any, error) {
 }
 
 func (q userItemInsertSQL) Exec(db sqlla.DB) (UserItem, error) {
-	query, args, err := q.ToSql()
-	if err != nil {
-		return UserItem{}, err
-	}
-	result, err := db.Exec(query, args...)
-	if err != nil {
-		return UserItem{}, err
-	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return UserItem{}, err
-	}
-	return NewUserItemSQL().Select().PkColumn(id).Single(db)
+	return q.ExecContext(context.Background(), db)
 }
 
 func (q userItemInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (UserItem, error) {
@@ -711,6 +703,7 @@ type userItemDefaultInsertHooker interface {
 }
 
 type userItemInsertSQLToSqler interface {
+	rowsNum() int
 	userItemInsertSQLToSql() (string, []any, error)
 }
 
@@ -726,6 +719,10 @@ func (q userItemSQL) BulkInsert() *userItemBulkInsertSQL {
 
 func (q *userItemBulkInsertSQL) Append(iqs ...userItemInsertSQL) {
 	q.insertSQLs = append(q.insertSQLs, iqs...)
+}
+
+func (q *userItemBulkInsertSQL) rowsNum() int {
+	return len(q.insertSQLs)
 }
 
 func (q *userItemBulkInsertSQL) userItemInsertSQLToSql() (string, []any, error) {

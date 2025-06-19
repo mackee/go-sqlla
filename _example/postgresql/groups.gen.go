@@ -777,7 +777,12 @@ func (q groupInsertSQL) ToSql() (string, []any, error) {
 	if err != nil {
 		return "", []any{}, err
 	}
-	return query + " RETURNING " + "\"id\"" + ";", vs, nil
+	columns := strings.Join(groupAllColumns, ", ")
+	return query + " RETURNING " + columns + ";", vs, nil
+}
+
+func (q groupInsertSQL) rowsNum() int {
+	return 1
 }
 
 func (q groupInsertSQL) groupInsertSQLToSqlPg(offset int) (string, int, []any, error) {
@@ -799,16 +804,7 @@ func (q groupInsertSQL) groupInsertSQLToSqlPg(offset int) (string, int, []any, e
 }
 
 func (q groupInsertSQL) Exec(db sqlla.DB) (Group, error) {
-	query, args, err := q.ToSql()
-	if err != nil {
-		return Group{}, err
-	}
-	row := db.QueryRow(query, args...)
-	var pk GroupID
-	if err := row.Scan(&pk); err != nil {
-		return Group{}, err
-	}
-	return NewGroupSQL().Select().ID(pk).Single(db)
+	return q.ExecContext(context.Background(), db)
 }
 
 func (q groupInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (Group, error) {
@@ -817,11 +813,11 @@ func (q groupInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (Group, er
 		return Group{}, err
 	}
 	row := db.QueryRowContext(ctx, query, args...)
-	var pk GroupID
-	if err := row.Scan(&pk); err != nil {
+	result, err := NewGroupSQL().Select().Scan(row)
+	if err != nil {
 		return Group{}, err
 	}
-	return NewGroupSQL().Select().ID(pk).SingleContext(ctx, db)
+	return result, nil
 }
 
 func (q groupInsertSQL) ExecContextWithoutSelect(ctx context.Context, db sqlla.DB) (sql.Result, error) {
@@ -838,6 +834,7 @@ type groupDefaultInsertHooker interface {
 }
 
 type groupInsertSQLToSqler interface {
+	rowsNum() int
 	groupInsertSQLToSqlPg(offset int) (string, int, []any, error)
 }
 
@@ -853,6 +850,10 @@ func (q groupSQL) BulkInsert() *groupBulkInsertSQL {
 
 func (q *groupBulkInsertSQL) Append(iqs ...groupInsertSQL) {
 	q.insertSQLs = append(q.insertSQLs, iqs...)
+}
+
+func (q *groupBulkInsertSQL) rowsNum() int {
+	return len(q.insertSQLs)
 }
 
 func (q *groupBulkInsertSQL) groupInsertSQLToSqlPg(offset int) (string, int, []any, error) {
@@ -891,7 +892,8 @@ func (q *groupBulkInsertSQL) ToSql() (string, []any, error) {
 	if err != nil {
 		return "", []any{}, err
 	}
-	return query + " RETURNING " + "\"id\"" + ";", vs, nil
+	columns := strings.Join(groupAllColumns, ", ")
+	return query + " RETURNING " + columns + ";", vs, nil
 }
 func (q *groupBulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Group, error) {
 	query, args, err := q.ToSql()
@@ -903,16 +905,18 @@ func (q *groupBulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Gr
 		return nil, err
 	}
 	defer rows.Close()
-	pks := make([]GroupID, 0, len(q.insertSQLs))
+	results := make([]Group, 0, len(q.insertSQLs))
+	sel := NewGroupSQL().Select()
 	for rows.Next() {
-		var pk GroupID
-		if err := rows.Scan(&pk); err != nil {
+		result, err := sel.Scan(rows)
+		if err != nil {
 			return nil, err
 		}
-		pks = append(pks, pk)
+		results = append(results, result)
 	}
-	return NewGroupSQL().Select().IDIn(pks...).AllContext(ctx, db)
+	return results, nil
 }
+
 func (q *groupBulkInsertSQL) ExecContextWithoutSelect(ctx context.Context, db sqlla.DB) (sql.Result, error) {
 	query, args, err := q.ToSql()
 	if err != nil {
@@ -937,8 +941,8 @@ func (q groupInsertOnConflictDoNothingSQL) ToSql() (string, []any, error) {
 	if err != nil {
 		return "", nil, err
 	}
-	query += " ON CONFLICT DO NOTHING"
-	query += " RETURNING " + "\"id\""
+	columns := strings.Join(groupAllColumns, ", ")
+	query += " ON CONFLICT DO NOTHING" + " RETURNING " + columns
 	return query + ";", vs, nil
 
 }
@@ -949,11 +953,11 @@ func (q groupInsertOnConflictDoNothingSQL) ExecContext(ctx context.Context, db s
 		return Group{}, err
 	}
 	row := db.QueryRowContext(ctx, query, args...)
-	var pk GroupID
-	if err := row.Scan(&pk); err != nil {
+	result, err := NewGroupSQL().Select().Scan(row)
+	if err != nil {
 		return Group{}, err
 	}
-	return NewGroupSQL().Select().ID(pk).SingleContext(ctx, db)
+	return result, nil
 
 }
 
@@ -1118,7 +1122,8 @@ func (q groupInsertOnConflictDoUpdateSQL) ToSql() (string, []any, error) {
 	}
 	query += " ON CONFLICT (" + q.target + ") DO UPDATE SET" + os
 	vs = append(vs, ovs...)
-	query += " RETURNING " + "\"id\""
+	columns := strings.Join(groupAllColumns, ", ")
+	query += " RETURNING " + columns
 
 	return query + ";", vs, nil
 }
@@ -1129,11 +1134,11 @@ func (q groupInsertOnConflictDoUpdateSQL) ExecContext(ctx context.Context, db sq
 		return Group{}, err
 	}
 	row := db.QueryRowContext(ctx, query, args...)
-	var pk GroupID
-	if err := row.Scan(&pk); err != nil {
+	result, err := NewGroupSQL().Select().Scan(row)
+	if err != nil {
 		return Group{}, err
 	}
-	return NewGroupSQL().Select().ID(pk).SingleContext(ctx, db)
+	return result, nil
 
 }
 
@@ -1167,8 +1172,8 @@ func (q groupBulkInsertOnConflictDoNothingSQL) ToSql() (string, []any, error) {
 	if err != nil {
 		return "", nil, err
 	}
-	query += " ON CONFLICT DO NOTHING"
-	query += " RETURNING " + "\"id\""
+	columns := strings.Join(groupAllColumns, ", ")
+	query += " ON CONFLICT DO NOTHING" + " RETURNING " + columns
 	return query + ";", vs, nil
 
 }
@@ -1183,16 +1188,17 @@ func (q groupBulkInsertOnConflictDoNothingSQL) ExecContext(ctx context.Context, 
 		return nil, err
 	}
 	defer rows.Close()
-	pks := make([]GroupID, 0)
+	results := make([]Group, 0, q.insertSQL.rowsNum())
+	sel := NewGroupSQL().Select()
 	for rows.Next() {
-		var pk GroupID
-		if err := rows.Scan(&pk); err != nil {
+		result, err := sel.Scan(rows)
+		if err != nil {
 			return nil, err
 		}
-		pks = append(pks, pk)
+		results = append(results, result)
 	}
 
-	return NewGroupSQL().Select().IDIn(pks...).AllContext(ctx, db)
+	return results, nil
 
 }
 
@@ -1364,7 +1370,8 @@ func (q groupBulkInsertOnConflictDoUpdateSQL) ToSql() (string, []any, error) {
 	}
 	query += " ON CONFLICT (" + q.target + ") DO UPDATE SET" + os
 	vs = append(vs, ovs...)
-	query += " RETURNING " + "\"id\""
+	columns := strings.Join(groupAllColumns, ", ")
+	query += " RETURNING " + columns
 
 	return query + ";", vs, nil
 }
@@ -1379,16 +1386,17 @@ func (q groupBulkInsertOnConflictDoUpdateSQL) ExecContext(ctx context.Context, d
 		return nil, err
 	}
 	defer rows.Close()
-	pks := make([]GroupID, 0)
+	results := make([]Group, 0, q.insertSQL.rowsNum())
+	sel := NewGroupSQL().Select()
 	for rows.Next() {
-		var pk GroupID
-		if err := rows.Scan(&pk); err != nil {
+		result, err := sel.Scan(rows)
+		if err != nil {
 			return nil, err
 		}
-		pks = append(pks, pk)
+		results = append(results, result)
 	}
 
-	return NewGroupSQL().Select().IDIn(pks...).AllContext(ctx, db)
+	return results, nil
 
 }
 

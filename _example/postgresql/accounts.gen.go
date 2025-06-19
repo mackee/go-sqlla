@@ -607,7 +607,12 @@ func (q accountInsertSQL) ToSql() (string, []any, error) {
 	if err != nil {
 		return "", []any{}, err
 	}
-	return query + " RETURNING " + "\"id\"" + ";", vs, nil
+	columns := strings.Join(accountAllColumns, ", ")
+	return query + " RETURNING " + columns + ";", vs, nil
+}
+
+func (q accountInsertSQL) rowsNum() int {
+	return 1
 }
 
 func (q accountInsertSQL) accountInsertSQLToSqlPg(offset int) (string, int, []any, error) {
@@ -629,16 +634,7 @@ func (q accountInsertSQL) accountInsertSQLToSqlPg(offset int) (string, int, []an
 }
 
 func (q accountInsertSQL) Exec(db sqlla.DB) (Account, error) {
-	query, args, err := q.ToSql()
-	if err != nil {
-		return Account{}, err
-	}
-	row := db.QueryRow(query, args...)
-	var pk AccountID
-	if err := row.Scan(&pk); err != nil {
-		return Account{}, err
-	}
-	return NewAccountSQL().Select().ID(pk).Single(db)
+	return q.ExecContext(context.Background(), db)
 }
 
 func (q accountInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (Account, error) {
@@ -647,11 +643,11 @@ func (q accountInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (Account
 		return Account{}, err
 	}
 	row := db.QueryRowContext(ctx, query, args...)
-	var pk AccountID
-	if err := row.Scan(&pk); err != nil {
+	result, err := NewAccountSQL().Select().Scan(row)
+	if err != nil {
 		return Account{}, err
 	}
-	return NewAccountSQL().Select().ID(pk).SingleContext(ctx, db)
+	return result, nil
 }
 
 func (q accountInsertSQL) ExecContextWithoutSelect(ctx context.Context, db sqlla.DB) (sql.Result, error) {
@@ -668,6 +664,7 @@ type accountDefaultInsertHooker interface {
 }
 
 type accountInsertSQLToSqler interface {
+	rowsNum() int
 	accountInsertSQLToSqlPg(offset int) (string, int, []any, error)
 }
 
@@ -683,6 +680,10 @@ func (q accountSQL) BulkInsert() *accountBulkInsertSQL {
 
 func (q *accountBulkInsertSQL) Append(iqs ...accountInsertSQL) {
 	q.insertSQLs = append(q.insertSQLs, iqs...)
+}
+
+func (q *accountBulkInsertSQL) rowsNum() int {
+	return len(q.insertSQLs)
 }
 
 func (q *accountBulkInsertSQL) accountInsertSQLToSqlPg(offset int) (string, int, []any, error) {
@@ -721,7 +722,8 @@ func (q *accountBulkInsertSQL) ToSql() (string, []any, error) {
 	if err != nil {
 		return "", []any{}, err
 	}
-	return query + " RETURNING " + "\"id\"" + ";", vs, nil
+	columns := strings.Join(accountAllColumns, ", ")
+	return query + " RETURNING " + columns + ";", vs, nil
 }
 func (q *accountBulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Account, error) {
 	query, args, err := q.ToSql()
@@ -733,16 +735,18 @@ func (q *accountBulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]
 		return nil, err
 	}
 	defer rows.Close()
-	pks := make([]AccountID, 0, len(q.insertSQLs))
+	results := make([]Account, 0, len(q.insertSQLs))
+	sel := NewAccountSQL().Select()
 	for rows.Next() {
-		var pk AccountID
-		if err := rows.Scan(&pk); err != nil {
+		result, err := sel.Scan(rows)
+		if err != nil {
 			return nil, err
 		}
-		pks = append(pks, pk)
+		results = append(results, result)
 	}
-	return NewAccountSQL().Select().IDIn(pks...).AllContext(ctx, db)
+	return results, nil
 }
+
 func (q *accountBulkInsertSQL) ExecContextWithoutSelect(ctx context.Context, db sqlla.DB) (sql.Result, error) {
 	query, args, err := q.ToSql()
 	if err != nil {
@@ -767,8 +771,8 @@ func (q accountInsertOnConflictDoNothingSQL) ToSql() (string, []any, error) {
 	if err != nil {
 		return "", nil, err
 	}
-	query += " ON CONFLICT DO NOTHING"
-	query += " RETURNING " + "\"id\""
+	columns := strings.Join(accountAllColumns, ", ")
+	query += " ON CONFLICT DO NOTHING" + " RETURNING " + columns
 	return query + ";", vs, nil
 
 }
@@ -779,11 +783,11 @@ func (q accountInsertOnConflictDoNothingSQL) ExecContext(ctx context.Context, db
 		return Account{}, err
 	}
 	row := db.QueryRowContext(ctx, query, args...)
-	var pk AccountID
-	if err := row.Scan(&pk); err != nil {
+	result, err := NewAccountSQL().Select().Scan(row)
+	if err != nil {
 		return Account{}, err
 	}
-	return NewAccountSQL().Select().ID(pk).SingleContext(ctx, db)
+	return result, nil
 
 }
 
@@ -908,7 +912,8 @@ func (q accountInsertOnConflictDoUpdateSQL) ToSql() (string, []any, error) {
 	}
 	query += " ON CONFLICT (" + q.target + ") DO UPDATE SET" + os
 	vs = append(vs, ovs...)
-	query += " RETURNING " + "\"id\""
+	columns := strings.Join(accountAllColumns, ", ")
+	query += " RETURNING " + columns
 
 	return query + ";", vs, nil
 }
@@ -919,11 +924,11 @@ func (q accountInsertOnConflictDoUpdateSQL) ExecContext(ctx context.Context, db 
 		return Account{}, err
 	}
 	row := db.QueryRowContext(ctx, query, args...)
-	var pk AccountID
-	if err := row.Scan(&pk); err != nil {
+	result, err := NewAccountSQL().Select().Scan(row)
+	if err != nil {
 		return Account{}, err
 	}
-	return NewAccountSQL().Select().ID(pk).SingleContext(ctx, db)
+	return result, nil
 
 }
 
@@ -957,8 +962,8 @@ func (q accountBulkInsertOnConflictDoNothingSQL) ToSql() (string, []any, error) 
 	if err != nil {
 		return "", nil, err
 	}
-	query += " ON CONFLICT DO NOTHING"
-	query += " RETURNING " + "\"id\""
+	columns := strings.Join(accountAllColumns, ", ")
+	query += " ON CONFLICT DO NOTHING" + " RETURNING " + columns
 	return query + ";", vs, nil
 
 }
@@ -973,16 +978,17 @@ func (q accountBulkInsertOnConflictDoNothingSQL) ExecContext(ctx context.Context
 		return nil, err
 	}
 	defer rows.Close()
-	pks := make([]AccountID, 0)
+	results := make([]Account, 0, q.insertSQL.rowsNum())
+	sel := NewAccountSQL().Select()
 	for rows.Next() {
-		var pk AccountID
-		if err := rows.Scan(&pk); err != nil {
+		result, err := sel.Scan(rows)
+		if err != nil {
 			return nil, err
 		}
-		pks = append(pks, pk)
+		results = append(results, result)
 	}
 
-	return NewAccountSQL().Select().IDIn(pks...).AllContext(ctx, db)
+	return results, nil
 
 }
 
@@ -1114,7 +1120,8 @@ func (q accountBulkInsertOnConflictDoUpdateSQL) ToSql() (string, []any, error) {
 	}
 	query += " ON CONFLICT (" + q.target + ") DO UPDATE SET" + os
 	vs = append(vs, ovs...)
-	query += " RETURNING " + "\"id\""
+	columns := strings.Join(accountAllColumns, ", ")
+	query += " RETURNING " + columns
 
 	return query + ";", vs, nil
 }
@@ -1129,16 +1136,17 @@ func (q accountBulkInsertOnConflictDoUpdateSQL) ExecContext(ctx context.Context,
 		return nil, err
 	}
 	defer rows.Close()
-	pks := make([]AccountID, 0)
+	results := make([]Account, 0, q.insertSQL.rowsNum())
+	sel := NewAccountSQL().Select()
 	for rows.Next() {
-		var pk AccountID
-		if err := rows.Scan(&pk); err != nil {
+		result, err := sel.Scan(rows)
+		if err != nil {
 			return nil, err
 		}
-		pks = append(pks, pk)
+		results = append(results, result)
 	}
 
-	return NewAccountSQL().Select().IDIn(pks...).AllContext(ctx, db)
+	return results, nil
 
 }
 

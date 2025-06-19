@@ -787,6 +787,10 @@ func (q groupInsertSQL) ToSql() (string, []any, error) {
 	return query + ";", vs, nil
 }
 
+func (q groupInsertSQL) rowsNum() int {
+	return 1
+}
+
 func (q groupInsertSQL) groupInsertSQLToSql() (string, []any, error) {
 	var err error
 	var s interface{} = Group{}
@@ -806,19 +810,7 @@ func (q groupInsertSQL) groupInsertSQLToSql() (string, []any, error) {
 }
 
 func (q groupInsertSQL) Exec(db sqlla.DB) (Group, error) {
-	query, args, err := q.ToSql()
-	if err != nil {
-		return Group{}, err
-	}
-	result, err := db.Exec(query, args...)
-	if err != nil {
-		return Group{}, err
-	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return Group{}, err
-	}
-	return NewGroupSQL().Select().PkColumn(id).Single(db)
+	return q.ExecContext(context.Background(), db)
 }
 
 func (q groupInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (Group, error) {
@@ -851,6 +843,7 @@ type groupDefaultInsertHooker interface {
 }
 
 type groupInsertSQLToSqler interface {
+	rowsNum() int
 	groupInsertSQLToSql() (string, []any, error)
 }
 
@@ -866,6 +859,10 @@ func (q groupSQL) BulkInsert() *groupBulkInsertSQL {
 
 func (q *groupBulkInsertSQL) Append(iqs ...groupInsertSQL) {
 	q.insertSQLs = append(q.insertSQLs, iqs...)
+}
+
+func (q *groupBulkInsertSQL) rowsNum() int {
+	return len(q.insertSQLs)
 }
 
 func (q *groupBulkInsertSQL) groupInsertSQLToSql() (string, []any, error) {
