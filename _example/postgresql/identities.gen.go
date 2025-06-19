@@ -534,36 +534,45 @@ func (q identityUpdateSQL) ToSql() (string, []interface{}, error) {
 
 	return query + ";", append(svs, wvs...), nil
 }
+func (q identityUpdateSQL) ToSqlWithReturning() (string, []interface{}, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return "", []interface{}{}, err
+	}
+	query = strings.TrimSuffix(query, ";")
+	query += " RETURNING " + strings.Join(identityAllColumns, ", ")
+	return query + ";", args, nil
+}
+
 func (s Identity) Update() identityUpdateSQL {
 	return NewIdentitySQL().Update().WhereID(s.ID)
 }
 
 func (q identityUpdateSQL) Exec(db sqlla.DB) ([]Identity, error) {
-	query, args, err := q.ToSql()
-	if err != nil {
-		return nil, err
-	}
-	_, err = db.Exec(query, args...)
-	if err != nil {
-		return nil, err
-	}
-	qq := q.identitySQL
-
-	return qq.Select().All(db)
+	return q.ExecContext(context.Background(), db)
 }
 
 func (q identityUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Identity, error) {
-	query, args, err := q.ToSql()
+	query, args, err := q.ToSqlWithReturning()
 	if err != nil {
 		return nil, err
 	}
-	_, err = db.ExecContext(ctx, query, args...)
+	rows, err := db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
-	qq := q.identitySQL
+	results := make([]Identity, 0, 1)
+	defer rows.Close()
+	sel := NewIdentitySQL().Select()
+	for rows.Next() {
+		result, err := sel.Scan(rows)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, result)
+	}
 
-	return qq.Select().AllContext(ctx, db)
+	return results, nil
 }
 
 type identityDefaultUpdateHooker interface {
@@ -613,7 +622,21 @@ func (q identityInsertSQL) ToSql() (string, []any, error) {
 	if err != nil {
 		return "", []any{}, err
 	}
-	return query + " RETURNING " + "\"id\"" + ";", vs, nil
+	return query + ";", vs, nil
+}
+
+func (q identityInsertSQL) ToSqlWithReturning() (string, []any, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return "", []any{}, err
+	}
+	query = strings.TrimSuffix(query, ";")
+	query += " RETURNING " + strings.Join(identityAllColumns, ", ")
+	return query, args, nil
+}
+
+func (q identityInsertSQL) rowsNum() int {
+	return 1
 }
 
 func (q identityInsertSQL) identityInsertSQLToSqlPg(offset int) (string, int, []any, error) {
@@ -635,29 +658,20 @@ func (q identityInsertSQL) identityInsertSQLToSqlPg(offset int) (string, int, []
 }
 
 func (q identityInsertSQL) Exec(db sqlla.DB) (Identity, error) {
-	query, args, err := q.ToSql()
-	if err != nil {
-		return Identity{}, err
-	}
-	row := db.QueryRow(query, args...)
-	var pk IdentityID
-	if err := row.Scan(&pk); err != nil {
-		return Identity{}, err
-	}
-	return NewIdentitySQL().Select().ID(pk).Single(db)
+	return q.ExecContext(context.Background(), db)
 }
 
 func (q identityInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (Identity, error) {
-	query, args, err := q.ToSql()
+	query, args, err := q.ToSqlWithReturning()
 	if err != nil {
 		return Identity{}, err
 	}
 	row := db.QueryRowContext(ctx, query, args...)
-	var pk IdentityID
-	if err := row.Scan(&pk); err != nil {
+	result, err := NewIdentitySQL().Select().Scan(row)
+	if err != nil {
 		return Identity{}, err
 	}
-	return NewIdentitySQL().Select().ID(pk).SingleContext(ctx, db)
+	return result, nil
 }
 
 func (q identityInsertSQL) ExecContextWithoutSelect(ctx context.Context, db sqlla.DB) (sql.Result, error) {
@@ -674,6 +688,7 @@ type identityDefaultInsertHooker interface {
 }
 
 type identityInsertSQLToSqler interface {
+	rowsNum() int
 	identityInsertSQLToSqlPg(offset int) (string, int, []any, error)
 }
 
@@ -689,6 +704,10 @@ func (q identitySQL) BulkInsert() *identityBulkInsertSQL {
 
 func (q *identityBulkInsertSQL) Append(iqs ...identityInsertSQL) {
 	q.insertSQLs = append(q.insertSQLs, iqs...)
+}
+
+func (q *identityBulkInsertSQL) rowsNum() int {
+	return len(q.insertSQLs)
 }
 
 func (q *identityBulkInsertSQL) identityInsertSQLToSqlPg(offset int) (string, int, []any, error) {
@@ -727,10 +746,20 @@ func (q *identityBulkInsertSQL) ToSql() (string, []any, error) {
 	if err != nil {
 		return "", []any{}, err
 	}
-	return query + " RETURNING " + "\"id\"" + ";", vs, nil
+	return query + ";", vs, nil
 }
-func (q *identityBulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Identity, error) {
+func (q *identityBulkInsertSQL) ToSqlWithReturning() (string, []any, error) {
 	query, args, err := q.ToSql()
+	if err != nil {
+		return "", []any{}, err
+	}
+	query = strings.TrimSuffix(query, ";")
+	query += " RETURNING " + strings.Join(identityAllColumns, ", ")
+	return query + ";", args, nil
+}
+
+func (q *identityBulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Identity, error) {
+	query, args, err := q.ToSqlWithReturning()
 	if err != nil {
 		return nil, err
 	}
@@ -739,16 +768,18 @@ func (q *identityBulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) ([
 		return nil, err
 	}
 	defer rows.Close()
-	pks := make([]IdentityID, 0, len(q.insertSQLs))
+	results := make([]Identity, 0, len(q.insertSQLs))
+	sel := NewIdentitySQL().Select()
 	for rows.Next() {
-		var pk IdentityID
-		if err := rows.Scan(&pk); err != nil {
+		result, err := sel.Scan(rows)
+		if err != nil {
 			return nil, err
 		}
-		pks = append(pks, pk)
+		results = append(results, result)
 	}
-	return NewIdentitySQL().Select().IDIn(pks...).AllContext(ctx, db)
+	return results, nil
 }
+
 func (q *identityBulkInsertSQL) ExecContextWithoutSelect(ctx context.Context, db sqlla.DB) (sql.Result, error) {
 	query, args, err := q.ToSql()
 	if err != nil {
@@ -774,22 +805,32 @@ func (q identityInsertOnConflictDoNothingSQL) ToSql() (string, []any, error) {
 		return "", nil, err
 	}
 	query += " ON CONFLICT DO NOTHING"
-	query += " RETURNING " + "\"id\""
 	return query + ";", vs, nil
 
 }
 
-func (q identityInsertOnConflictDoNothingSQL) ExecContext(ctx context.Context, db sqlla.DB) (Identity, error) {
+func (q identityInsertOnConflictDoNothingSQL) ToSqlWithReturning() (string, []any, error) {
 	query, args, err := q.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	query = strings.TrimSuffix(query, ";")
+	query += " RETURNING " + strings.Join(identityAllColumns, ", ")
+	return query + ";", args, nil
+
+}
+
+func (q identityInsertOnConflictDoNothingSQL) ExecContext(ctx context.Context, db sqlla.DB) (Identity, error) {
+	query, args, err := q.ToSqlWithReturning()
 	if err != nil {
 		return Identity{}, err
 	}
 	row := db.QueryRowContext(ctx, query, args...)
-	var pk IdentityID
-	if err := row.Scan(&pk); err != nil {
+	result, err := NewIdentitySQL().Select().Scan(row)
+	if err != nil {
 		return Identity{}, err
 	}
-	return NewIdentitySQL().Select().ID(pk).SingleContext(ctx, db)
+	return result, nil
 
 }
 
@@ -914,22 +955,32 @@ func (q identityInsertOnConflictDoUpdateSQL) ToSql() (string, []any, error) {
 	}
 	query += " ON CONFLICT (" + q.target + ") DO UPDATE SET" + os
 	vs = append(vs, ovs...)
-	query += " RETURNING " + "\"id\""
 
 	return query + ";", vs, nil
 }
 
-func (q identityInsertOnConflictDoUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) (Identity, error) {
+func (q identityInsertOnConflictDoUpdateSQL) ToSqlWithReturning() (string, []any, error) {
 	query, args, err := q.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	query = strings.TrimSuffix(query, ";")
+	query += " RETURNING " + strings.Join(identityAllColumns, ", ")
+	return query + ";", args, nil
+
+}
+
+func (q identityInsertOnConflictDoUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) (Identity, error) {
+	query, args, err := q.ToSqlWithReturning()
 	if err != nil {
 		return Identity{}, err
 	}
 	row := db.QueryRowContext(ctx, query, args...)
-	var pk IdentityID
-	if err := row.Scan(&pk); err != nil {
+	result, err := NewIdentitySQL().Select().Scan(row)
+	if err != nil {
 		return Identity{}, err
 	}
-	return NewIdentitySQL().Select().ID(pk).SingleContext(ctx, db)
+	return result, nil
 
 }
 
@@ -964,13 +1015,23 @@ func (q identityBulkInsertOnConflictDoNothingSQL) ToSql() (string, []any, error)
 		return "", nil, err
 	}
 	query += " ON CONFLICT DO NOTHING"
-	query += " RETURNING " + "\"id\""
 	return query + ";", vs, nil
 
 }
 
-func (q identityBulkInsertOnConflictDoNothingSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Identity, error) {
+func (q identityBulkInsertOnConflictDoNothingSQL) ToSqlWithReturning() (string, []any, error) {
 	query, args, err := q.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	query = strings.TrimSuffix(query, ";")
+	query += " RETURNING " + strings.Join(identityAllColumns, ", ")
+	return query + ";", args, nil
+
+}
+
+func (q identityBulkInsertOnConflictDoNothingSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Identity, error) {
+	query, args, err := q.ToSqlWithReturning()
 	if err != nil {
 		return nil, err
 	}
@@ -979,16 +1040,17 @@ func (q identityBulkInsertOnConflictDoNothingSQL) ExecContext(ctx context.Contex
 		return nil, err
 	}
 	defer rows.Close()
-	pks := make([]IdentityID, 0)
+	results := make([]Identity, 0, q.insertSQL.rowsNum())
+	sel := NewIdentitySQL().Select()
 	for rows.Next() {
-		var pk IdentityID
-		if err := rows.Scan(&pk); err != nil {
+		result, err := sel.Scan(rows)
+		if err != nil {
 			return nil, err
 		}
-		pks = append(pks, pk)
+		results = append(results, result)
 	}
 
-	return NewIdentitySQL().Select().IDIn(pks...).AllContext(ctx, db)
+	return results, nil
 
 }
 
@@ -1120,13 +1182,23 @@ func (q identityBulkInsertOnConflictDoUpdateSQL) ToSql() (string, []any, error) 
 	}
 	query += " ON CONFLICT (" + q.target + ") DO UPDATE SET" + os
 	vs = append(vs, ovs...)
-	query += " RETURNING " + "\"id\""
 
 	return query + ";", vs, nil
 }
 
-func (q identityBulkInsertOnConflictDoUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Identity, error) {
+func (q identityBulkInsertOnConflictDoUpdateSQL) ToSqlWithReturning() (string, []any, error) {
 	query, args, err := q.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	query = strings.TrimSuffix(query, ";")
+	query += " RETURNING " + strings.Join(identityAllColumns, ", ")
+	return query + ";", args, nil
+
+}
+
+func (q identityBulkInsertOnConflictDoUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Identity, error) {
+	query, args, err := q.ToSqlWithReturning()
 	if err != nil {
 		return nil, err
 	}
@@ -1135,16 +1207,17 @@ func (q identityBulkInsertOnConflictDoUpdateSQL) ExecContext(ctx context.Context
 		return nil, err
 	}
 	defer rows.Close()
-	pks := make([]IdentityID, 0)
+	results := make([]Identity, 0, q.insertSQL.rowsNum())
+	sel := NewIdentitySQL().Select()
 	for rows.Next() {
-		var pk IdentityID
-		if err := rows.Scan(&pk); err != nil {
+		result, err := sel.Scan(rows)
+		if err != nil {
 			return nil, err
 		}
-		pks = append(pks, pk)
+		results = append(results, result)
 	}
 
-	return NewIdentitySQL().Select().IDIn(pks...).AllContext(ctx, db)
+	return results, nil
 
 }
 

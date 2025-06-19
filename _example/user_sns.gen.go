@@ -495,17 +495,7 @@ func (s UserSNS) Update() userSNSUpdateSQL {
 }
 
 func (q userSNSUpdateSQL) Exec(db sqlla.DB) ([]UserSNS, error) {
-	query, args, err := q.ToSql()
-	if err != nil {
-		return nil, err
-	}
-	_, err = db.Exec(query, args...)
-	if err != nil {
-		return nil, err
-	}
-	qq := q.userSNSSQL
-
-	return qq.Select().All(db)
+	return q.ExecContext(context.Background(), db)
 }
 
 func (q userSNSUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]UserSNS, error) {
@@ -567,6 +557,10 @@ func (q userSNSInsertSQL) ToSql() (string, []any, error) {
 	return query + ";", vs, nil
 }
 
+func (q userSNSInsertSQL) rowsNum() int {
+	return 1
+}
+
 func (q userSNSInsertSQL) userSNSInsertSQLToSql() (string, []any, error) {
 	var err error
 	var s interface{} = UserSNS{}
@@ -586,19 +580,7 @@ func (q userSNSInsertSQL) userSNSInsertSQLToSql() (string, []any, error) {
 }
 
 func (q userSNSInsertSQL) Exec(db sqlla.DB) (UserSNS, error) {
-	query, args, err := q.ToSql()
-	if err != nil {
-		return UserSNS{}, err
-	}
-	result, err := db.Exec(query, args...)
-	if err != nil {
-		return UserSNS{}, err
-	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return UserSNS{}, err
-	}
-	return NewUserSNSSQL().Select().PkColumn(id).Single(db)
+	return q.ExecContext(context.Background(), db)
 }
 
 func (q userSNSInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (UserSNS, error) {
@@ -631,6 +613,7 @@ type userSNSDefaultInsertHooker interface {
 }
 
 type userSNSInsertSQLToSqler interface {
+	rowsNum() int
 	userSNSInsertSQLToSql() (string, []any, error)
 }
 
@@ -646,6 +629,10 @@ func (q userSNSSQL) BulkInsert() *userSNSBulkInsertSQL {
 
 func (q *userSNSBulkInsertSQL) Append(iqs ...userSNSInsertSQL) {
 	q.insertSQLs = append(q.insertSQLs, iqs...)
+}
+
+func (q *userSNSBulkInsertSQL) rowsNum() int {
+	return len(q.insertSQLs)
 }
 
 func (q *userSNSBulkInsertSQL) userSNSInsertSQLToSql() (string, []any, error) {

@@ -50,23 +50,56 @@ func (q {{ $camelName }}UpdateSQL) ToSql() (string, []interface{}, error) {
 	return query + ";", append(svs, wvs...), nil
 }
 
+{{- if eq (dialect) "postgresql" }}
+func (q {{ $camelName }}UpdateSQL) ToSqlWithReturning() (string, []interface{}, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return "", []interface{}{}, err
+	}
+	query = strings.TrimSuffix(query, ";")
+	query += " RETURNING " + strings.Join({{ $camelName }}AllColumns, ", ")
+	return query + ";", args, nil
+}
+
+func (s {{ .StructName }}) Update() {{ $camelName }}UpdateSQL {
+	return {{ $constructor }}().Update().Where{{ .PkColumn.Name | toCamel | title }}(s.{{ .PkColumn.FieldName }})
+}
+
+func (q {{ $camelName }}UpdateSQL) Exec(db sqlla.DB) ([]{{ .StructName }}, error) {
+	return q.ExecContext(context.Background(), db)
+}
+
+func (q {{ $camelName }}UpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]{{ .StructName }}, error) {
+	query, args, err := q.ToSqlWithReturning()
+	if err != nil {
+		return nil, err
+	}
+	rows, err := db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]{{ .StructName }}, 0, 1)
+	defer rows.Close()
+	sel := {{ $constructor }}().Select()
+	for rows.Next() {
+		result, err := sel.Scan(rows)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+{{- end }}
+{{- if eq (dialect) "mysql" }}
 {{- if .HasPk }}
 func (s {{ .StructName }}) Update() {{ $camelName }}UpdateSQL {
 	return {{ $constructor }}().Update().Where{{ .PkColumn.Name | toCamel | title }}(s.{{ .PkColumn.FieldName }})
 }
 
 func (q {{ $camelName }}UpdateSQL) Exec(db sqlla.DB) ([]{{ .StructName }}, error) {
-	query, args, err := q.ToSql()
-	if err != nil {
-		return nil, err
-	}
-	_, err = db.Exec(query, args...)
-	if err != nil {
-		return nil, err
-	}
-	qq := q.{{ $camelName }}SQL
-
-	return qq.Select().All(db)
+	return q.ExecContext(context.Background(), db)
 }
 
 func (q {{ $camelName }}UpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]{{ .StructName }}, error) {
@@ -84,11 +117,7 @@ func (q {{ $camelName }}UpdateSQL) ExecContext(ctx context.Context, db sqlla.DB)
 }
 {{- else }}
 func (q {{ $camelName }}UpdateSQL) Exec(db sqlla.DB) (sql.Result, error) {
-	query, args, err := q.ToSql()
-	if err != nil {
-		return nil, err
-	}
-	return db.Exec(query, args...)
+	return q.ExecContext(context.Background(), db)
 }
 
 func (q {{ $camelName }}UpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) (sql.Result, error) {
@@ -98,6 +127,7 @@ func (q {{ $camelName }}UpdateSQL) ExecContext(ctx context.Context, db sqlla.DB)
 	}
 	return db.ExecContext(ctx, query, args...)
 }
+{{- end }}
 {{- end }}
 
 type {{ $camelName }}DefaultUpdateHooker interface {

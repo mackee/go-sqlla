@@ -530,17 +530,7 @@ func (s UserExternal) Update() userExternalUpdateSQL {
 }
 
 func (q userExternalUpdateSQL) Exec(db sqlla.DB) ([]UserExternal, error) {
-	query, args, err := q.ToSql()
-	if err != nil {
-		return nil, err
-	}
-	_, err = db.Exec(query, args...)
-	if err != nil {
-		return nil, err
-	}
-	qq := q.userExternalSQL
-
-	return qq.Select().All(db)
+	return q.ExecContext(context.Background(), db)
 }
 
 func (q userExternalUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]UserExternal, error) {
@@ -607,6 +597,10 @@ func (q userExternalInsertSQL) ToSql() (string, []any, error) {
 	return query + ";", vs, nil
 }
 
+func (q userExternalInsertSQL) rowsNum() int {
+	return 1
+}
+
 func (q userExternalInsertSQL) userExternalInsertSQLToSql() (string, []any, error) {
 	var err error
 	var s interface{} = UserExternal{}
@@ -626,19 +620,7 @@ func (q userExternalInsertSQL) userExternalInsertSQLToSql() (string, []any, erro
 }
 
 func (q userExternalInsertSQL) Exec(db sqlla.DB) (UserExternal, error) {
-	query, args, err := q.ToSql()
-	if err != nil {
-		return UserExternal{}, err
-	}
-	result, err := db.Exec(query, args...)
-	if err != nil {
-		return UserExternal{}, err
-	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return UserExternal{}, err
-	}
-	return NewUserExternalSQL().Select().PkColumn(id).Single(db)
+	return q.ExecContext(context.Background(), db)
 }
 
 func (q userExternalInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (UserExternal, error) {
@@ -671,6 +653,7 @@ type userExternalDefaultInsertHooker interface {
 }
 
 type userExternalInsertSQLToSqler interface {
+	rowsNum() int
 	userExternalInsertSQLToSql() (string, []any, error)
 }
 
@@ -686,6 +669,10 @@ func (q userExternalSQL) BulkInsert() *userExternalBulkInsertSQL {
 
 func (q *userExternalBulkInsertSQL) Append(iqs ...userExternalInsertSQL) {
 	q.insertSQLs = append(q.insertSQLs, iqs...)
+}
+
+func (q *userExternalBulkInsertSQL) rowsNum() int {
+	return len(q.insertSQLs)
 }
 
 func (q *userExternalBulkInsertSQL) userExternalInsertSQLToSql() (string, []any, error) {

@@ -610,17 +610,7 @@ func (s User) Update() userUpdateSQL {
 }
 
 func (q userUpdateSQL) Exec(db sqlla.DB) ([]User, error) {
-	query, args, err := q.ToSql()
-	if err != nil {
-		return nil, err
-	}
-	_, err = db.Exec(query, args...)
-	if err != nil {
-		return nil, err
-	}
-	qq := q.userSQL
-
-	return qq.Select().All(db)
+	return q.ExecContext(context.Background(), db)
 }
 
 func (q userUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]User, error) {
@@ -697,6 +687,10 @@ func (q userInsertSQL) ToSql() (string, []any, error) {
 	return query + ";", vs, nil
 }
 
+func (q userInsertSQL) rowsNum() int {
+	return 1
+}
+
 func (q userInsertSQL) userInsertSQLToSql() (string, []any, error) {
 	var err error
 	var s interface{} = User{}
@@ -716,19 +710,7 @@ func (q userInsertSQL) userInsertSQLToSql() (string, []any, error) {
 }
 
 func (q userInsertSQL) Exec(db sqlla.DB) (User, error) {
-	query, args, err := q.ToSql()
-	if err != nil {
-		return User{}, err
-	}
-	result, err := db.Exec(query, args...)
-	if err != nil {
-		return User{}, err
-	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return User{}, err
-	}
-	return NewUserSQL().Select().PkColumn(id).Single(db)
+	return q.ExecContext(context.Background(), db)
 }
 
 func (q userInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (User, error) {
@@ -761,6 +743,7 @@ type userDefaultInsertHooker interface {
 }
 
 type userInsertSQLToSqler interface {
+	rowsNum() int
 	userInsertSQLToSql() (string, []any, error)
 }
 
@@ -776,6 +759,10 @@ func (q userSQL) BulkInsert() *userBulkInsertSQL {
 
 func (q *userBulkInsertSQL) Append(iqs ...userInsertSQL) {
 	q.insertSQLs = append(q.insertSQLs, iqs...)
+}
+
+func (q *userBulkInsertSQL) rowsNum() int {
+	return len(q.insertSQLs)
 }
 
 func (q *userBulkInsertSQL) userInsertSQLToSql() (string, []any, error) {
