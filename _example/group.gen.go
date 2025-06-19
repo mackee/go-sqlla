@@ -690,17 +690,7 @@ func (s Group) Update() groupUpdateSQL {
 }
 
 func (q groupUpdateSQL) Exec(db sqlla.DB) ([]Group, error) {
-	query, args, err := q.ToSql()
-	if err != nil {
-		return nil, err
-	}
-	_, err = db.Exec(query, args...)
-	if err != nil {
-		return nil, err
-	}
-	qq := q.groupSQL
-
-	return qq.Select().All(db)
+	return q.ExecContext(context.Background(), db)
 }
 
 func (q groupUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Group, error) {

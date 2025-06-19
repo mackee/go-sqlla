@@ -534,36 +534,45 @@ func (q identityUpdateSQL) ToSql() (string, []interface{}, error) {
 
 	return query + ";", append(svs, wvs...), nil
 }
+func (q identityUpdateSQL) ToSqlWithReturning() (string, []interface{}, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return "", []interface{}{}, err
+	}
+	query = strings.TrimSuffix(query, ";")
+	query += " RETURNING " + strings.Join(identityAllColumns, ", ")
+	return query + ";", args, nil
+}
+
 func (s Identity) Update() identityUpdateSQL {
 	return NewIdentitySQL().Update().WhereID(s.ID)
 }
 
 func (q identityUpdateSQL) Exec(db sqlla.DB) ([]Identity, error) {
-	query, args, err := q.ToSql()
-	if err != nil {
-		return nil, err
-	}
-	_, err = db.Exec(query, args...)
-	if err != nil {
-		return nil, err
-	}
-	qq := q.identitySQL
-
-	return qq.Select().All(db)
+	return q.ExecContext(context.Background(), db)
 }
 
 func (q identityUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Identity, error) {
-	query, args, err := q.ToSql()
+	query, args, err := q.ToSqlWithReturning()
 	if err != nil {
 		return nil, err
 	}
-	_, err = db.ExecContext(ctx, query, args...)
+	rows, err := db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
-	qq := q.identitySQL
+	results := make([]Identity, 0, 1)
+	defer rows.Close()
+	sel := NewIdentitySQL().Select()
+	for rows.Next() {
+		result, err := sel.Scan(rows)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, result)
+	}
 
-	return qq.Select().AllContext(ctx, db)
+	return results, nil
 }
 
 type identityDefaultUpdateHooker interface {

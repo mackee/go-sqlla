@@ -565,17 +565,7 @@ func (s UserItem) Update() userItemUpdateSQL {
 }
 
 func (q userItemUpdateSQL) Exec(db sqlla.DB) ([]UserItem, error) {
-	query, args, err := q.ToSql()
-	if err != nil {
-		return nil, err
-	}
-	_, err = db.Exec(query, args...)
-	if err != nil {
-		return nil, err
-	}
-	qq := q.userItemSQL
-
-	return qq.Select().All(db)
+	return q.ExecContext(context.Background(), db)
 }
 
 func (q userItemUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]UserItem, error) {

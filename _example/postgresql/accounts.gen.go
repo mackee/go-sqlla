@@ -528,36 +528,45 @@ func (q accountUpdateSQL) ToSql() (string, []interface{}, error) {
 
 	return query + ";", append(svs, wvs...), nil
 }
+func (q accountUpdateSQL) ToSqlWithReturning() (string, []interface{}, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return "", []interface{}{}, err
+	}
+	query = strings.TrimSuffix(query, ";")
+	query += " RETURNING " + strings.Join(accountAllColumns, ", ")
+	return query + ";", args, nil
+}
+
 func (s Account) Update() accountUpdateSQL {
 	return NewAccountSQL().Update().WhereID(s.ID)
 }
 
 func (q accountUpdateSQL) Exec(db sqlla.DB) ([]Account, error) {
-	query, args, err := q.ToSql()
-	if err != nil {
-		return nil, err
-	}
-	_, err = db.Exec(query, args...)
-	if err != nil {
-		return nil, err
-	}
-	qq := q.accountSQL
-
-	return qq.Select().All(db)
+	return q.ExecContext(context.Background(), db)
 }
 
 func (q accountUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Account, error) {
-	query, args, err := q.ToSql()
+	query, args, err := q.ToSqlWithReturning()
 	if err != nil {
 		return nil, err
 	}
-	_, err = db.ExecContext(ctx, query, args...)
+	rows, err := db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
-	qq := q.accountSQL
+	results := make([]Account, 0, 1)
+	defer rows.Close()
+	sel := NewAccountSQL().Select()
+	for rows.Next() {
+		result, err := sel.Scan(rows)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, result)
+	}
 
-	return qq.Select().AllContext(ctx, db)
+	return results, nil
 }
 
 type accountDefaultUpdateHooker interface {

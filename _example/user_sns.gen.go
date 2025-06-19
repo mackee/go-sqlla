@@ -495,17 +495,7 @@ func (s UserSNS) Update() userSNSUpdateSQL {
 }
 
 func (q userSNSUpdateSQL) Exec(db sqlla.DB) ([]UserSNS, error) {
-	query, args, err := q.ToSql()
-	if err != nil {
-		return nil, err
-	}
-	_, err = db.Exec(query, args...)
-	if err != nil {
-		return nil, err
-	}
-	qq := q.userSNSSQL
-
-	return qq.Select().All(db)
+	return q.ExecContext(context.Background(), db)
 }
 
 func (q userSNSUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]UserSNS, error) {

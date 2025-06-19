@@ -678,36 +678,45 @@ func (q groupUpdateSQL) ToSql() (string, []interface{}, error) {
 
 	return query + ";", append(svs, wvs...), nil
 }
+func (q groupUpdateSQL) ToSqlWithReturning() (string, []interface{}, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return "", []interface{}{}, err
+	}
+	query = strings.TrimSuffix(query, ";")
+	query += " RETURNING " + strings.Join(groupAllColumns, ", ")
+	return query + ";", args, nil
+}
+
 func (s Group) Update() groupUpdateSQL {
 	return NewGroupSQL().Update().WhereID(s.ID)
 }
 
 func (q groupUpdateSQL) Exec(db sqlla.DB) ([]Group, error) {
-	query, args, err := q.ToSql()
-	if err != nil {
-		return nil, err
-	}
-	_, err = db.Exec(query, args...)
-	if err != nil {
-		return nil, err
-	}
-	qq := q.groupSQL
-
-	return qq.Select().All(db)
+	return q.ExecContext(context.Background(), db)
 }
 
 func (q groupUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Group, error) {
-	query, args, err := q.ToSql()
+	query, args, err := q.ToSqlWithReturning()
 	if err != nil {
 		return nil, err
 	}
-	_, err = db.ExecContext(ctx, query, args...)
+	rows, err := db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
-	qq := q.groupSQL
+	results := make([]Group, 0, 1)
+	defer rows.Close()
+	sel := NewGroupSQL().Select()
+	for rows.Next() {
+		result, err := sel.Scan(rows)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, result)
+	}
 
-	return qq.Select().AllContext(ctx, db)
+	return results, nil
 }
 
 type groupDefaultUpdateHooker interface {

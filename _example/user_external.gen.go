@@ -530,17 +530,7 @@ func (s UserExternal) Update() userExternalUpdateSQL {
 }
 
 func (q userExternalUpdateSQL) Exec(db sqlla.DB) ([]UserExternal, error) {
-	query, args, err := q.ToSql()
-	if err != nil {
-		return nil, err
-	}
-	_, err = db.Exec(query, args...)
-	if err != nil {
-		return nil, err
-	}
-	qq := q.userExternalSQL
-
-	return qq.Select().All(db)
+	return q.ExecContext(context.Background(), db)
 }
 
 func (q userExternalUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]UserExternal, error) {

@@ -205,6 +205,7 @@ type updateQueryTestCase[T any] struct {
 	query          updateQuery[T]
 	expected       string
 	vs             []any
+	setup          func(t *testing.T, db sqlla.DB)
 	expectedResult []T
 }
 
@@ -225,6 +226,9 @@ func (u updateQueryTestCase[T]) assert(t *testing.T, opts ...cmp.Option) {
 	t.Helper()
 
 	ctx := context.Background()
+	if u.setup != nil {
+		u.setup(t, db)
+	}
 	got, err := u.query.ExecContext(ctx, db)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -586,15 +590,42 @@ func testCases() []testCaseWithToQueryTestCase {
 		},
 		updateQueryTestCase[postgresql.Account]{
 			name: "update",
+			setup: func(t *testing.T, db sqlla.DB) {
+				if _, err := postgresql.NewAccountSQL().Insert().
+					ValueID(42).
+					ValueName("foo").
+					ValueEmbedding(sampleVector).
+					ValueCreatedAt(sampleDate).
+					ValueUpdatedAt(sampleDate).
+					ExecContextWithoutSelect(t.Context(), db); err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+			},
 			query: postgresql.NewAccountSQL().Update().
 				SetName("bar").
 				SetEmbedding(sampleVector).
 				WhereID(42),
 			expected: `UPDATE "accounts" SET "embedding" = $1, "name" = $2, "updated_at" = $3 WHERE "id" = $4;`,
 			vs:       []any{sampleVector, "bar", sampleDate, int64(42)},
+			expectedResult: []postgresql.Account{
+				{ID: 42, Name: "bar", Embedding: sampleVector, CreatedAt: sampleDate, UpdatedAt: sampleDate},
+			},
 		},
 		updateQueryTestCase[postgresql.Group]{
 			name: "update with set null",
+			setup: func(t *testing.T, db sqlla.DB) {
+				if _, err := postgresql.NewGroupSQL().Insert().
+					ValueID(111).
+					ValueName("foo").
+					ValueLeaderAccountID(42).
+					ValueSubLeaderAccountID(28).
+					ValueChildGroupID(43).
+					ValueCreatedAt(sampleDate).
+					ValueUpdatedAt(sampleDate).
+					ExecContextWithoutSelect(t.Context(), db); err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+			},
 			query: postgresql.NewGroupSQL().Update().
 				SetLeaderAccountID(42).
 				SetSubLeaderAccountID(28).
@@ -602,6 +633,9 @@ func testCases() []testCaseWithToQueryTestCase {
 				WhereID(111),
 			expected: `UPDATE "groups" SET "child_group_id" = $1, "leader_account_id" = $2, "sub_leader_account_id" = $3 WHERE "id" = $4;`,
 			vs:       []any{sql.Null[int64]{}, int64(42), int64(28), int64(111)},
+			expectedResult: []postgresql.Group{
+				{ID: 111, Name: "foo", LeaderAccountID: 42, SubLeaderAccountID: sql.Null[postgresql.AccountID]{Valid: true, V: 28}, ChildGroupID: sql.Null[postgresql.GroupID]{}, CreatedAt: sampleDate, UpdatedAt: sampleDate},
+			},
 		},
 		deleteQueryTestCase{
 			name:     "delete with where",
