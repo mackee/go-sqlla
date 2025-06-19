@@ -1,6 +1,6 @@
 {{ define "InsertPostgreSQL.ExecContextSingle" }}
 {{- $constructor := printf "New%sSQL" (.Name | toCamel) -}}
-	query, args, err := q.ToSql()
+	query, args, err := q.ToSqlWithReturning()
 	if err != nil {
 		return {{ .StructName }}{}, err
 	}
@@ -13,7 +13,7 @@
 {{ end }}
 {{ define "InsertPostgreSQL.ExecContextAll" }}
 {{- $constructor := printf "New%sSQL" (.Name | toCamel) -}}
-	query, args, err := q.ToSql()
+	query, args, err := q.ToSqlWithReturning()
 	if err != nil {
 		return nil, err
 	}
@@ -48,8 +48,7 @@
 	if err != nil {
 		return "", nil, err
 	}
-	columns := strings.Join({{ $camelName }}AllColumns, ", ")
-	query += " ON CONFLICT DO NOTHING" + " RETURNING " + columns
+	query += " ON CONFLICT DO NOTHING"
 	return query + ";", vs, nil
 {{ end }}
 {{ define "InsertPostgreSQL.DoUpdateToSql" }}
@@ -74,10 +73,18 @@
 	}
 	query += " ON CONFLICT (" + q.target + ") DO UPDATE SET" + os
 	vs = append(vs, ovs...)
-	columns := strings.Join({{ $camelName }}AllColumns, ", ")
-	query += " RETURNING " + columns
 
 	return query + ";", vs, nil
+{{ end }}
+{{ define "InsertPostgreSQL.ToSqlWithReturning" }}
+{{- $camelName := .Name | toCamel | untitle -}}
+	query, args, err := q.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	query = strings.TrimSuffix(query, ";")
+	query += " RETURNING " + strings.Join({{ $camelName }}AllColumns, ", ")
+	return query + ";", args, nil
 {{ end }}
 
 {{ define "InsertPostgreSQL" }}
@@ -96,6 +103,10 @@ func (q {{ $camelName }}InsertSQL) OnConflictDoNothing() {{ $camelName }}InsertO
 
 func (q {{ $camelName }}InsertOnConflictDoNothingSQL) ToSql() (string, []any, error) {
 {{ template "InsertPostgreSQL.DoNothingToSql" . }}
+}
+
+func (q {{ $camelName }}InsertOnConflictDoNothingSQL) ToSqlWithReturning() (string, []any, error) {
+{{ template "InsertPostgreSQL.ToSqlWithReturning" . }}
 }
 
 func (q {{ $camelName }}InsertOnConflictDoNothingSQL) ExecContext(ctx context.Context, db sqlla.DB) ({{ .StructName }}, error) {
@@ -143,10 +154,12 @@ func (q {{ $camelName }}InsertOnConflictDoUpdateSQL) ToSql() (string, []any, err
 	}
 	query += " ON CONFLICT (" + q.target + ") DO UPDATE SET" + os
 	vs = append(vs, ovs...)
-	columns := strings.Join({{ $camelName }}AllColumns, ", ")
-	query += " RETURNING " + columns
 
 	return query + ";", vs, nil
+}
+
+func (q {{ $camelName }}InsertOnConflictDoUpdateSQL) ToSqlWithReturning() (string, []any, error) {
+{{ template "InsertPostgreSQL.ToSqlWithReturning" . }}
 }
 
 func (q {{ $camelName }}InsertOnConflictDoUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ({{ .StructName }}, error) {
@@ -173,6 +186,10 @@ func (q *{{ $camelName }}BulkInsertSQL) OnConflictDoNothing() {{ $camelName }}Bu
 
 func (q {{ $camelName }}BulkInsertOnConflictDoNothingSQL) ToSql() (string, []any, error) {
 {{ template "InsertPostgreSQL.DoNothingToSql" . }}
+}
+
+func (q {{ $camelName }}BulkInsertOnConflictDoNothingSQL) ToSqlWithReturning() (string, []any, error) {
+{{ template "InsertPostgreSQL.ToSqlWithReturning" . }}
 }
 
 func (q {{ $camelName }}BulkInsertOnConflictDoNothingSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]{{ .StructName }}, error) {
@@ -227,10 +244,12 @@ func (q {{ $camelName }}BulkInsertOnConflictDoUpdateSQL) ToSql() (string, []any,
 	}
 	query += " ON CONFLICT (" + q.target + ") DO UPDATE SET" + os
 	vs = append(vs, ovs...)
-	columns := strings.Join({{ $camelName }}AllColumns, ", ")
-	query += " RETURNING " + columns
 
 	return query + ";", vs, nil
+}
+
+func (q {{ $camelName }}BulkInsertOnConflictDoUpdateSQL) ToSqlWithReturning() (string, []any, error) {
+{{ template "InsertPostgreSQL.ToSqlWithReturning" . }}
 }
 
 func (q {{ $camelName }}BulkInsertOnConflictDoUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]{{ .StructName }}, error) {

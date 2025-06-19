@@ -786,8 +786,17 @@ func (q groupInsertSQL) ToSql() (string, []any, error) {
 	if err != nil {
 		return "", []any{}, err
 	}
-	columns := strings.Join(groupAllColumns, ", ")
-	return query + " RETURNING " + columns + ";", vs, nil
+	return query + ";", vs, nil
+}
+
+func (q groupInsertSQL) ToSqlWithReturning() (string, []any, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return "", []any{}, err
+	}
+	query = strings.TrimSuffix(query, ";")
+	query += " RETURNING " + strings.Join(groupAllColumns, ", ")
+	return query, args, nil
 }
 
 func (q groupInsertSQL) rowsNum() int {
@@ -817,7 +826,7 @@ func (q groupInsertSQL) Exec(db sqlla.DB) (Group, error) {
 }
 
 func (q groupInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (Group, error) {
-	query, args, err := q.ToSql()
+	query, args, err := q.ToSqlWithReturning()
 	if err != nil {
 		return Group{}, err
 	}
@@ -901,11 +910,20 @@ func (q *groupBulkInsertSQL) ToSql() (string, []any, error) {
 	if err != nil {
 		return "", []any{}, err
 	}
-	columns := strings.Join(groupAllColumns, ", ")
-	return query + " RETURNING " + columns + ";", vs, nil
+	return query + ";", vs, nil
 }
-func (q *groupBulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Group, error) {
+func (q *groupBulkInsertSQL) ToSqlWithReturning() (string, []any, error) {
 	query, args, err := q.ToSql()
+	if err != nil {
+		return "", []any{}, err
+	}
+	query = strings.TrimSuffix(query, ";")
+	query += " RETURNING " + strings.Join(groupAllColumns, ", ")
+	return query + ";", args, nil
+}
+
+func (q *groupBulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Group, error) {
+	query, args, err := q.ToSqlWithReturning()
 	if err != nil {
 		return nil, err
 	}
@@ -950,14 +968,24 @@ func (q groupInsertOnConflictDoNothingSQL) ToSql() (string, []any, error) {
 	if err != nil {
 		return "", nil, err
 	}
-	columns := strings.Join(groupAllColumns, ", ")
-	query += " ON CONFLICT DO NOTHING" + " RETURNING " + columns
+	query += " ON CONFLICT DO NOTHING"
 	return query + ";", vs, nil
 
 }
 
-func (q groupInsertOnConflictDoNothingSQL) ExecContext(ctx context.Context, db sqlla.DB) (Group, error) {
+func (q groupInsertOnConflictDoNothingSQL) ToSqlWithReturning() (string, []any, error) {
 	query, args, err := q.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	query = strings.TrimSuffix(query, ";")
+	query += " RETURNING " + strings.Join(groupAllColumns, ", ")
+	return query + ";", args, nil
+
+}
+
+func (q groupInsertOnConflictDoNothingSQL) ExecContext(ctx context.Context, db sqlla.DB) (Group, error) {
+	query, args, err := q.ToSqlWithReturning()
 	if err != nil {
 		return Group{}, err
 	}
@@ -1131,14 +1159,23 @@ func (q groupInsertOnConflictDoUpdateSQL) ToSql() (string, []any, error) {
 	}
 	query += " ON CONFLICT (" + q.target + ") DO UPDATE SET" + os
 	vs = append(vs, ovs...)
-	columns := strings.Join(groupAllColumns, ", ")
-	query += " RETURNING " + columns
 
 	return query + ";", vs, nil
 }
 
-func (q groupInsertOnConflictDoUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) (Group, error) {
+func (q groupInsertOnConflictDoUpdateSQL) ToSqlWithReturning() (string, []any, error) {
 	query, args, err := q.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	query = strings.TrimSuffix(query, ";")
+	query += " RETURNING " + strings.Join(groupAllColumns, ", ")
+	return query + ";", args, nil
+
+}
+
+func (q groupInsertOnConflictDoUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) (Group, error) {
+	query, args, err := q.ToSqlWithReturning()
 	if err != nil {
 		return Group{}, err
 	}
@@ -1181,14 +1218,24 @@ func (q groupBulkInsertOnConflictDoNothingSQL) ToSql() (string, []any, error) {
 	if err != nil {
 		return "", nil, err
 	}
-	columns := strings.Join(groupAllColumns, ", ")
-	query += " ON CONFLICT DO NOTHING" + " RETURNING " + columns
+	query += " ON CONFLICT DO NOTHING"
 	return query + ";", vs, nil
 
 }
 
-func (q groupBulkInsertOnConflictDoNothingSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Group, error) {
+func (q groupBulkInsertOnConflictDoNothingSQL) ToSqlWithReturning() (string, []any, error) {
 	query, args, err := q.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	query = strings.TrimSuffix(query, ";")
+	query += " RETURNING " + strings.Join(groupAllColumns, ", ")
+	return query + ";", args, nil
+
+}
+
+func (q groupBulkInsertOnConflictDoNothingSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Group, error) {
+	query, args, err := q.ToSqlWithReturning()
 	if err != nil {
 		return nil, err
 	}
@@ -1379,14 +1426,23 @@ func (q groupBulkInsertOnConflictDoUpdateSQL) ToSql() (string, []any, error) {
 	}
 	query += " ON CONFLICT (" + q.target + ") DO UPDATE SET" + os
 	vs = append(vs, ovs...)
-	columns := strings.Join(groupAllColumns, ", ")
-	query += " RETURNING " + columns
 
 	return query + ";", vs, nil
 }
 
-func (q groupBulkInsertOnConflictDoUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Group, error) {
+func (q groupBulkInsertOnConflictDoUpdateSQL) ToSqlWithReturning() (string, []any, error) {
 	query, args, err := q.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	query = strings.TrimSuffix(query, ";")
+	query += " RETURNING " + strings.Join(groupAllColumns, ", ")
+	return query + ";", args, nil
+
+}
+
+func (q groupBulkInsertOnConflictDoUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Group, error) {
+	query, args, err := q.ToSqlWithReturning()
 	if err != nil {
 		return nil, err
 	}

@@ -25,13 +25,20 @@ func (q {{ $camelName }}InsertSQL) ToSql() (string, []any, error) {
 	if err != nil {
 			return "", []any{}, err
 	}
-	{{- if eq (dialect) "postgresql" }}
-	columns := strings.Join({{ $camelName }}AllColumns, ", ")
-	return query + " RETURNING " + columns + ";", vs, nil
-	{{- else }}
 	return query + ";", vs, nil
-	{{- end }}
 }
+
+{{ if eq (dialect) "postgresql" }}
+func (q {{ $camelName }}InsertSQL) ToSqlWithReturning() (string, []any, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return "", []any{}, err
+	}
+	query = strings.TrimSuffix(query, ";")
+	query += " RETURNING " + strings.Join({{ $camelName }}AllColumns, ", ")
+	return query, args, nil
+}
+{{ end }}
 
 func (q {{ $camelName }}InsertSQL) rowsNum() int {
 	return 1
@@ -91,7 +98,7 @@ func (q {{ $camelName }}InsertSQL) Exec(db sqlla.DB) (sql.Result, error) {
 
 {{ if eq (dialect) "postgresql" }}
 func (q {{ $camelName }}InsertSQL) ExecContext(ctx context.Context, db sqlla.DB) ({{ .StructName }}, error) {
-	query, args, err := q.ToSql()
+	query, args, err := q.ToSqlWithReturning()
 	if err != nil {
 		return {{ .StructName }}{}, err
 	}
@@ -257,17 +264,22 @@ func (q *{{ $camelName }}BulkInsertSQL) ToSql() (string, []any, error) {
 	if err != nil {
 			return "", []any{}, err
 	}
-	{{- if eq (dialect) "postgresql" }}
-	columns := strings.Join({{ $camelName }}AllColumns, ", ")
-	return query + " RETURNING " + columns + ";", vs, nil
-	{{- else }}
 	return query + ";", vs, nil
-	{{- end }}
 }
 
 {{- if eq (dialect) "postgresql" }}
-func (q *{{ $camelName }}BulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]{{ .StructName }}, error) {
+func (q *{{ $camelName }}BulkInsertSQL) ToSqlWithReturning() (string, []any, error) {
 	query, args, err := q.ToSql()
+	if err != nil {
+		return "", []any{}, err
+	}
+	query = strings.TrimSuffix(query, ";")
+	query += " RETURNING " + strings.Join({{ $camelName }}AllColumns, ", ")
+	return query + ";", args, nil
+}
+
+func (q *{{ $camelName }}BulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]{{ .StructName }}, error) {
+	query, args, err := q.ToSqlWithReturning()
 	if err != nil {
 		return nil, err
 	}

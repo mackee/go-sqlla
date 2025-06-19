@@ -616,8 +616,17 @@ func (q accountInsertSQL) ToSql() (string, []any, error) {
 	if err != nil {
 		return "", []any{}, err
 	}
-	columns := strings.Join(accountAllColumns, ", ")
-	return query + " RETURNING " + columns + ";", vs, nil
+	return query + ";", vs, nil
+}
+
+func (q accountInsertSQL) ToSqlWithReturning() (string, []any, error) {
+	query, args, err := q.ToSql()
+	if err != nil {
+		return "", []any{}, err
+	}
+	query = strings.TrimSuffix(query, ";")
+	query += " RETURNING " + strings.Join(accountAllColumns, ", ")
+	return query, args, nil
 }
 
 func (q accountInsertSQL) rowsNum() int {
@@ -647,7 +656,7 @@ func (q accountInsertSQL) Exec(db sqlla.DB) (Account, error) {
 }
 
 func (q accountInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) (Account, error) {
-	query, args, err := q.ToSql()
+	query, args, err := q.ToSqlWithReturning()
 	if err != nil {
 		return Account{}, err
 	}
@@ -731,11 +740,20 @@ func (q *accountBulkInsertSQL) ToSql() (string, []any, error) {
 	if err != nil {
 		return "", []any{}, err
 	}
-	columns := strings.Join(accountAllColumns, ", ")
-	return query + " RETURNING " + columns + ";", vs, nil
+	return query + ";", vs, nil
 }
-func (q *accountBulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Account, error) {
+func (q *accountBulkInsertSQL) ToSqlWithReturning() (string, []any, error) {
 	query, args, err := q.ToSql()
+	if err != nil {
+		return "", []any{}, err
+	}
+	query = strings.TrimSuffix(query, ";")
+	query += " RETURNING " + strings.Join(accountAllColumns, ", ")
+	return query + ";", args, nil
+}
+
+func (q *accountBulkInsertSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Account, error) {
+	query, args, err := q.ToSqlWithReturning()
 	if err != nil {
 		return nil, err
 	}
@@ -780,14 +798,24 @@ func (q accountInsertOnConflictDoNothingSQL) ToSql() (string, []any, error) {
 	if err != nil {
 		return "", nil, err
 	}
-	columns := strings.Join(accountAllColumns, ", ")
-	query += " ON CONFLICT DO NOTHING" + " RETURNING " + columns
+	query += " ON CONFLICT DO NOTHING"
 	return query + ";", vs, nil
 
 }
 
-func (q accountInsertOnConflictDoNothingSQL) ExecContext(ctx context.Context, db sqlla.DB) (Account, error) {
+func (q accountInsertOnConflictDoNothingSQL) ToSqlWithReturning() (string, []any, error) {
 	query, args, err := q.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	query = strings.TrimSuffix(query, ";")
+	query += " RETURNING " + strings.Join(accountAllColumns, ", ")
+	return query + ";", args, nil
+
+}
+
+func (q accountInsertOnConflictDoNothingSQL) ExecContext(ctx context.Context, db sqlla.DB) (Account, error) {
+	query, args, err := q.ToSqlWithReturning()
 	if err != nil {
 		return Account{}, err
 	}
@@ -921,14 +949,23 @@ func (q accountInsertOnConflictDoUpdateSQL) ToSql() (string, []any, error) {
 	}
 	query += " ON CONFLICT (" + q.target + ") DO UPDATE SET" + os
 	vs = append(vs, ovs...)
-	columns := strings.Join(accountAllColumns, ", ")
-	query += " RETURNING " + columns
 
 	return query + ";", vs, nil
 }
 
-func (q accountInsertOnConflictDoUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) (Account, error) {
+func (q accountInsertOnConflictDoUpdateSQL) ToSqlWithReturning() (string, []any, error) {
 	query, args, err := q.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	query = strings.TrimSuffix(query, ";")
+	query += " RETURNING " + strings.Join(accountAllColumns, ", ")
+	return query + ";", args, nil
+
+}
+
+func (q accountInsertOnConflictDoUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) (Account, error) {
+	query, args, err := q.ToSqlWithReturning()
 	if err != nil {
 		return Account{}, err
 	}
@@ -971,14 +1008,24 @@ func (q accountBulkInsertOnConflictDoNothingSQL) ToSql() (string, []any, error) 
 	if err != nil {
 		return "", nil, err
 	}
-	columns := strings.Join(accountAllColumns, ", ")
-	query += " ON CONFLICT DO NOTHING" + " RETURNING " + columns
+	query += " ON CONFLICT DO NOTHING"
 	return query + ";", vs, nil
 
 }
 
-func (q accountBulkInsertOnConflictDoNothingSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Account, error) {
+func (q accountBulkInsertOnConflictDoNothingSQL) ToSqlWithReturning() (string, []any, error) {
 	query, args, err := q.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	query = strings.TrimSuffix(query, ";")
+	query += " RETURNING " + strings.Join(accountAllColumns, ", ")
+	return query + ";", args, nil
+
+}
+
+func (q accountBulkInsertOnConflictDoNothingSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Account, error) {
+	query, args, err := q.ToSqlWithReturning()
 	if err != nil {
 		return nil, err
 	}
@@ -1129,14 +1176,23 @@ func (q accountBulkInsertOnConflictDoUpdateSQL) ToSql() (string, []any, error) {
 	}
 	query += " ON CONFLICT (" + q.target + ") DO UPDATE SET" + os
 	vs = append(vs, ovs...)
-	columns := strings.Join(accountAllColumns, ", ")
-	query += " RETURNING " + columns
 
 	return query + ";", vs, nil
 }
 
-func (q accountBulkInsertOnConflictDoUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Account, error) {
+func (q accountBulkInsertOnConflictDoUpdateSQL) ToSqlWithReturning() (string, []any, error) {
 	query, args, err := q.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	query = strings.TrimSuffix(query, ";")
+	query += " RETURNING " + strings.Join(accountAllColumns, ", ")
+	return query + ";", args, nil
+
+}
+
+func (q accountBulkInsertOnConflictDoUpdateSQL) ExecContext(ctx context.Context, db sqlla.DB) ([]Account, error) {
+	query, args, err := q.ToSqlWithReturning()
 	if err != nil {
 		return nil, err
 	}
